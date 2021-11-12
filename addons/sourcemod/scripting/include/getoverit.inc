@@ -1,0 +1,1 @@
+native any FetchColoredName(int client, char[] colored_name, int max_len);

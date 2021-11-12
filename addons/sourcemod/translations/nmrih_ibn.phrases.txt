@@ -1,0 +1,18 @@
+﻿"Phrases"
+{
+	"Notifi_Infection"
+	{
+		"en"			"is infected."
+		"jp"			"さんが感染しました。"
+		"ko"			"님이 감염 상태 입니다."
+		"chi"			"感染了！"
+	}
+	
+	"Notifi_Bleeding"
+	{
+		"en"			"is bleeding."
+		"jp"			"さんが出血しています。"
+		"ko"			"님이 출혈 상태 입니다."
+		"chi"			"流血了！"
+	}
+}

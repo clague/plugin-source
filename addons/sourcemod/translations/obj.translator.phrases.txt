@@ -1,0 +1,40 @@
+﻿"Phrases"
+{
+	"ccc"
+	{
+		"#format"		"{1:.0f},{2:s},{3:.0f},{4:s},{5:.0f}"
+		"en"			"No map got over {1}%% votes ({2} [{3}%%] & {4} [{5}%%]), starting runoff vote"
+		"zho"			"任务"
+	}
+	
+	"OnStart"
+	{
+		"en"			"生存或死亡"
+	}
+	
+	"NoObjectiveExists"
+	{
+		"en"			"无任务提示"
+	}
+	
+	"ExtractionBegin"
+	{
+		"en"			"救援来了,赶快逃生!"
+	}
+	
+	"OnAllPlayersExtracted"
+	{
+		"en"			"幸存者成功撤离!"
+	}
+	
+	"OnExtractionExpired"
+	{
+		"en"			"幸存者撤离失败!"
+	}
+	
+	"Mission"
+	{
+		"en"			"[任务]"
+	}
+	
+}

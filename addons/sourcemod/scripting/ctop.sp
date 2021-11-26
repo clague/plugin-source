@@ -243,16 +243,16 @@ public Action EVENT_NPC(Event e, const char[] n, bool b)
 
 public Action Command_WR(int client, int args)
 {
-    if(IsClientConnected(client))
-        if(IsClientInGame(client))
-            return Plugin_Handled;
+    if(!(IsClientConnected(client) && IsClientInGame(client)))
+        return Plugin_Handled;
 
     char sCommand[64], cmd[5];
     if (args == 0)
         FormatEx(sCommand, 64, "%s", gS_Map);
     else
         GetCmdArg(1, sCommand, 64);
-    GetCmdArg(0, cmd, 5);
+    GetCmdArg(0, cmd, 10);
+
     if (cmd[strlen(cmd) - 1] == 'n')
         StartWRMenu(client, sCommand, true);
     else

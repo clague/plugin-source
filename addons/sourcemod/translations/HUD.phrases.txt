@@ -1,0 +1,43 @@
+"Phrases"
+{
+	"Health"
+	{
+		"#format"	"{1:i}"
+		"en"		"Health: {1}"
+		"jp"		"体力; {1}"
+        "chi"       "血量: {1}"
+	}
+	
+	"Stamina"
+	{
+		"#format"	"{1:i}"
+		"en"		"Stamina: {1}"
+		"jp"		"スタミナ; {1}"
+        "chi"       "耐力: {1}"
+	}
+
+	"bleeding"
+	{
+		"#format"	"{1:s}"
+		"en"		"{1}   < bleeding >"
+		"jp"		"{1}   < 出血 >"
+		"chi"       "{1} 「 流血 」"
+	}
+
+	"vaccinated"
+	{
+		"#format"	"{1:s}"
+		"en"		"{1}   < vaccinated >"
+		"jp"		"{1}   < ワクチン接種済 >"
+		"chi"       "{1} 「 疫苗接种 」"
+	}
+
+	"infected"
+	{
+		"#format"	"{1:s},{2:i}"
+		"en"		"{1}   < infected; {2} >"
+		"jp"		"{1}   < 感染; {2} >"
+		"chi"       "{1} 「 感染 {2} 」"
+	}
+}
+

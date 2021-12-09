@@ -281,6 +281,7 @@ int GetHUDTarget(int client)
                 }
             }
         }
+        g_aObserveTarget[client] = 0;
     }
     return client;
 }

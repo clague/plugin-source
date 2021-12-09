@@ -27,11 +27,12 @@ https://forums.alliedmods.net/showthread.php?p=2732929
 ## getoverit.sp
 特色插件，根据撤离次数改变名字颜色。
 
-## health_and_stamina_disp.sp
-https://forums.alliedmods.net/showthread.php?p=2667936
-
+## HUD.sp
 ui插件，需要翻译文本。
-改进：删掉蓄力伤害显示，解决地图文本冲突。
+!speed开启/关闭速度显示；
+sm_speedmeter参数开启后，UI更新频率大幅加快，且去除耐力、状态显示，适合连跳、滑翔；
+观战时能看到观战同一对象的人；
+
 ## mapconfigs.sp
 不同的地图套用不同参数
 

@@ -17,6 +17,7 @@ char gS_Map[160];
 float g_fStartTime = -1.0;
 float g_fEndTime = -1.0;
 
+ConVar sm_record_enable_rt;
 bool enable = true;
 
 // player timer variables
@@ -34,10 +35,11 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
     LoadTranslations("ctop.phrases");
-    enable = true;
     
     (g_bEnable = CreateConVar("sm_record_enable", "1", "on = 1 , off = 0")).AddChangeHook(OnConVarChange);
     (g_bPKMode = CreateConVar("sm_pk_mode", "0", "on = 1 , off = 0")).AddChangeHook(OnConVarChange);
+    (sm_record_enable_rt = CreateConVar("sm_record_enable_rt", "1", "on = 1 , off = 0")).AddChangeHook(OnConVarChange);
+    enable = true;
 
     HookEvent("nmrih_round_begin", OnRoundStart);
     if (g_bPKMode.BoolValue)
@@ -63,7 +65,7 @@ public void OnMapStart()
         return;
     }
     g_bEnable.IntValue = 1;
-    enable = true;
+    sm_record_enable_rt.BoolValue = true;
     // Get mapname
     GetCurrentMap(gS_Map, 160);
 
@@ -81,7 +83,7 @@ public void OnClientPutInServer(int client)
 public void OnConVarChange(Handle CVar, const char[] oldValue, const char[] newValue)
 {
     if (CVar == g_bEnable && !g_bEnable.BoolValue)
-        enable = false;
+        sm_record_enable_rt.BoolValue = false;
     else if (CVar == g_bPKMode)
     {
         if (g_bPKMode.BoolValue)
@@ -95,13 +97,16 @@ public void OnConVarChange(Handle CVar, const char[] oldValue, const char[] newV
             HookEvent("nmrih_round_begin", TIMER_START);
         }
     }
+    else if (CVar == sm_record_enable_rt) {
+        enable = sm_record_enable_rt.BoolValue;
+    }
 }
 
 public void OnRoundStart(Event e, const char[] n, bool b) {
     if (g_bEnable.BoolValue)
-        enable = true;
+        sm_record_enable_rt.BoolValue = true;
     else
-        enable = false;
+        sm_record_enable_rt.BoolValue = false;
 }
 
 public Action TIMER_START(Event e, const char[] n, bool b)
@@ -246,7 +251,7 @@ public Action Command_WR(int client, int args)
     if(!(IsClientConnected(client) && IsClientInGame(client)))
         return Plugin_Handled;
 
-    char sCommand[64], cmd[5];
+    char sCommand[64], cmd[10];
     if (args == 0)
         FormatEx(sCommand, 64, "%s", gS_Map);
     else

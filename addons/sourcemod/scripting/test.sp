@@ -10,10 +10,10 @@ int nZombieCount = 0;
 float g_pos[3];
 
 public void OnPluginStart() {
-    HookUserMessage(GetUserMessageId("GameMessage"), OnUserMessage, true);
-    HookUserMessage(GetUserMessageId("BecameInfected"), OnUserMessage, true);
-    HookUserMessage(GetUserMessageId("InfectionCured"), OnUserMessage, true);
-    HookUserMessage(GetUserMessageId("Cure"), OnUserMessage, true);
+    // HookUserMessage(GetUserMessageId("GameMessage"), OnUserMessage, true);
+    // HookUserMessage(GetUserMessageId("BecameInfected"), OnUserMessage, true);
+    // HookUserMessage(GetUserMessageId("InfectionCured"), OnUserMessage, true);
+    // HookUserMessage(GetUserMessageId("Cure"), OnUserMessage, true);
 
     RegAdminCmd("sm_tmi", TestMotdIndex, ADMFLAG_GENERIC);
 

@@ -1,0 +1,460 @@
+"Phrases"
+{
+	"Yes"
+	{
+		"en"			"yes"
+		"chi"			"是"
+		"ru"			"да"
+	}
+	"No"
+	{
+		"en"			"no"
+		"chi"			"否"
+		"ru"			"нет"
+	}
+	"On"
+	{
+		"en"			"on"
+		"chi"			"开"
+		"ru"			"включено"
+	}
+	"Off"
+	{
+		"en"			"off"
+		"chi"			"关"
+		"ru"			"выключено"
+	}
+	"Confirm"
+	{
+        "en"            "Are you sure to "
+        "chi"           "你确定要"
+	}
+	"VoteInProgress"
+	{
+		"en"			"Vote in Progress"
+		"chi"			"投票正在进行中"
+		"ru"			"Запущено голосование"
+	}
+	"NoVotesCast"
+	{
+		"en"			"No Votes Cast"
+		"chi"			"投票已经取消"
+		"ru"			"Голосование отменено"
+	}
+	"VoteFailed"
+	{
+		"en"			"Vote Failed"
+		"chi"			"投票未通过"
+		"ru"			"Голосование провалилось"
+	}
+	"VoteByAlive"
+	{
+		"en"			"Vote only when you live"
+		"chi"			"你存活时才能进行投票."
+		"ru"			"Только живые могут голосовать"
+	}
+	"VoteDelayMinutes"
+	{
+		"#format"		"{1:d}"
+		"en"			"You must wait {1} minutes before starting another vote."
+		"chi"			"您必须再等 {1} 分钟后才能发起新一轮投票."
+		"ru"			"Вы должны подождать {1} минут, прежде чем начать новое голосование"
+	}
+	"VoteDelaySeconds"
+	{
+		"#format"		"{1:d}"
+		"en"			"You must wait {1} seconds before starting another vote."
+		"chi"			"您必须再等 {1} 秒钟后才能发起新一轮投票."
+		"ru"			"Вы должны подождать {1} секунд, прежде чем начать новое голосование"
+	}
+	"ChatFlag"
+	{
+		"en"			"[DiffModer]"
+		"chi"			"[系统]"
+		"ru"			"[DiffModer]"
+	}
+	"ModeFlag"
+	{
+		"en"			"[Mode]"
+		"chi"			"[模式]"
+		"ru"			"[Режим]"
+	}
+	"DifFlag"
+	{
+		"en"			"[Difficulty]"
+		"chi"			"[难度]"
+		"ru"			"[Сложность]"
+	}
+	"DensityFlag"
+	{
+		"en"			"[Density]"
+		"chi"			"[密度]"
+	}
+	"MacheteFlag"
+	{
+		"en"			"[Machete]"
+		"chi"			"[出生自带砍刀]"
+	}
+	"InfStaminaFlag"
+	{
+		"en"			"[InfStamina]"
+		"chi"			"[无限体力]"
+	}
+	"ModeDisable"
+	{
+		"en"			"The DiffModer was disabled."
+		"chi"			"服务器已禁止更改难度模式."
+		"ru"			"DiffModer был отключён"
+	}
+	"TopMenuTitle"
+	{
+		"en"			"[DiffModer] Select:"
+		"chi"			"[模式难度] 选择你的选项:"
+		"ru"			"[DiffModer]"
+	}
+	"TopMenuItemMode"
+	{
+		"en"			"Game Mode"
+		"chi"			"游戏模式"
+		"ru"			"Режим игры"
+	}
+	"TopMenuItemDifficulty"
+	{
+		"en"			"Game Difficulty"
+		"chi"			"游戏难度"
+		"ru"			"Сложность игры"
+	}
+	"TopMenuItemDensity"
+	{
+		"en"			"Zombie Density"
+		"chi"			"僵尸生成密度"
+	}
+	"TopMenuItemInfStaminaEnable"
+	{
+		"en"			"Turn on infinite stamina"
+		"chi"			"开启无限体力"
+	}
+	"TopMenuItemInfStaminaDisable"
+	{
+		"en"			"Turn off infinite stamina"
+		"chi"			"关闭无限体力"
+	}
+	"TopMenuItemMacheteEnable"
+	{
+		"en"			"Turn on machete mode"
+		"chi"			"开启出生自带砍刀"
+	}
+	"TopMenuItemMacheteDisable"
+	{
+		"en"			"Turn off machete mode"
+		"chi"			"关闭出生自带砍刀"
+	}
+	"ModeMenuTitle"
+	{
+		"en"			"Mode Select"
+		"chi"			"选择模式"
+		"ru"			"Выберите режим:"
+	}
+	"ConfMenuTitle"
+	{
+		"en"			"Configs Select"
+		"chi"			"选择打开关闭参数"
+		"ru"			"Выберите настройки:"
+	}
+	"DifMenuTitle"
+	{
+		"en"			"Difficult Select"
+		"chi"			"选择难度"
+		"ru"			"Выберите сложность:"
+	}
+	"DensityMenuTitle"
+	{
+		"en"			"Density Custom"
+		"chi"			"选择密度"
+	}
+	"ModeMenuItemRunner"
+	{
+		"en"			"Runner Mode"
+		"chi"			"全跑模式"
+		"ru"			"Только бегуны"
+	}
+	"ModeMenuItemKid"
+	{
+		"en"			"Kid Mode"
+		"chi"			"全小孩模式"
+		"ru"			"Только дети"
+	}
+	"ModeMenuItemDefault"
+	{
+		"en"			"default"
+		"chi"			"默认模式"
+		"ru"			"по умолчанию"
+	}
+	"DensityMenuItemCustom"
+	{
+        "en"            "Custom (1.5-)"
+        "chi"           "自定密度（1.5-）"
+	}
+	"DifMenuItemClassic"
+	{
+		"en"			"Classic"
+		"chi"			"经典难度"
+		"ru"			"Классика"
+	}
+	"DifMenuItemCasual"
+	{
+		"en"			"Casual"
+		"chi"			"休闲难度"
+		"ru"			"Легко"
+	}
+	"DifMenuItemNightmare"
+	{
+		"en"			"Nightmare"
+		"chi"			"噩梦难度"
+		"ru"			"Кошмар"
+	}
+	"RunnerModeVoteTitle"
+	{
+        "en"			"Change to all runner mode"
+		"chi"			"更换为全跑模式"
+	}
+	"KidModeVoteTitle"
+	{
+        "en"			"Change to all kid mode"
+		"chi"			"更换为全小孩模式"
+	}
+	"DefModeVoteTitle"
+	{
+        "en"			"Change to default mode"
+		"chi"			"更换为普通模式"
+	}
+	"RunnerModeVoteHint"
+	{
+		"#format"		"{1:s}"
+		"en"			"{1} want to vote for all runner mode"
+		"chi"			"{1} 想投票更换全跑模式"
+		"ru"			"{1} запустил голосование за режим 'Только бегуны'"
+	}
+	"KidModeVoteHint"
+	{
+		"#format"		"{1:s}"
+		"en"			"{1} want to vote for all kid mode"
+		"chi"			"{1} 想投票更换全小孩模式"
+		"ru"			"{1} запустил голосование за режим 'Только дети'"
+	}
+	"DefModeVoteHint"
+	{
+		"#format"		"{1:s}"
+		"en"			"{1} want to vote for default mode"
+		"chi"			"{1} 想投票更换回默认模式"
+		"ru"			"{1} запустил голосование за "
+	}
+	"RunnerModeVoteFinishHint"
+	{
+		"en"			"All runner mode on"
+		"chi"			"已切换为全跑模式"
+	}
+	"KidModeVoteFinishHint"
+	{
+		"en"			"All kid mode on"
+		"chi"			"已切换为全小孩模式"
+	}
+	"DefModeVoteFinishHint"
+	{
+		"en"			"Default mode on"
+		"chi"			"已切换为默认模式"
+	}
+	"ConfMenuRealismVote"
+	{
+		"#format"		"{1:s}"
+		"en"			"{1} want to vote for switch the realism"
+		"chi"			"{1} 想投票切换写实参数"
+		"ru"			"{1} запустил голосование за режим 'Реализм'"
+	}
+	"ConfMenuFriendlyVote"
+	{
+		"#format"		"{1:s}"
+		"en"			"{1} want to vote for switch the friendly fire"
+		"chi"			"{1} 想投票切换友伤参数"
+		"ru"			"{1} запустил голосование за переключение режима дружественного огня"
+	}
+	"ConfMenuHardcoreVote"
+	{
+		"#format"		"{1:s}"
+		"en"			"{1} want to vote for difficulty to hardcore"
+		"chi"			"{1} 想投票切换专家生还参数"
+		"ru"			"{1} запустил голосование за сложность 'Хардкор'"
+	}
+	"ConfMenuInfinityStaminaVote"
+	{
+		"#format"		"{1:s}"
+		"en"			"{1} want to vote for stamina to infinity"
+		"chi"			"{1} 想投票切换无限体力参数"
+		"ru"			"{1} хочу проголосовать за выносливость до бесконечности  бесконечности"
+	}
+	"ConfMenuDefaultVote"
+	{
+		"#format"		"{1:s}"
+		"en"			"{1} want to vote for switch the default configs"
+		"chi"			"{1} 想投票恢复参数"
+		"ru"			"{1} запустил голосование за возвращение настроек по умолчанию"
+	}
+	"ClassicDifVoteTitle"
+	{
+		"en"			"Change difficulty to classic"
+		"chi"			"更换难度为经典难度"
+	}
+	"CasualDifVoteTitle"
+	{
+		"en"			"Change difficulty to casual"
+		"chi"			"更换难度为休闲难度"
+	}
+	"NightmareDifVoteTitle"
+	{
+		"en"			"Change difficulty to nightmare"
+		"chi"			"更换难度为噩梦难度"
+	}
+	"ClassicDifVoteHint"
+	{
+		"#format"		"{1:s}"
+		"en"			"{1} want to vote for difficulty to classic"
+		"chi"			"{1} 想投票更换难度为经典难度"
+		"ru"			"{1} запустил голосование за сложность 'Хардкор'"
+	}
+	"CasualDifVoteHint"
+	{
+		"#format"		"{1:s}"
+		"en"			"{1} want to vote for difficulty to casual"
+		"chi"			"{1} 想投票更换难度为休闲难度"
+		"ru"			"{1} запустил голосование за сложность 'Легко'"
+	}
+	"NightmareDifVoteHint"
+	{
+		"#format"		"{1:s}"
+		"en"			"{1} want to vote for difficulty to nightmare"
+		"chi"			"{1} 想投票更换难度为噩梦难度"
+		"ru"			"{1} запустил голосование за сложность 'Кошмар'"
+	}
+	"ClassicDifVoteFinishHint"
+	{
+		"en"			"Difficulty has been changed to classic"
+		"chi"			"已更换为经典难度"
+	}
+	"CasualDifVoteFinishHint"
+	{
+		"en"			"Difficulty has been changed to casual"
+		"chi"			"已更换为休闲难度"
+	}
+	"NightmareDifVoteFinishHint"
+	{
+		"en"			"Difficulty has been changed to nightmare"
+		"chi"			"已更换为噩梦难度"
+	}
+	"DensityCustomHint"
+	{
+        "en"			"Please send your custom density through chat(>= 1.5)"
+		"chi"			"请在聊天框发送你的自定密度（大于等于1.5）"
+	}
+	"DensityVoteTitle"
+	{
+        "#format"       "{1:f}"
+        "en"			"Change density to {1}"
+		"chi"			"更改密度为 {1}"
+	}
+	"DensityVoteHint"
+	{
+        "#format"       "{1:s},{2:f}"
+        "en"			"{1} want to vote for density to {2}"
+		"chi"			"{1} 想投票更改密度为 {2}"
+	}
+	"DensityVoteFinishHint"
+	{
+        "#format"       "{1:f}"
+        "en"			"Density has been changed to {1}"
+		"chi"			"已更改密度为 {1}"
+	}
+	"InfStaminaEnableVoteTitle"
+	{
+        "en"            "Vote for stamina to infinity (record will be disabled)"
+        "chi"           "开启无限体力（将不会记录通关）"
+	}
+	"InfStaminaDisableVoteTitle"
+	{
+        "en"            "Vote for stamina to limited (record will be enabled in next round)"
+        "chi"           "关闭无限体力（重启回合才会记录通关）"
+	}
+	"InfStaminaEnableVoteHint"
+	{
+        "#format"       "{1:s}"
+        "en"			"{1} want to vote for stamina to infinity (record will be disabled)"
+		"chi"			"{1} 想投票开启无限体力（将不会记录通关）"
+	}
+	"InfStaminaDisableVoteHint"
+	{
+        "#format"       "{1:s}"
+        "en"			"{1} want to vote for stamina to limited (record will be enabled in next round)"
+		"chi"			"{1} 想投票关闭无限体力（重启回合才会记录通关）"
+	}
+	"InfStaminaEnableVoteFinishHint"
+	{
+        "en"			"Infinity stamina is on"
+		"chi"			"无限体力已开启"
+	}
+	"InfStaminaDisableVoteFinishHint"
+	{
+        "en"			"Infinity stamina is off"
+		"chi"			"无限体力已关闭"
+	}
+	"InfStaminaInvalid"
+	{
+        "en"			"Infinity stamina is invalid"
+		"chi"			"无限体力不可用"
+	}
+	"MacheteEnableVoteTitle"
+	{
+        "en"            "Vote on Machete mode (record will be disabled)"
+        "chi"           "开启出生自带砍刀（将不会记录通关）"
+	}
+	"MacheteDisableVoteTitle"
+	{
+        "en"            "Vote off Machete mode (record will be enabled in next round)"
+        "chi"           "关闭出生自带砍刀（重启回合才会记录通关）"
+	}
+	"MacheteEnableVoteHint"
+	{
+        "#format"       "{1:s}"
+        "en"			"{1} want to vote on machete mode (record will be disabled)"
+		"chi"			"{1} 想投票开启出生自带砍刀（将不会记录通关）"
+	}
+	"MacheteDisableVoteHint"
+	{
+        "#format"       "{1:s}"
+        "en"			"{1} want to vote off machete mode (record will be enabled in next round)"
+		"chi"			"{1} 想投票关闭出生自带砍刀（重启回合才会记录通关）"
+	}
+	"MacheteEnableVoteFinishHint"
+	{
+        "en"			"Machete mode is on"
+		"chi"			"出生自带砍刀已开启"
+	}
+	"MacheteDisableVoteFinishHint"
+	{
+        "en"			"Machete mode is off"
+		"chi"			"出生自带砍刀已关闭"
+	}
+	"MacheteInvalid"
+	{
+        "en"			"Machete mode is invalid"
+		"chi"			"出生自带砍刀不可用"
+	}
+	"RecordEnable"
+	{
+        "en"			"Record is enabled!"
+		"chi"			"本次游玩将记录通关"
+	}
+	"RecordDisable"
+	{
+        "en"			"Record is disabled!"
+		"chi"			"本次游玩将不会记录通关"
+	}
+}

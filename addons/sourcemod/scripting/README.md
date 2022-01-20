@@ -1,9 +1,8 @@
 
 注意：为了使得名字颜色改变，大部分插件都与getoverit.sp有联动，没有这个插件，其它插件可能需要修改才能正常工作。
-## c_nmrih_diffmoder.sp
-原版：https://forums.alliedmods.net/showthread.php?p=2549109
+## nmrih_dif.sp
 
-简化为仅有全跑功能，可通过参数切换默认、全跑、全小孩，每次换图会重置为全跑模式。
+投票更改模式、难度、密度，以及开启、关闭无限体力、出生自带砍刀。
 ## chat-processor.sp
 https://forums.alliedmods.net/showthread.php?p=2448733
 

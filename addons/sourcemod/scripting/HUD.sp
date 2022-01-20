@@ -47,7 +47,7 @@ public void OnPluginStart()
         fPrint_Repeat_time = fPrint_Repeat_time_Default;
     }
     g_hTimer = CreateTimer(fPrint_Repeat_time, Repeat_Print, _, TIMER_REPEAT);
-    CreateTimer(0.5, SendExtraMsg, _, TIMER_REPEAT);
+    CreateTimer(0.25, SendExtraMsg, _, TIMER_REPEAT);
 
     for (int i = 0; i < 6; i++) {
         g_aChannelEnable[i] = true;

@@ -48,7 +48,7 @@ public OnMapStart()
 
 public OnStatusTimer()
 {
-	for(new Client=1; Client<=9; Client++)
+	for(new Client=1; Client<=MaxClients; Client++)
 	{
 		CreateTimer(0.2, Event_PlayerStatus, Client, TIMER_REPEAT);
 	}

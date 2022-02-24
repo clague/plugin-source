@@ -23,7 +23,7 @@ float fPrint_Repeat_time = 0.25;
 float fPrint_x = 0.02;
 float fPrint_y = 0.86;
 
-bool g_aChannelEnable[6], g_aSpeedMetterEnabled[MAXPLAYERS + 1], g_bSpeedMeter;
+bool g_aChannelEnable[6], g_aChannelUsed[6], g_aSpeedMetterEnabled[MAXPLAYERS + 1], g_bSpeedMeter;
 int health_channel = 0, speed_channel = 0;
 int g_aObserveTarget[16];
 
@@ -51,12 +51,11 @@ public void OnPluginStart()
 
     for (int i = 0; i < 6; i++) {
         g_aChannelEnable[i] = true;
+        g_aChannelUsed[i] = false;
     }
 
-    health_channel = ChooseChannel();
-    g_aChannelEnable[health_channel] = false;
-    speed_channel = ChooseChannel();
-    g_aChannelEnable[health_channel] = true;
+    health_channel = 0;
+    speed_channel = 5;
 
     RegConsoleCmd("sm_speed", CommandSpeed);
     //PrintToServer("%d %d", health_channel, speed_channel);
@@ -248,16 +247,22 @@ public int NativeSetChannelDisabled(Handle plugin, int num_params) {
     int n = GetNativeCell(1);
     g_aChannelEnable[n] = false;
 
-    health_channel = ChooseChannel();
-    g_aChannelEnable[health_channel] = false;
-    speed_channel = ChooseChannel();
-    g_aChannelEnable[health_channel] = true;
+    if (health_channel == n) {
+        g_aChannelUsed[health_channel] = false;
+        health_channel = ChooseChannel();
+        g_aChannelUsed[health_channel] = true;
+    }
+    if (speed_channel == n) {
+        g_aChannelUsed[speed_channel] = false;
+        speed_channel = ChooseChannel();
+        g_aChannelUsed[speed_channel] = true;
+    }
     return 0;
 }
 
 int ChooseChannel() {
     for (int i = 2; i < 6; i++) { //channel 1 is much used for map text, so skip it
-        if (g_aChannelEnable[i]) {
+        if (g_aChannelEnable[i] && !g_aChannelUsed[i]) {
             return i;
         }
     }

@@ -4,7 +4,6 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <colorvariables>
-#include <getoverit>
 
 int nZombieCount = 0;
 float g_pos[3];
@@ -19,6 +18,7 @@ public void OnPluginStart() {
 
     RegAdminCmd("sm_count", CountZombies, ADMFLAG_GENERIC);
     RegAdminCmd("sm_make", MakeZombies, ADMFLAG_GENERIC);
+    RegConsoleCmd("sm_keyhint", SendKeyHintText);
 }
 
 public Action OnUserMessage(UserMsg msg_id, BfRead bf, const int[] players, int playersNum, bool reliable, bool init)
@@ -60,6 +60,7 @@ public Action TestMotdIndex(int client, int args)
     GetCmdArgString(msg, sizeof(msg));
     SetLongMOTD("motd_text", msg);
     ShowNotHiddenMOTDPanel(client, "motd_text", MOTDPANEL_TYPE_INDEX);
+    return Plugin_Handled;
 }
 
 bool SetLongMOTD(const String:panel[],const String:text[]) {
@@ -96,6 +97,7 @@ public Action CountZombies(int client, int args)
         i += 1;
     }
     CPrintToChat(client, "当前有 {red}%d 个僵尸", n);
+    return Plugin_Handled;
 }
 
 public Action MakeZombies(int client, int args)
@@ -154,3 +156,13 @@ public bool TraceEntityFilterPlayer(int entity, int contentsMask)
 {
     return entity > MaxClients;
 }  
+
+public Action SendKeyHintText(int client, int args) {
+    Handle msg = StartMessageOne("KeyHintText", client, USERMSG_BLOCKHOOKS);
+    BfWrite bf = UserMessageToBfWrite(msg);
+    bf.WriteByte(1); // number of strings, only 1 is accepted
+    bf.WriteString("123321");
+    EndMessage();
+
+    return Plugin_Handled;
+}

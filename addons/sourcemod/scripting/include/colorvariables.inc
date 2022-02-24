@@ -7,7 +7,7 @@
 // Syntax update: Keith Warren (Drixevel) (redwerewolf on Allied Mods)
 
 // ----------------------------------------------------------------------------------------
-#define _CV_MAX_MESSAGE_LENGTH 		1024
+#define _CV_MAX_MESSAGE_LENGTH 		2048
 #define _CV_MAX_VARIABLE_REDIRECTS 	10
 #define _CV_CONFIG_DIRECTORY 		"configs/colorvariables"
 

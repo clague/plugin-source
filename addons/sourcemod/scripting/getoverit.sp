@@ -108,10 +108,7 @@ public void AfterQuery(Handle:owner, Handle:hndl, const String:error[], any:data
     if(!IsClientInGame(data))
         return;
 
-    decl String:steam_id[20];
-    decl String:name[500];
-    decl String:colored_name[500];
-    char buffer[500] = {0};
+    char steam_id[20], name[500], buffer[500];
     int times = 0;
     bool need_insert = false;
 
@@ -128,9 +125,9 @@ public void AfterQuery(Handle:owner, Handle:hndl, const String:error[], any:data
     times++;
     strcopy(g_user_name_color[data], 20, g_rank_color[GetColorIndexFromTimes(times)]);
 
-    GetColoredName(data, colored_name, sizeof(colored_name));
-    Format(buffer, sizeof(buffer), "{white}幸存者** %s {white}**已经撤离！", colored_name);
-    CPrintToChatAll(buffer);
+    //GetColoredName(data, colored_name, sizeof(colored_name));
+    //Format(buffer, sizeof(buffer), "{white}幸存者** %s {white}**已经撤离！", colored_name);
+    //CPrintToChatAll(buffer);
 
     if(need_insert)
         Format(buffer, sizeof(buffer), "INSERT INTO extraction_times VALUES ('%s', '%s', %i)", steam_id, name, times);
@@ -154,6 +151,7 @@ public Action OnClientPreAdminCheck(int client) {
         PrintToServer(steam_id);
         SQL_TQuery(db, ApplyNameColor, buffer, client);
     }
+    return Plugin_Continue;
 }
 
 public void ApplyNameColor(Handle:owner, Handle:hndl, const String:error[], any:data) {
@@ -247,26 +245,11 @@ public bool IsChar(char c) {
     return false;
 }
 
-public void RandomColor(char[] color) {
-    switch(GetRandomInt(1, 10)) {
-        case  1: strcopy(color, 20, "{white}");
-        case  2: strcopy(color, 20, "{grey}");
-        case  3: strcopy(color, 20, "{yellow}");
-        case  4: strcopy(color, 20, "{lawngreen}");
-        case  5: strcopy(color, 20, "{aqua}");
-        case  6: strcopy(color, 20, "{fuchsia}");
-        case  7: strcopy(color, 20, "{darkviolet}");
-        case  8: strcopy(color, 20, "{orange}");
-        case  9: strcopy(color, 20, "{crimson}");
-        case 10: strcopy(color, 20, "{darkred}");
-        default: strcopy(color, 20, "{black}");
-    }
-}
-
 public Action ShowTopRankToClient_p1(int client, int args) {
     char buffer[200];
     Format(buffer, 200, "SELECT name, times FROM extraction_times ORDER BY times DESC LIMIT 10");
     SQL_TQuery(db, ShowTopRankToClient_p2, buffer, client);
+    return Plugin_Continue;
 }
 
 public void ShowTopRankToClient_p2(Handle:owner, Handle:hndl, const String:error[], any:data) {
@@ -313,6 +296,7 @@ public any NativeGetColoredName(Handle plugin, int num_params) {
     char[] new_name = new char[max_len];
     GetColoredName(client, new_name, max_len);
     SetNativeString(2, new_name, max_len);
+    return 0;
 }
 
 public void GetColoredName(int client, char[] new_name, int max_len) {

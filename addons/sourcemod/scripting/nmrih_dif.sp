@@ -127,12 +127,6 @@ Action TimerShowGameInfo (Handle timer) {
 }
 
 public void OnConfigsExecuted() {
-    char buffer[100];
-    FindConVar("hostname").GetString(buffer, 100);
-    if (SplitString(buffer, "（", g_szHostName, 100) == -1) {
-        FormatEx(g_szHostName, 100, buffer);
-    }
-
     sm_inf_stamina = FindConVar("sm_inf_stamina");
     sm_machete_enable = FindConVar("sm_machete_enable");
     sm_record_enable_rt = FindConVar("sm_record_enable_rt");
@@ -155,7 +149,7 @@ public void OnConVarChange(ConVar CVar, const char[] oldValue, const char[] newV
     else if (CVar == sm_gamemode) {
         g_GameMode = view_as<GameMode>(sm_gamemode.IntValue);
         if (g_GameMode == GameModeRunner || g_GameMode == GameModeKid) {
-            ShamblerConvertToRunner();
+            ShamblerConvertToRunner(g_GameMode == GameModeKid);
         }
         ConVarSet(g_GameMode);
     }
@@ -166,8 +160,12 @@ public void OnConVarChange(ConVar CVar, const char[] oldValue, const char[] newV
 
 void SetHostName() {
     char buffer[128], difficulty[24];
-    sv_difficulty.GetString(buffer, 128);
+    hostname.GetString(buffer, 100);
+    if (SplitString(buffer, "（", g_szHostName, 100) == -1) {
+        FormatEx(g_szHostName, 100, buffer);
+    }
     
+    sv_difficulty.GetString(buffer, 128);
     if (StrEqual(buffer, "classic")) {
         g_GameDif = GameDifClassic;
         FormatEx(difficulty, 24, "经典");
@@ -210,18 +208,18 @@ public void OnPluginEnd() {
 }
 
 public void OnEntityCreated(int entity, const char[] classname) {
-    if(!g_bEnabled) return;
+    if(!g_bEnabled || g_GameMode == GameModeDefault) return;
 
     if(IsValidShamblerZombie(entity))
         SDKHook(entity, SDKHook_SpawnPost, SDKHookCBZombieSpawnPost);
 }
 
 bool IsValidShamblerZombie(int entity) {
-    if((entity <= MaxClients) || !IsValidEntity(entity)) return false;
-
-    char classname[32];
-    GetEntityClassname(entity, classname, sizeof(classname));
-    return StrEqual(classname, "npc_nmrih_shamblerzombie", false);
+    char classname[128];
+    if (GetEntityClassname(entity, classname, sizeof(classname))) {
+        return StrEqual(classname, "npc_nmrih_shamblerzombie", false);
+    }
+    return false;
 }
 
 public void SDKHookCBZombieSpawnPost(int zombie) {
@@ -232,35 +230,31 @@ public void SDKHookCBZombieSpawnPost(int zombie) {
     }
 }
 
-int ShamblerToRunnerFromPosion(int shambler, bool isKid = false) {
+int ShamblerToRunnerFromPosion(int zombie, bool isKid = false) {
     float pos[3];
-    GetEntPropVector(shambler, Prop_Send, "m_vecOrigin", pos);
+    GetEntPropVector(zombie, Prop_Send, "m_vecOrigin", pos);
+    SDKUnhook(zombie, SDKHook_SpawnPost, SDKHookCBZombieSpawnPost);
 
-    SDKUnhook(shambler, SDKHook_SpawnPost, SDKHookCBZombieSpawnPost);
-    AcceptEntityInput(shambler, "kill");
-
-    int zombie = -1;
-    if (isKid || GetRandomInt(0, 100) < 100 * ov_runner_kid_chance.FloatValue)
+    if (isKid || GetRandomInt(0, 100) < 100 * ov_runner_kid_chance.FloatValue) {
+        AcceptEntityInput(zombie, "kill");
         zombie = CreateEntityByName("npc_nmrih_kidzombie");
-    else
-        zombie = CreateEntityByName("npc_nmrih_runnerzombie");
 
-    if(!IsValidEntity(zombie)) return -1;
-    if(DispatchSpawn(zombie)) TeleportEntity(zombie, pos, NULL_VECTOR, NULL_VECTOR);
-
-    return zombie;
+        if(!IsValidEntity(zombie)) return -1;
+        if(DispatchSpawn(zombie)) TeleportEntity(zombie, pos, NULL_VECTOR, NULL_VECTOR);
+        return zombie;
+    }
+    else {
+        AcceptEntityInput(zombie, "BecomeRunner");
+        return zombie;
+    }
 }
 
-void ShamblerConvertToRunner() {
+void ShamblerConvertToRunner(bool kid) {
     int MaxEnt = GetMaxEntities();
     for(int zombie = MaxClients + 1; zombie <= MaxEnt; zombie++)
     {
         if(!IsValidShamblerZombie(zombie)) continue;
-        switch(g_GameMode)
-        {
-            case GameModeRunner:	ShamblerToRunnerFromPosion(zombie);
-            case GameModeKid:	ShamblerToRunnerFromPosion(zombie, true);
-        }
+        ShamblerToRunnerFromPosion(zombie, kid);
     }
 }
 
@@ -628,9 +622,9 @@ public Action DensityListener(int client, const char[] command, int argc) {
         ReplaceString(buffer, 64, "\"", "");
         float density = StringToFloat(buffer);
 
-        PrintToServer("Listen: %s, %f", buffer, density);
+        //PrintToServer("Listen: %s, %f", buffer, density);
 
-        if (density < 1.5) {
+        if (density < 1.5 || density > 9999999) {
             g_hDensityMenu.Display(client, 20);
         }
         else {

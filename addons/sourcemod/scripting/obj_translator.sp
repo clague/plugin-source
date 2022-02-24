@@ -105,6 +105,7 @@ public Action OnStateChange(Handle event, const char[] name, bool dontBroadcast)
         PrintToChatAll("\x04%t\x01：%t","Mission", "OnExtractionExpired");
     }
     PrintToServer("State: %d", state);
+    return Plugin_Continue;
 }
 
 public void OnEntityCreated(int entity, const char[] classname){
@@ -154,6 +155,7 @@ public bool GetTranslatedMessage(int client, char[] obj_id,  char[] translated, 
 public Action Test(int client, int args) {
     UnhookUserMessage(GetUserMessageId("HudMsg"), GameTextHook, true);
     OnMapStart();
+    return Plugin_Handled;
 }
 
 public Action CommandTranslate(int client, int n_args) {

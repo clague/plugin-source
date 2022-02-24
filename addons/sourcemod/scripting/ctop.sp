@@ -112,7 +112,7 @@ public void OnRoundStart(Event e, const char[] n, bool b) {
 public Action TIMER_START(Event e, const char[] n, bool b)
 {
     if (!g_bEnable.BoolValue)
-        return;
+        return Plugin_Continue;
     if (g_bPKMode.BoolValue)
     {
         int client = GetClientOfUserId(GetEventInt(e, "userid"));
@@ -131,12 +131,13 @@ public Action TIMER_START(Event e, const char[] n, bool b)
             gA_Timers[i].iKills = 0;
         }
     }
+    return Plugin_Continue;
 }
 
 public Action TIMER_END(Event e, const char[] n, bool b)
 {
     if (!enable)
-        return;
+        return Plugin_Continue;
     int client = e.GetInt("player_id");
 
     // Get client name
@@ -162,6 +163,7 @@ public Action TIMER_END(Event e, const char[] n, bool b)
     FormatEx(sQuery, 512, "SELECT time, counts FROM playertimes WHERE map = '%s' AND auth = %d ORDER BY time ASC;", gS_Map, gA_Timers[client].iSteamid);
 
     gH_SQL.Query(SQL_OnFinishCheck_Callback, sQuery, client, DBPrio_High);
+    return Plugin_Continue;
 }
 
 public void SQL_OnFinishCheck_Callback(Database db, DBResultSet results, const char[] error, any client)
@@ -191,7 +193,7 @@ public void SQL_OnFinishCheck_Callback(Database db, DBResultSet results, const c
         else if(gA_Timers[client].iKills < results.FetchFloat(0))
         {
             FormatEx(sQuery, 512,
-            "UPDATE playertimes SET time = %f, deaths = %d, counts = counts + 1, kills = %d WHERE map = '%s' AND auth = %d;", 
+            "INSERT playertimes SET time = %f, deaths = %d, counts = counts + 1, kills = %d WHERE map = '%s' AND auth = %d;", 
             gA_Timers[client].fFinalTime, gA_Timers[client].iDeaths, gA_Timers[client].iKills, gS_Map, gA_Timers[client].iSteamid);
         }
         else
@@ -228,22 +230,23 @@ public void SQL_OnFinish_Callback(Database db, DBResultSet results, const char[]
 public Action EVENT_DEATH(Event e, const char[] n, bool b)
 {
     if (!enable)
-        return;
+        return Plugin_Continue;
     int client = GetClientOfUserId(e.GetInt("userid"));
 
     gA_Timers[client].iDeaths++;
+    return Plugin_Continue;
 }
 
 public Action EVENT_NPC(Event e, const char[] n, bool b)
 {
     if (!enable)
-        return;
+        return Plugin_Continue;
     int client = e.GetInt("killeridx");
 
-    if(IsClientConnected(client))
+    if(client <= MaxClients && client > 0)
         if(IsClientInGame(client))
             gA_Timers[client].iKills++;
-
+    return Plugin_Continue;
 }
 
 public Action Command_WR(int client, int args)

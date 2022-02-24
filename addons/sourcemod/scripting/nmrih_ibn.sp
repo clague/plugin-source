@@ -10,8 +10,6 @@
 
 new bool:Infection[MAXPLAYERS+1];
 new bool:Bleeding[MAXPLAYERS+1];
-new int:Death[MAXPLAYERS + 1];
-new int:Extracted[MAXPLAYERS + 1];
 
 new Float:flLastTA = 0.0;
 

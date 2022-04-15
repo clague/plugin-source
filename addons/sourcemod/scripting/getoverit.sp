@@ -236,7 +236,7 @@ void StringRainbow(const char[] input, char[] output, int maxLen) {
     }
     bytes += StrCat(output, maxLen, "{white}");
     output[bytes] = '\0';
-    PrintToServer(output);
+    //PrintToServer(output);
 }
 
 public bool IsChar(char c) {

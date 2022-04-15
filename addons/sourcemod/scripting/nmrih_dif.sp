@@ -21,6 +21,7 @@ enum GameDif {
 }
 
 enum GameDensity {
+    GameDensity10,
     GameDensity15,
     GameDensity30,
     GameDensity50,
@@ -43,7 +44,8 @@ ConVar hostname,
     sm_gamemode_default,
     sm_gamemode,
     sv_difficulty,
-    sv_spawn_density;
+    sv_spawn_density,
+    sv_spawn_density_default;
 
 bool g_bEnabled, g_bListenClient[MAXPLAYERS];
 
@@ -98,8 +100,6 @@ public void OnPluginStart() {
 
     (sv_difficulty = FindConVar("sv_difficulty")).AddChangeHook(OnConVarChange);
     (sv_spawn_density = FindConVar("sv_spawn_density")).AddChangeHook(OnConVarChange);
-    sv_spawn_density.FloatValue = 1.5;
-
     g_GameMode = view_as<GameMode>(sm_gamemode.IntValue);
 
     AutoExecConfig();
@@ -180,7 +180,10 @@ void SetHostName() {
     }
 
     float density = sv_spawn_density.FloatValue;
-    if (density == 1.5) {
+    if (density == 1.0) {
+        g_GameDensity = GameDensity10;
+    }
+    else if (density == 1.5) {
         g_GameDensity = GameDensity15;
     }
     else if (density == 3.0) {
@@ -294,7 +297,8 @@ void MenuInitialize() {
     g_hTopMenu = new Menu(TopMenuHandler, MenuAction_DisplayItem | MenuAction_Select | MenuAction_Display); 
     g_hTopMenu.SetTitle("TopMenuTitle");
 
-    g_hTopMenu.AddItem("TopMenuItemMode", "TopMenuItemMode", ITEMDRAW_DISABLED);
+    //g_hTopMenu.AddItem("TopMenuItemMode", "TopMenuItemMode", ITEMDRAW_DISABLED);
+    g_hTopMenu.AddItem("TopMenuItemMode", "TopMenuItemMode");
     g_hTopMenu.AddItem("TopMenuItemDifficulty", "TopMenuItemDifficulty");
     g_hTopMenu.AddItem("TopMenuItemDensity", "TopMenuItemDensity");
     g_hTopMenu.AddItem("TopMenuItemInfStamina", "TopMenuItemInfStamina");
@@ -328,7 +332,8 @@ void MenuInitialize() {
 
     g_hDensityMenu = new Menu(DensityMenuHandler, MenuAction_DisplayItem | MenuAction_Select | MenuAction_Display | MenuAction_Cancel | MenuAction_DrawItem);
     g_hDensityMenu.SetTitle("DensityMenuTitle");
-
+    
+    g_hDensityMenu.AddItem("1.0", "1.0");
     g_hDensityMenu.AddItem("1.5", "1.5");
     g_hDensityMenu.AddItem("3.0", "3.0");
     g_hDensityMenu.AddItem("5.0", "5.0");
@@ -373,9 +378,7 @@ int TopMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
     else if (action == MenuAction_Select) {
         switch (param2) {
             case 0: {
-                CPrintToChat(param1, "{red}%t %t", "ChatFlag", "ModeDisable");
-                menu.Display(param1, 20);
-                return 0;
+                g_hModeMenu.Display(param1, 20);
             }
             case 1: {
                 g_hDifMenu.Display(param1, 20);
@@ -464,19 +467,19 @@ int ModeMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
         FormatEx(g_szVoteCommand[param1 - 1], 128, "sm_gamemode %d", param2);
         switch (param2) {
             case 0: {
+                FormatEx(g_szVoteTitle[param1 - 1], 64, "DefModeVoteTitle");
+                FormatEx(g_szVoteHint[param1 - 1], 256, "DefModeVoteHint");
+                FormatEx(g_szVoteFinishHint[param1 - 1], 64, "DefModeVoteFinishHint");
+            }
+            case 1: {
                 FormatEx(g_szVoteTitle[param1 - 1], 64, "RunnerModeVoteTitle");
                 FormatEx(g_szVoteHint[param1 - 1], 256, "RunnerModeVoteHint");
                 FormatEx(g_szVoteFinishHint[param1 - 1], 64, "RunnerModeVoteFinishHint");
             }
-            case 1: {
+            case 2: {
                 FormatEx(g_szVoteTitle[param1 - 1], 64, "KidModeVoteTitle");
                 FormatEx(g_szVoteHint[param1 - 1], 256, "KidModeVoteHint");
                 FormatEx(g_szVoteFinishHint[param1 - 1], 64, "KidModeVoteFinishHint");
-            }
-            case 2: {
-                FormatEx(g_szVoteTitle[param1 - 1], 64, "DefModeVoteTitle");
-                FormatEx(g_szVoteHint[param1 - 1], 256, "DefModeVoteHint");
-                FormatEx(g_szVoteFinishHint[param1 - 1], 64, "DefModeVoteFinishHint");
             }
         }
         g_hConfirmMenu.Display(param1, 20);
@@ -563,18 +566,21 @@ int DensityMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
         panel.SetTitle(buffer);
     }
     else if (action == MenuAction_Select) {
-        float density = 1.5;
+        float density = 1.0;
         switch (param2) {
             case 0: {
-                density = 1.5;
+                density = 1.0;
             }
             case 1: {
-                density = 3.0;
+                density = 1.5;
             }
             case 2: {
-                density = 5.0;
+                density = 3.0;
             }
             case 3: {
+                density = 5.0;
+            }
+            case 4: {
                 g_bListenClient[param1] = true;
                 CPrintToChat(param1, "{red}%t {white}%t", "ChatFlag", "DensityCustomHint");
                 return 0;
@@ -591,7 +597,7 @@ int DensityMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
         g_hConfirmMenu.Display(param1, 20);
     }
     else if (action == MenuAction_DrawItem) {
-        if (g_GameDensity == view_as<GameDensity>(param2) && param2 != 3) {
+        if (g_GameDensity == view_as<GameDensity>(param2) && g_GameDensity != GameDensityCustom) {
             return ITEMDRAW_DISABLED;
         }
     }
@@ -624,7 +630,8 @@ public Action DensityListener(int client, const char[] command, int argc) {
 
         //PrintToServer("Listen: %s, %f", buffer, density);
 
-        if (density < 1.5 || density > 9999999) {
+        // if (density < 1.5 || density > 9999999) {
+        if (density > 9999999) {
             g_hDensityMenu.Display(client, 20);
         }
         else {

@@ -4,6 +4,7 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <colorvariables>
+#include <getoverit>
 
 int nZombieCount = 0;
 float g_pos[3];
@@ -13,12 +14,12 @@ public void OnPluginStart() {
     // HookUserMessage(GetUserMessageId("BecameInfected"), OnUserMessage, true);
     // HookUserMessage(GetUserMessageId("InfectionCured"), OnUserMessage, true);
     // HookUserMessage(GetUserMessageId("Cure"), OnUserMessage, true);
-
+    LoadTranslations("delay_quit.phrases");
     RegAdminCmd("sm_tmi", TestMotdIndex, ADMFLAG_GENERIC);
 
     RegAdminCmd("sm_count", CountZombies, ADMFLAG_GENERIC);
     RegAdminCmd("sm_make", MakeZombies, ADMFLAG_GENERIC);
-    RegConsoleCmd("sm_keyhint", SendKeyHintText);
+    RegServerCmd("sm_delay_quit", DelayQuit, "quit at a proper time");
 }
 
 public Action OnUserMessage(UserMsg msg_id, BfRead bf, const int[] players, int playersNum, bool reliable, bool init)
@@ -82,21 +83,23 @@ bool SetLongMOTD(const String:panel[],const String:text[]) {
 
 public Action CountZombies(int client, int args)
 {
-    int n = 0, i = MaxClients + 1, max = GetMaxEntities();
+    int nBig = 0, nKid = 0, i = MaxClients + 1, max = GetMaxEntities();
     char classname[30];
     while (i < max) {
         if (IsValidEntity(i)) {
             GetEntityClassname(i, classname, 30);
             if (StrEqual(classname, "npc_nmrih_runnerzombie"))
-                n += 1;
+                nBig += 1;
+            else if (StrEqual(classname, "npc_nmrih_shamblerzombie"))
+                nBig += 1;
             else if (StrEqual(classname, "npc_nmrih_kidzombie"))
-                n += 1;
+                nKid += 1;
             else if (StrEqual(classname, "npc_nmrih_turnedzombie"))
-                n += 1;
+                nBig += 1;
         }
         i += 1;
     }
-    CPrintToChat(client, "当前有 {red}%d 个僵尸", n);
+    CPrintToChat(client, "当前有 {red}%d {white}个大僵尸，{red} %d {white}个小孩", nBig, nKid);
     return Plugin_Handled;
 }
 
@@ -157,12 +160,32 @@ public bool TraceEntityFilterPlayer(int entity, int contentsMask)
     return entity > MaxClients;
 }  
 
-public Action SendKeyHintText(int client, int args) {
-    Handle msg = StartMessageOne("KeyHintText", client, USERMSG_BLOCKHOOKS);
-    BfWrite bf = UserMessageToBfWrite(msg);
-    bf.WriteByte(1); // number of strings, only 1 is accepted
-    bf.WriteString("123321");
-    EndMessage();
+public Action DelayQuit(int args) {
+    for (int i = 1; i <= MaxClients; i++) {
+        if (IsClientInGame(i)) {
+            if (IsPlayerAlive(i)) {
+                PrintToChatAll("\x04%t\x01：%t", "Prefix", "DelayQuitSet");
+                HookEvent("state_change", OnStateChange, EventHookMode_Post);
+                return Plugin_Handled;
+            }
+        }
+    }
+    PrintToChatAll("\x04%t\x01：%t","Prefix", "ServerQuit");
+    CreateTimer(3.0, TimerQuit, _);
+    return Plugin_Handled;
+}
 
+public Action OnStateChange(Event event, const char[] name, bool dontBroadcast) {
+    int state = event.GetInt("state");
+    if (state == 6) { //Extraction expired
+        UnhookEvent("state_change", OnStateChange, EventHookMode_Post);
+        PrintToChatAll("\x04%t\x01：%t","Prefix", "ServerQuit");
+        CreateTimer(3.0, TimerQuit, _);
+    }
+    return Plugin_Handled;
+}
+
+public Action TimerQuit(Handle timer) {
+    ServerCommand("quit");
     return Plugin_Handled;
 }

@@ -1,5 +1,5 @@
 #include <sourcemod>
-#include <morecolors>
+#include <colorvariables>
 #include <ctop>
 
 #pragma newdecls required
@@ -190,11 +190,11 @@ public void SQL_OnFinishCheck_Callback(Database db, DBResultSet results, const c
             "UPDATE playertimes SET time = %f, deaths = %d, counts = counts + 1, kills = %d WHERE map = '%s' AND auth = %d;", 
             gA_Timers[client].fFinalTime, gA_Timers[client].iDeaths, gA_Timers[client].iKills, gS_Map, gA_Timers[client].iSteamid);
         }
-        else if(gA_Timers[client].iKills < results.FetchFloat(0))
+        else if(gA_Timers[client].iKills > results.FetchFloat(0))
         {
             FormatEx(sQuery, 512,
-            "INSERT playertimes SET time = %f, deaths = %d, counts = counts + 1, kills = %d WHERE map = '%s' AND auth = %d;", 
-            gA_Timers[client].fFinalTime, gA_Timers[client].iDeaths, gA_Timers[client].iKills, gS_Map, gA_Timers[client].iSteamid);
+            "INSERT INTO playertimes (auth, name, map, time, deaths, counts, kills) VALUES (%d, '%s', '%s', %f, %d, 1, %d);", 
+             gA_Timers[client].iSteamid, gA_Timers[client].sName, gS_Map, gA_Timers[client].fFinalTime, gA_Timers[client].iDeaths, gA_Timers[client].iKills);
         }
         else
         {

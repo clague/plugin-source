@@ -1,0 +1,1 @@
+native any SetGived(int client, bool gived);

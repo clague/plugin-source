@@ -76,10 +76,10 @@ public void CheckNetSettings()
         }
     }
     if (GetClientCount()> 4) {
-        ServerCommand("net_maxcleartime 0.01");
+        ServerCommand("net_maxcleartime 0.1");
     }
     else {
-        ServerCommand("net_maxcleartime 0.0001");
+        ServerCommand("net_maxcleartime 0.001");
     }
 }
 

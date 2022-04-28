@@ -105,11 +105,11 @@ public Action CountZombies(int client, int args)
 
 public Action MakeZombies(int client, int args)
 {
-    decl Float:vAngles[3];
-    decl Float:vOrigin[3];
-    decl Float:vBuffer[3];
-    decl Float:vStart[3];
-    decl Float:Distance;
+    float vAngles[3];
+    float vOrigin[3];
+    float vBuffer[3];
+    float vStart[3];
+    float Distance;
     
     GetClientEyePosition(client,vOrigin);
     GetClientEyeAngles(client, vAngles);

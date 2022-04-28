@@ -33,7 +33,7 @@ char g_rank_color[11][20] = {
 };
 
 char g_color_group[][][] = {
-    {"{axis}", "{orangered}", "{crimson}", "{collectors}", "{darkred}"},
+    {"{red}", "{orangered}", "{crimson}", "{collectors}", "{darkred}"},
     {"{palegreen}", "{lawngreen}", "{green}", "{lime}", "{forestgreen}"},
     {"{aqua}", "{dodgerblue}", "{blue}", "{darkcyan}", "{teal}"},
     {"{fuchsia}", "{violet}", "{orchid}", "{legendary}", "{darkviolet}"},
@@ -207,33 +207,47 @@ public void OnClientDisconnect(int client) {
 
 void StringRainbow(const char[] input, char[] output, int maxLen) {
     int bytes = 0, buffs = 0;
-    int size = strlen(input)+1;
-    char rand_color[20] = {'\0'};
-    int color_index = GetRandomInt(0, 4);
+    int size = strlen(input)+1, color_index = GetRandomInt(0, 4);
+    int char_len = 0, chars_width[256];
     output[0] = '\0';
 
-    for(int x = 0; x < size; ++x) {
-        if(input[x] == '\0')
-            break;
-
-        if(!IsChar(input[x])) {
-            buffs++;
-            if(buffs == 3) {
-                strcopy(rand_color, 20, g_color_group[color_index][RoundToFloor(5.0 * float(x) / float(size - 1))]);
-                bytes += StrCat(output, maxLen, rand_color);
-                output[bytes] = input[x-2];
-                output[++bytes] = input[x-1];
-                output[++bytes] = input[x];
-                output[++bytes] = '\0';
+    for (int x = 0; x < size; ++x) {
+        if (IsChar(input[x])) {
+            if (buffs > 0) {
+                chars_width[char_len++] = buffs;
                 buffs = 0;
             }
-            continue;
+            chars_width[char_len++] = 1;
         }
-        strcopy(rand_color, 20, g_color_group[color_index][RoundToFloor(5.0 * float(x) / float(size - 1))]);
-        bytes += StrCat(output, maxLen, rand_color);
-        output[bytes] = input[x];
-        output[++bytes] = '\0';
+        else {
+            buffs++;
+            if(buffs >= 3) {
+                chars_width[char_len++] = buffs;
+                buffs = 0;
+            }
+        }
     }
+
+    bytes += StrCat(output, maxLen, g_color_group[color_index][0]);
+    int last = 0, index = 0;
+    for (int i = 1; i < 5; ++i) {
+        int insert_point = RoundToNearest(float(char_len) / 5.0 * i);
+        if (insert_point != last) {
+            for (int j = last; j < insert_point; j++) {
+                for (int k = 0; k < chars_width[j]; k++) {
+                     output[bytes++] = input[index++];
+                }
+            }
+            bytes += StrCat(output, maxLen, g_color_group[color_index][i]);
+            last = insert_point;
+        }
+    }
+    for (int j = last; j < char_len; j++) {
+        for (int k = 0; k < chars_width[j]; k++) {
+            output[bytes++] = input[index++];
+        }
+    }
+
     bytes += StrCat(output, maxLen, "{white}");
     output[bytes] = '\0';
     //PrintToServer(output);

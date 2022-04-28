@@ -37,12 +37,12 @@ public OnPluginStart()
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("player_hurt", Event_PlayerHurt);
 	HookEvent("player_death", Event_PlayerDeath);
-	
-	OnStatusTimer();
 }
 
-public OnMapStart()
+public OnMapStart() {
 	flLastTA = 0.0;
+	OnStatusTimer();
+}
 
 public OnStatusTimer()
 {

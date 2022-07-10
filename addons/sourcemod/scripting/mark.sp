@@ -3,6 +3,7 @@
 
 #include <sourcemod>
 #include <sdktools>
+#include <sdkhooks>
 #include <colorvariables>
 #include <getoverit>
 
@@ -13,27 +14,31 @@ public Plugin MyInfo = {
     version = PLUGIN_VERSION
 };
 
-int g_iMarkedItemRef[MAXPLAYERS + 1];
-int g_iMarkedMessageRef[MAXPLAYERS + 1];
+int g_iMarkItemEntRef[MAXPLAYERS + 1];
+float g_fHitposRelative[MAXPLAYERS + 1][3];
 float g_fLastMarkTime[MAXPLAYERS + 1];
-Handle g_hMarkedTimer[MAXPLAYERS + 1];
+Handle g_hMarkTimer[MAXPLAYERS + 1];
+Handle g_hUpdatePointMessageTimer[MAXPLAYERS + 1];
 
 ConVar sm_mark_inactive_interval;
 ConVar sm_mark_cooldown_interval;
 ConVar sm_mark_max_distance;
 ConVar sm_mark_hull_size;
+ConVar sm_mark_message_radius;
 
 public void OnPluginStart() {
     LoadTranslations("mark.phrases");
 
-    sm_mark_inactive_interval = CreateConVar("sm_mark_inactive_interval", "10.0", "Interval that a mark auto disappear, in seconds.");
+    sm_mark_inactive_interval = CreateConVar("sm_mark_inactive_interval", "10.0", "Interval that a mark automatically disappear, in seconds.");
     sm_mark_cooldown_interval = CreateConVar("sm_mark_cooldown_interval", "1.0", "Interval between two mark action for a player, in seconds.");
     sm_mark_max_distance = CreateConVar("sm_mark_max_distance", "2000.0", "Max distance that player can mark a item.");
     sm_mark_hull_size = CreateConVar("sm_mark_hull_size", "10.0", "Trace hull's size.");
+    sm_mark_message_radius = CreateConVar("sm_mark_message_radius", "2048", "Message show radius.");
 
     RegConsoleCmd("sm_mark", CmdMark, "Mark anywhere");
     RegAdminCmd("sm_makemess", MakeMessage, ADMFLAG_GENERIC);
 }
+
 
 Action CmdMark(int iClient, int nArgs) {
     float fEyePos[3], fEyeAngle[3], fDir[3], fEndPos[3], fMaxHull[3], fMinHull[3], fHitPos[3];
@@ -69,14 +74,13 @@ Action CmdMark(int iClient, int nArgs) {
         if (iHitEntity == 0) {
             return Plugin_Handled;
         }
-        int iEntRef = EntIndexToEntRef(iHitEntity);
 
         //disglow last mark
-        if (g_iMarkedItemRef[iClient] != 0) {
-            UnmarkEntity(g_iMarkedItemRef[iClient], g_iMarkedMessageRef[iClient], iClient);
+        if (g_iMarkItemEntRef[iClient] != 0) {
+            UnmarkEntity(g_iMarkItemEntRef[iClient], iClient);
 
-            if (EntRefToEntIndex(g_iMarkedItemRef[iClient]) == iHitEntity) {
-                g_iMarkedItemRef[iClient] = 0;
+            if (EntRefToEntIndex(g_iMarkItemEntRef[iClient]) == iHitEntity) {
+                g_iMarkItemEntRef[iClient] = 0;
                 return Plugin_Handled;
             }
         }
@@ -88,7 +92,7 @@ Action CmdMark(int iClient, int nArgs) {
         //check if object glow entity
         bool bOtherMarked = false;
         for (int i = 1; i <= MaxClients; i++) {
-            if (EntRefToEntIndex(g_iMarkedItemRef[i]) == iHitEntity) {
+            if (EntRefToEntIndex(g_iMarkItemEntRef[i]) == iHitEntity) {
                 bOtherMarked = true;
             }
         }
@@ -119,6 +123,11 @@ Action CmdMark(int iClient, int nArgs) {
             char szDir[10];
             if (IsClientInGame(i)) {
                 GetClientAbsOrigin(i, fClientPos);
+                float dis = GetVectorDistance(fClientPos, fHitPos);
+                if (dis <= 2000) {
+                    continue;
+                }
+
                 if (fHitPos[0] - fClientPos[0] > 0) {
                     FormatEx(szDir, 10, "东");
                 }
@@ -133,13 +142,10 @@ Action CmdMark(int iClient, int nArgs) {
                 }
                 
                 CPrintToChat(i, "{green}[Mark] %s {white}标记了 {green}%s{white}, 在{aqua}%s{white}方向, 距离你{red}%.1f{white}远",
-            name, szHitClassname, szDir, GetVectorDistance(fClientPos, fHitPos));
+            name, szHitClassname, szDir, dis);
             }
         }
-        
-        g_iMarkedItemRef[iClient] = iEntRef;
     }
-
     return Plugin_Handled;
 }
 
@@ -148,98 +154,138 @@ void MarkEntity(int iEntity, int iClient, float fHitPos[3])
     if (iEntity == -1) {
         return;
     }
-    int iMessageEnt = CreateEntityByName("point_message");
-    char szMessage[64];
-    FormatEx(szMessage, 64, "%N 的标记", iClient);
-    DispatchKeyValue(iMessageEnt, "message", szMessage);
-    DispatchKeyValue(iMessageEnt, "radius", "8192");
-    
-    if (!DispatchSpawn(iMessageEnt)) {
-        PrintToServer("Spawn message failed!");
-    }
-    else {
-        TeleportEntity(iMessageEnt, fHitPos);
-        //SetVariantString("!activator");
-        //AcceptEntityInput(iMessageEnt, "SetParent", iEntity, iMessageEnt);
-        int iMessEntRef = EntIndexToEntRef(iMessageEnt);
-        RequestFrame(FrameEnableMessage, iMessEntRef);
+    Timer_UpdatePointMessage(INVALID_HANDLE, iClient);
+    g_hUpdatePointMessageTimer[iClient] = CreateTimer(0.25, Timer_UpdatePointMessage, iClient, TIMER_REPEAT);
 
-        g_iMarkedMessageRef[iClient] = iMessEntRef;
-    }
+    float fEntOrigin[3];
+    GetEntPropVector(iEntity, Prop_Send, "m_vecOrigin", fEntOrigin);
+    g_fHitposRelative[iClient][0] = fHitPos[0] - fEntOrigin[0];
+    g_fHitposRelative[iClient][1] = fHitPos[1] - fEntOrigin[1];
+    g_fHitposRelative[iClient][2] = fHitPos[2] - fEntOrigin[2];
     
+    g_iMarkItemEntRef[iClient] = EntIndexToEntRef(iEntity);
     DispatchKeyValue(iEntity, "glowable", "1");
     DispatchKeyValueFloat(iEntity, "glowdistance", 99999999999.0);
     DispatchKeyValue(iEntity, "glowcolor", /*isFull ? "255 0 0" :*/ "0 255 0"); // same as item pickup
 
-    RequestFrame(FrameMarkEntity, EntIndexToEntRef(iEntity));
+    RequestFrame(FrameMarkEntity, iClient);
     
-    if (IsValidHandle(g_hMarkedTimer[iClient])) {
-        CloseHandle(g_hMarkedTimer[iClient]);
+    if (IsValidHandle(g_hMarkTimer[iClient])) {
+        CloseHandle(g_hMarkTimer[iClient]);
     }
-    g_hMarkedTimer[iClient] = CreateTimer(sm_mark_inactive_interval.FloatValue, TimerUnMarkForClient, iClient);
+    g_hMarkTimer[iClient] = CreateTimer(sm_mark_inactive_interval.FloatValue, TimerUnmarkForClient, iClient);
+}
+Action Timer_UpdatePointMessage(Handle timer, int iClient) {
+    int iEntity = EntRefToEntIndex(g_iMarkItemEntRef[iClient]);
+    if (!IsValidEntity(iEntity)) {
+        return Plugin_Stop;
+    }
+    char szMessage[64], szHitClassname[64];
+    GetEntityClassname(iEntity, szHitClassname, 128);
+    FormatEx(szMessage, 64, "%N 的标记", iClient);
+
+    float fEntOrigin[3];
+    GetEntPropVector(iEntity, Prop_Send, "m_vecOrigin", fEntOrigin);
+    fEntOrigin[0] += g_fHitposRelative[iClient][0];
+    fEntOrigin[1] += g_fHitposRelative[iClient][1];
+    fEntOrigin[2] += g_fHitposRelative[iClient][2];
+
+    SendPointMessage(szMessage, iClient, fEntOrigin);
+    return Plugin_Continue;
 }
 
-void FrameEnableMessage(int iMessEntRef) {
-    AcceptEntityInput(EntRefToEntIndex(iMessEntRef), "Enable");
-}
-
-void FrameMarkEntity(int iEntRef)
-{
-    int iEntity = EntRefToEntIndex(iEntRef);
+void FrameMarkEntity(int iClient) {
+    int iEntity = EntRefToEntIndex(g_iMarkItemEntRef[iClient]);
     if (IsValidEntity(iEntity)) {
-        AcceptEntityInput(iEntity, "enableglow"); 
+        AcceptEntityInput(iEntity, "enableglow");
     }
 }
 
-Action TimerUnMarkForClient(Handle hTimer, int iClient) {
-    UnmarkEntity(g_iMarkedItemRef[iClient], g_iMarkedMessageRef[iClient], iClient);
+Action TimerUnmarkForClient(Handle hTimer, int iClient) {
+    UnmarkEntity(g_iMarkItemEntRef[iClient], iClient);
     return Plugin_Stop;
 }
 
-void UnmarkEntity(int iEntRef, int iMessageRef, int iClient)
+void UnmarkEntity(int iEntRef, int iClient)
 {
     int iEntity = EntRefToEntIndex(iEntRef);
-    int iMessageEnt = EntRefToEntIndex(iMessageRef);
     if (IsValidEntity(iEntity)) {
         AcceptEntityInput(iEntity, "disableglow");
-        g_iMarkedItemRef[iClient] = -1;
+        g_iMarkItemEntRef[iClient] = -1;
         //DispatchKeyValue(iEntity, "glowable", "0");
         //RequestFrame(FrameDisglowEntity, iEntRef);
     }
-    if (IsValidEntity(iMessageEnt)) {
-        AcceptEntityInput(iMessageEnt, "Kill");
-        g_iMarkedMessageRef[iClient] = -1;
-    }
-}
-
-void FrameUnmarkEntity(int iEntRef)
-{
-    int iEntity = EntRefToEntIndex(iEntRef);
-    if (iEntity != -1) {
-        AcceptEntityInput(iEntity, "disableglow");
+    if (IsValidHandle(g_hUpdatePointMessageTimer[iClient])) {
+        delete g_hUpdatePointMessageTimer[iClient];
+        StopPointMessage(iClient);
     }
 }
 
 public bool TraceEntityFilterPlayer(int iHitEntity, int iContentsMask) 
 {
     return iHitEntity > MaxClients;
-} 
+}
+
+public int SendPointMessage(char szMessage[64], int iEntity, float pos[3]) {
+    Handle msg = StartMessageAll("PointMessage", USERMSG_BLOCKHOOKS);
+    BfWrite bf = UserMessageToBfWrite(msg);
+    
+    if (!IsValidEntity(iEntity)) {
+        return -1;
+    }
+    bf.WriteString(szMessage); //message
+    bf.WriteShort(iEntity); //entity
+    bf.WriteShort(0);  //flags
+    bf.WriteVecCoord(pos); //coord
+    bf.WriteFloat(sm_mark_message_radius.FloatValue); //radius
+    bf.WriteString("PointMessageDefault"); //font
+    bf.WriteByte(0); //r
+    bf.WriteByte(255); //g
+    bf.WriteByte(255); //b
+    
+    EndMessage();
+    return 0;
+}
+
+public int StopPointMessage(int iEntity) {
+    Handle msg = StartMessageAll("PointMessage", USERMSG_BLOCKHOOKS);
+    BfWrite bf = UserMessageToBfWrite(msg);
+    
+    if (!IsValidEntity(iEntity)) {
+        return -1;
+    }
+    bf.WriteString(""); //message
+    bf.WriteShort(iEntity); //entity
+    bf.WriteShort(0);  //flags
+    bf.WriteVecCoord(NULL_VECTOR); //coord
+    bf.WriteFloat(0.0); //radius
+    bf.WriteString(""); //font
+    bf.WriteByte(0); //r
+    bf.WriteByte(0); //g
+    bf.WriteByte(0); //b
+    
+    EndMessage();
+    return 0;
+}
 
 Action MakeMessage(int iClient, int nArgs) {
     float fPos[3];
     GetClientEyePosition(iClient, fPos);
 
-    int iMessageEnt = CreateEntityByName("point_message");
+    int iMessageEnt = CreateEntityByName("point_message_multiplayer");
     char szMessage[64];
-    FormatEx(szMessage, 64, "%N 的标记", iClient);
+    FormatEx(szMessage, 64, "TESTTEST", iClient);
     DispatchKeyValue(iMessageEnt, "message", szMessage);
-    DispatchKeyValue(iMessageEnt, "radius", "8192");
+    DispatchKeyValue(iMessageEnt, "radius", "256");
+    DispatchKeyValue(iMessageEnt, "font", "PointMessageDefault");
+    DispatchKeyValue(iMessageEnt, "fontproportional", "1");
+    DispatchKeyValue(iMessageEnt, "spawnflags", "0");
+    DispatchKeyValue(iMessageEnt, "color", "0 0 255");
 
     if (DispatchSpawn(iMessageEnt)) {
         TeleportEntity(iMessageEnt, fPos);
-
-        int iMessEntRef = EntIndexToEntRef(iMessageEnt);
-        RequestFrame(FrameEnableMessage, iMessEntRef);
+        //SetVariantString("!activator");
+        //AcceptEntityInput(iMessageEnt, "SetParent", iClient);
     }
     else {
         PrintToServer("Spawn message failed!");

@@ -374,8 +374,8 @@ methodmap Database < Handle
 	// the database's character set.
 	//
 	// NOTE: SourceMod only guarantees properly escaped strings when the query
-	// encloses the string in ''. While drivers tend to allow " instead, the string
-	// may be not be escaped (for example, on SQLite)!
+	// encloses the string in single quotes. While drivers tend to allow double
+	// quotes (") instead, the string may be not be escaped (for example, on SQLite)!
 	//
 	// @param string        String to quote.
 	// @param buffer        Buffer to store quoted string in.
@@ -393,7 +393,7 @@ methodmap Database < Handle
 	// @param format        Formatting rules.
 	// @param ...           Variable number of format parameters.
 	// @return              Number of cells written.
-	public native int Format(const char[] buffer, int maxlength, const char[] format, any ...);
+	public native int Format(char[] buffer, int maxlength, const char[] format, any ...);
 
 	// Returns whether a database is the same connection as another database.
 	public native bool IsSameConnection(Database other);
@@ -635,8 +635,8 @@ native bool SQL_GetError(Handle hndl, char[] error, int maxlength);
  * the database's character set.
  *
  * NOTE: SourceMod only guarantees properly escaped strings when the query
- * encloses the string in ''. While drivers tend to allow " instead, the string
- * may be not be escaped (for example, on SQLite)!
+ * encloses the string in single quotes. While drivers tend to allow double
+ * quotes (") instead, the string may be not be escaped (for example, on SQLite)!
  *
  * @param database      A database Handle.
  * @param string        String to quote.
@@ -664,7 +664,7 @@ native bool SQL_EscapeString(Handle database,
  * @param ...           Variable number of format parameters.
  * @return              Number of cells written.
  */
-native int SQL_FormatQuery(Handle database, const char[] buffer, int maxlength, const char[] format, any ...);
+native int SQL_FormatQuery(Handle database, char[] buffer, int maxlength, const char[] format, any ...);
 
 /**
  * This function is deprecated.  Use SQL_EscapeString instead.

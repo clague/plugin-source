@@ -14,7 +14,7 @@ public Plugin MyInfo = {
     version = PLUGIN_VERSION
 };
 
-#define PLAYER_STATE_LEN 14
+#define PLAYER_STATE_LEN 15
 
 ConVar sm_reconnect_max_interval;
 ConVar sm_reconnect_choose_time;
@@ -152,15 +152,19 @@ public void OnClientPostAdminCheck(int iClient) {
 public Action OnUserDisconnect(Event event, const char[] name, bool dontBroadcast) {
     char szReason[128];
     int iClient = GetClientOfUserId(GetEventInt(event, "userid"));
+    bool bStore = false;
+
     if (iClient != 0) {
         if (IsClientInGame(iClient)) {
-            if (!(IsPlayerAlive(iClient) && GetEntProp(iClient, Prop_Send, "m_iPlayerState") == 0)) {
-                return Plugin_Continue;
+            if (IsPlayerAlive(iClient) && GetEntProp(iClient, Prop_Send, "m_iPlayerState") == 0) {
+                bStore = true;
             }
         }
     }
 
-    bool bStore = true;
+    if (!bStore) {
+        return Plugin_Continue;
+    }
 
     GetEventString(event, "reason", szReason, 128);
 
@@ -171,6 +175,9 @@ public Action OnUserDisconnect(Event event, const char[] name, bool dontBroadcas
         bStore = true;
     }
     else if (StrContains(szReason, "Steam auth ticket has been canceled") != -1) {
+        bStore = true;
+    }
+    else if (StrContains(szReason, "Lost connection") != -1) {
         bStore = true;
     }
     else {
@@ -199,7 +206,8 @@ public Action OnUserDisconnect(Event event, const char[] name, bool dontBroadcas
         aPlayerState[10] = float(GetEntProp(iClient, Prop_Send, "_bleedingOut"));
         aPlayerState[11] = float(GetEntProp(iClient, Prop_Send, "_vaccinated"));
         aPlayerState[12] = float(GetEntProp(iClient, Prop_Data, "m_iFrags"));
-        aPlayerState[13] = GetEngineTime();
+        aPlayerState[13] = float(GetEntProp(iClient, Prop_Data, "m_iDeaths"));
+        aPlayerState[14] = GetEngineTime();
 
         g_hRestoredState.SetArray(szAuth, aPlayerState, PLAYER_STATE_LEN);
     }
@@ -254,7 +262,7 @@ void SetPlayerState(int iClient) {
     vAngle[0] = aPlayerState[3];
     vAngle[1] = aPlayerState[4];
     vAngle[2] = aPlayerState[5];
-    float fInterval = GetEngineTime() - aPlayerState[13];
+    float fInterval = GetEngineTime() - aPlayerState[14];
     int iHealth = RoundFloat(aPlayerState[6]);
 
     SetEntPropFloat(iClient, Prop_Send, "m_flStamina", aPlayerState[7]);
@@ -281,6 +289,7 @@ void SetPlayerState(int iClient) {
         SetEntProp(iClient, Prop_Send, "_vaccinated", 1);
     }
     SetEntProp(iClient, Prop_Data, "m_iFrags", RoundFloat(aPlayerState[12]));
+    SetEntProp(iClient, Prop_Data, "m_iDeaths", RoundFloat(aPlayerState[13]));
 
     SetEntProp(iClient, Prop_Send, "m_iHealth", iHealth);
 

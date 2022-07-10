@@ -71,6 +71,7 @@ enum AuthIdType
 
 #define MAXPLAYERS      65  /**< Maximum number of players SourceMod supports */
 #define MAX_NAME_LENGTH 128 /**< Maximum buffer required to store a client name */
+#define MAX_AUTHID_LENGTH 64 /**< Maximum buffer required to store any AuthID type */
 
 public const int MaxClients;   /**< Maximum number of players the server supports (dynamic) */
 
@@ -224,6 +225,14 @@ forward void OnClientPostAdminFilter(int client);
  * @param client        Client index.
  */
 forward void OnClientPostAdminCheck(int client);
+
+/**
+ * Called when the language was received from the player.
+ *
+ * @param client        Client index.
+ * @param language      Language number.
+ */
+forward void OnClientLanguageChanged(int client, int language);
 
 /**
  * This function is deprecated. Use the MaxClients variable instead.

@@ -1,0 +1,1 @@
+native int NativeSetChannelDisabled(int n);

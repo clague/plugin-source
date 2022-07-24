@@ -125,6 +125,7 @@ Action CmdMark(int iClient, int nArgs) {
                 GetClientAbsOrigin(i, fClientPos);
                 float dis = GetVectorDistance(fClientPos, fHitPos);
                 if (dis <= 2000) {
+                    CPrintToChat(i, "{green}[Mark] %s 标记了 {green}%s", name, szHitClassname);
                     continue;
                 }
 
@@ -154,7 +155,8 @@ void MarkEntity(int iEntity, int iClient, float fHitPos[3])
     if (iEntity == -1) {
         return;
     }
-    Timer_UpdatePointMessage(INVALID_HANDLE, iClient);
+    g_iMarkItemEntRef[iClient] = EntIndexToEntRef(iEntity);
+
     g_hUpdatePointMessageTimer[iClient] = CreateTimer(0.25, Timer_UpdatePointMessage, iClient, TIMER_REPEAT);
 
     float fEntOrigin[3];
@@ -162,8 +164,9 @@ void MarkEntity(int iEntity, int iClient, float fHitPos[3])
     g_fHitposRelative[iClient][0] = fHitPos[0] - fEntOrigin[0];
     g_fHitposRelative[iClient][1] = fHitPos[1] - fEntOrigin[1];
     g_fHitposRelative[iClient][2] = fHitPos[2] - fEntOrigin[2];
+
+    Timer_UpdatePointMessage(INVALID_HANDLE, iClient);
     
-    g_iMarkItemEntRef[iClient] = EntIndexToEntRef(iEntity);
     DispatchKeyValue(iEntity, "glowable", "1");
     DispatchKeyValueFloat(iEntity, "glowdistance", 99999999999.0);
     DispatchKeyValue(iEntity, "glowcolor", /*isFull ? "255 0 0" :*/ "0 255 0"); // same as item pickup
@@ -178,11 +181,11 @@ void MarkEntity(int iEntity, int iClient, float fHitPos[3])
 Action Timer_UpdatePointMessage(Handle timer, int iClient) {
     int iEntity = EntRefToEntIndex(g_iMarkItemEntRef[iClient]);
     if (!IsValidEntity(iEntity)) {
+        StopPointMessage(iClient);
         return Plugin_Stop;
     }
-    char szMessage[64], szHitClassname[64];
-    GetEntityClassname(iEntity, szHitClassname, 128);
-    FormatEx(szMessage, 64, "%N 的标记", iClient);
+    char szMessage[64];
+    FormatEx(szMessage, 128, "%N的标记", iClient);
 
     float fEntOrigin[3];
     GetEntPropVector(iEntity, Prop_Send, "m_vecOrigin", fEntOrigin);
@@ -235,10 +238,10 @@ public int SendPointMessage(char szMessage[64], int iEntity, float pos[3]) {
     }
     bf.WriteString(szMessage); //message
     bf.WriteShort(iEntity); //entity
-    bf.WriteShort(0);  //flags
+    bf.WriteShort(2);  //flags
     bf.WriteVecCoord(pos); //coord
     bf.WriteFloat(sm_mark_message_radius.FloatValue); //radius
-    bf.WriteString("PointMessageDefault"); //font
+    bf.WriteString("DebugFixedSmall"); //font
     bf.WriteByte(0); //r
     bf.WriteByte(255); //g
     bf.WriteByte(255); //b

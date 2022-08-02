@@ -185,7 +185,12 @@ Action Timer_UpdatePointMessage(Handle timer, int iClient) {
         return Plugin_Stop;
     }
     char szMessage[64];
-    FormatEx(szMessage, 128, "%N的标记", iClient);
+    if (IsClientInGame(iClient)) {
+        FormatEx(szMessage, 128, "%N 的标记", iClient);
+    }
+    else {
+        FormatEx(szMessage, 128, "某离开服务器玩家的标记");
+    }
 
     float fEntOrigin[3];
     GetEntPropVector(iEntity, Prop_Send, "m_vecOrigin", fEntOrigin);

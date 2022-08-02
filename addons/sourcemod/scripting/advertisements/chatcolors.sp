@@ -237,42 +237,42 @@ static void AddChatColor(const char[] name, const char[] color)
     g_hChatColors.SetString(name, color);
 }
 
-static int PreFormat(char[] buffer, int maxlength)
-{
-    if (GetEngineVersion() == Engine_CSGO) {
-        return FormatEx(buffer, maxlength, " %c", 1);
-    }
+// static int PreFormat(char[] buffer, int maxlength)
+// {
+//     if (GetEngineVersion() == Engine_CSGO) {
+//         return FormatEx(buffer, maxlength, " %c", 1);
+//     }
 
-    return FormatEx(buffer, maxlength, "%c", 1);
-}
+//     return FormatEx(buffer, maxlength, "%c", 1);
+// }
 
-void ProcessChatColors(const char[] message, char[] buffer, int maxlength)
-{
-    char name[32], color[10];
-    int buf_idx = PreFormat(buffer, maxlength);
-    int i, name_len;
+// void ProcessChatColors(const char[] message, char[] buffer, int maxlength)
+// {
+//     char name[32], color[10];
+//     int buf_idx = PreFormat(buffer, maxlength);
+//     int i, name_len;
 
-    while (message[i] && buf_idx < maxlength - 1) {
-        if (message[i] != '{' || (name_len = FindCharInString(message[i + 1], '}')) == -1) {
-            buffer[buf_idx++] = message[i++];
-            continue;
-        }
+//     while (message[i] && buf_idx < maxlength - 1) {
+//         if (message[i] != '{' || (name_len = FindCharInString(message[i + 1], '}')) == -1) {
+//             buffer[buf_idx++] = message[i++];
+//             continue;
+//         }
 
-        strcopy(name, name_len + 1, message[i + 1]);
+//         strcopy(name, name_len + 1, message[i + 1]);
 
-        if (name[0] == '#') {
-            buf_idx += FormatEx(buffer[buf_idx], maxlength - buf_idx, "%c%s", (name_len == 9) ? 8 : 7, name[1]);
-        } else if (g_hChatColors.GetString(name, color, sizeof(color))) {
-            buf_idx += strcopy(buffer[buf_idx], maxlength - buf_idx, color);
-        } else {
-            buf_idx += FormatEx(buffer[buf_idx], maxlength - buf_idx, "{%s}", name);
-        }
+//         if (name[0] == '#') {
+//             buf_idx += FormatEx(buffer[buf_idx], maxlength - buf_idx, "%c%s", (name_len == 9) ? 8 : 7, name[1]);
+//         } else if (g_hChatColors.GetString(name, color, sizeof(color))) {
+//             buf_idx += strcopy(buffer[buf_idx], maxlength - buf_idx, color);
+//         } else {
+//             buf_idx += FormatEx(buffer[buf_idx], maxlength - buf_idx, "{%s}", name);
+//         }
 
-        i += name_len + 2;
-    }
+//         i += name_len + 2;
+//     }
 
-    buffer[buf_idx] = '\0';
-}
+//     buffer[buf_idx] = '\0';
+// }
 
 void SayText2(int client, const char[] message)
 {

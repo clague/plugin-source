@@ -2,7 +2,7 @@
 #include <sourcemod>
 #include <SteamWorks>
 #include <json>
-#include <colorvariables>
+#include <globalvariables>
 #include <clientprefs>
 #include <getoverit>
 
@@ -81,6 +81,8 @@ public Action DoMusic(int client, int args)
     SteamWorks_SetHTTPRequestNetworkActivityTimeout(hRequest, 30);
     SteamWorks_SetHTTPCallbacks(hRequest, OnTransferComplete);
     SteamWorks_SendHTTPRequest(hRequest);
+
+    return Plugin_Handled;
 }
 
 public OnTransferComplete(Handle:hRequest, bool:bFailure, bool:bRequestSuccessful, EHTTPStatusCode:eStatusCode, int data)
@@ -91,7 +93,7 @@ public OnTransferComplete(Handle:hRequest, bool:bFailure, bool:bRequestSuccessfu
     }
 }
 
-public APIWebResponse(const String:sData[], int data)
+public int APIWebResponse(const String:sData[], int data)
 {
     int client = data % 100;
     bool bIsBackground = data >= 100;
@@ -174,6 +176,7 @@ public int MusicMenuHandlerB(Menu menu, MenuAction action, int client, int slot)
     }
     else if (action == MenuAction_End)
         delete menu;
+    return 0;
 }
 
 public int MusicMenuHandler(Menu menu, MenuAction action, int client, int slot)
@@ -195,6 +198,7 @@ public int MusicMenuHandler(Menu menu, MenuAction action, int client, int slot)
     }
     else if (action == MenuAction_End)
         delete menu;
+    return 0;
 }
 
 public int ConfirmMenuHandler(Menu menu, MenuAction action, int client, int slot)
@@ -327,11 +331,11 @@ stock urlencode(const char[] sString, char[] sResult, int len)
     }
 }
 
-public int MusicMessage(int client, char[] display) {
+public void MusicMessage(int client, char[] display) {
     char name[500];
     FetchColoredName(client, name, sizeof(name));
-    CPrintToChatAll("{green}[系统] %s 收听了 {red}%s {white}！", name, display);
-    CPrintToChat(client, "{green}[系统] {white}输入{green}!stop{white}暂停音乐！");
+    CPrintToChatAll(0, "{green}[系统] %s 收听了 {red}%s {white}！", name, display);
+    CPrintToChat(client, 0, "{green}[系统] {white}输入{green}!stop{white}暂停音乐！");
 }
 
 public void BroadcastMusic(int client, char[] sSongId, const char[] display) {
@@ -348,7 +352,7 @@ public void BroadcastMusic(int client, char[] sSongId, const char[] display) {
                 menu.ExitButton = true;
 
                 menu.Display(i, 20);
-                CPrintToChat(i, "{red}[提示]：{white}如果想屏蔽别人的点歌，你可以输入{red}!nr");
+                CPrintToChat(i, 0, "{red}[提示]：{white}如果想屏蔽别人的点歌，你可以输入{red}!nr");
             }
         }
     }
@@ -357,10 +361,12 @@ public void BroadcastMusic(int client, char[] sSongId, const char[] display) {
 public Action NoReceive(int client, int args) {
     if (g_sReceiveMusic[client][0] != 'N') {
         FormatEx(g_sReceiveMusic[client], 5, "No");
-        CPrintToChat(client, "{green}[提示]：{white}将不再接受别人的点歌，你可以再次输入{green}!nr{white}解除屏蔽");
+        CPrintToChat(client, 0, "{green}[提示]：{white}将不再接受别人的点歌，你可以再次输入{green}!nr{white}解除屏蔽");
     }
     else if (g_sReceiveMusic[client][0] == 'N') {
         FormatEx(g_sReceiveMusic[client], 5, "Yes");
-        CPrintToChat(client, "{green}[提示]：{white}目前会接受别人的点歌，你可以再次输入{green}!nr{white}屏蔽");
+        CPrintToChat(client, 0, "{green}[提示]：{white}目前会接受别人的点歌，你可以再次输入{green}!nr{white}屏蔽");
     }
+
+    return Plugin_Handled;
 }

@@ -3,7 +3,7 @@
 
 #include <sdktools>
 #include <sdkhooks>
-#include <colorvariables>
+#include <globalvariables>
 #include <getoverit>
 
 int nZombieCount = 0;
@@ -99,7 +99,7 @@ public Action CountZombies(int client, int args)
         }
         i += 1;
     }
-    CPrintToChat(client, "当前有 {red}%d {white}个大僵尸，{red} %d {white}个小孩", nBig, nKid);
+    CPrintToChat(client, 0, "当前有 {red}%d {white}个大僵尸，{red} %d {white}个小孩", nBig, nKid);
     return Plugin_Handled;
 }
 

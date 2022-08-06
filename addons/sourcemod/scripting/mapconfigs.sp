@@ -55,7 +55,7 @@ new Handle:mc_version = INVALID_HANDLE;
 public OnPluginStart() {
 	
 	// ConVars
-	mc_version = CreateConVar("mc_version", PLUGIN_VERSION, "Map Configs plugin version", FCVAR_DONTRECORD|FCVAR_PLUGIN|FCVAR_NOTIFY);
+	mc_version = CreateConVar("mc_version", PLUGIN_VERSION, "Map Configs plugin version", FCVAR_DONTRECORD|FCVAR_NOTIFY);
 	// Set it to the correct version, in case the plugin gets updated...
 	SetConVarString(mc_version, PLUGIN_VERSION);
 }

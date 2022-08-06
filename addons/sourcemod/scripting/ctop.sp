@@ -1,5 +1,5 @@
 #include <sourcemod>
-#include <colorvariables>
+#include <globalvariables>
 #include <ctop>
 
 #pragma newdecls required
@@ -7,8 +7,14 @@
 
 // database handle
 Database gH_SQL = null;
-ConVar g_bEnable, g_bPKMode;
+
+ConVar g_cvEnable, g_cvPKMode, g_cvEnableRT;
+ConVar g_cvInfStamina, g_cvMachete, g_cvGameMode, g_cvDensity, g_cvDifficulty;
+ConVar g_cvDensityMinReq;
+
 bool gB_Connected = false;
+
+bool g_bIgnoreInfStamina, g_bIgnoreMachete, g_bIgnoreGameMode, g_bIgnoreDensity, g_bIgnoreDifficulty;
 
 // Current map's name
 char gS_Map[160];
@@ -16,9 +22,6 @@ char gS_Map[160];
 // total start time
 float g_fStartTime = -1.0;
 float g_fEndTime = -1.0;
-
-ConVar sm_record_enable_rt;
-bool enable = true;
 
 // player timer variables
 playertimer_t gA_Timers[MAXPLAYERS+1];
@@ -36,13 +39,13 @@ public void OnPluginStart()
 {
     LoadTranslations("ctop.phrases");
     
-    (g_bEnable = CreateConVar("sm_record_enable", "1", "on = 1 , off = 0")).AddChangeHook(OnConVarChange);
-    (g_bPKMode = CreateConVar("sm_pk_mode", "0", "on = 1 , off = 0")).AddChangeHook(OnConVarChange);
-    (sm_record_enable_rt = CreateConVar("sm_record_enable_rt", "1", "on = 1 , off = 0")).AddChangeHook(OnConVarChange);
-    enable = true;
+    (g_cvEnable = CreateConVar("sm_record_enable", "1", "on = 1 , off = 0")).AddChangeHook(OnConVarChange);
+    (g_cvPKMode = CreateConVar("sm_pk_mode", "0", "Another method to record time, on = 1 , off = 0")).AddChangeHook(OnConVarChange);
+    (g_cvEnableRT = CreateConVar("sm_record_enable_rt", "1", "on = 1 , off = 0")).AddChangeHook(OnConVarChange);
+    g_cvDensityMinReq = CreateConVar("sm_density_min_req", "1.5", "When sv_spawn_density is lower than this value, record will be disable");
 
     HookEvent("nmrih_round_begin", OnRoundStart);
-    if (g_bPKMode.BoolValue)
+    if (g_cvPKMode.BoolValue)
         HookEvent("player_spawn", TIMER_START);
     else
         HookEvent("nmrih_round_begin", TIMER_START);
@@ -64,13 +67,28 @@ public void OnMapStart()
     {
         return;
     }
-    g_bEnable.IntValue = 1;
-    sm_record_enable_rt.BoolValue = true;
+    g_cvEnable.IntValue = 1;
+    g_cvEnableRT.BoolValue = true;
     // Get mapname
     GetCurrentMap(gS_Map, 160);
 
     // fuck workshop map
     GetMapDisplayName(gS_Map, gS_Map, 160);
+}
+
+public void OnConfigsExecuted() {
+    (g_cvInfStamina = FindConVar("sm_inf_stamina")).AddChangeHook(OnConVarChange);
+    (g_cvMachete = FindConVar("sm_machete_enable")).AddChangeHook(OnConVarChange);
+    (g_cvGameMode = FindConVar("sm_gamemode")).AddChangeHook(OnConVarChange);
+    (g_cvDensity = FindConVar("sv_spawn_density")).AddChangeHook(OnConVarChange);
+    (g_cvDifficulty = FindConVar("sv_difficulty")).AddChangeHook(OnConVarChange);
+
+    // When a convar is set cheat previously, ignore that convar in check (usually because map neeed)
+    g_bIgnoreDensity = !CheckDensity();
+    g_bIgnoreGameMode = !CheckGameMode();
+    g_bIgnoreInfStamina = !CheckInfStamina();
+    g_bIgnoreMachete = !CheckMachete();
+    g_bIgnoreDifficulty = !CheckDifficulty();
 }
 
 public void OnClientPutInServer(int client)
@@ -82,11 +100,9 @@ public void OnClientPutInServer(int client)
 
 public void OnConVarChange(Handle CVar, const char[] oldValue, const char[] newValue)
 {
-    if (CVar == g_bEnable && !g_bEnable.BoolValue)
-        sm_record_enable_rt.BoolValue = false;
-    else if (CVar == g_bPKMode)
+    if (CVar == g_cvPKMode)
     {
-        if (g_bPKMode.BoolValue)
+        if (g_cvPKMode.BoolValue)
         {
             UnhookEvent("nmrih_round_begin", TIMER_START);
             HookEvent("player_spawn", TIMER_START);
@@ -97,23 +113,67 @@ public void OnConVarChange(Handle CVar, const char[] oldValue, const char[] newV
             HookEvent("nmrih_round_begin", TIMER_START);
         }
     }
-    else if (CVar == sm_record_enable_rt) {
-        enable = sm_record_enable_rt.BoolValue;
+    else if (CVar == g_cvDensity || 
+        CVar == g_cvGameMode || 
+        CVar == g_cvInfStamina || 
+        CVar == g_cvMachete || 
+        CVar == g_cvDifficulty) {
+        
+        if ( (g_bIgnoreDensity       ||  CheckDensity()) && 
+             (g_bIgnoreGameMode      ||  CheckGameMode()) &&
+             (g_bIgnoreInfStamina    ||  CheckInfStamina()) && 
+             (g_bIgnoreMachete       ||  CheckMachete()) && 
+             (g_bIgnoreDifficulty    ||  CheckDifficulty()) ) {
+            
+            g_cvEnable.BoolValue = true;
+            if (!g_cvEnableRT.BoolValue) {
+                CPrintToChatAll(0, "{green}[系统] {default}下回合开始时将会启用通关记录！");
+            }
+        }
+        else {
+            if (g_cvEnableRT.BoolValue) {
+                g_cvEnable.BoolValue = false;
+                g_cvEnableRT.BoolValue = false;
+                CPrintToChatAll(0, "{green}[系统] {default}停止记录通关！");
+            }
+        }
     }
 }
 
+static bool CheckDensity() {
+    return FloatCompare(g_cvDensity.FloatValue, g_cvDensityMinReq.FloatValue) >= 0;
+}
+
+static bool CheckGameMode() {
+    return g_cvGameMode.IntValue == 1;  // 1 - all runner, 0 - default, 2 - all kids
+}
+
+static bool CheckInfStamina() {
+    return !g_cvInfStamina.BoolValue;
+}
+
+static bool CheckMachete() {
+    return !g_cvMachete.BoolValue;
+}
+
+static bool CheckDifficulty() {
+    char szDifficulty[16];
+    g_cvDifficulty.GetString(szDifficulty, sizeof(szDifficulty));
+    return strcmp(szDifficulty, "classic") == 0 || strcmp(szDifficulty, "nightmare") == 0;
+}
+
 public void OnRoundStart(Event e, const char[] n, bool b) {
-    if (g_bEnable.BoolValue)
-        sm_record_enable_rt.BoolValue = true;
+    if (g_cvEnable.BoolValue)
+        g_cvEnableRT.BoolValue = true;
     else
-        sm_record_enable_rt.BoolValue = false;
+        g_cvEnableRT.BoolValue = false;
 }
 
 public Action TIMER_START(Event e, const char[] n, bool b)
 {
-    if (!g_bEnable.BoolValue)
+    if (!g_cvEnable.BoolValue)
         return Plugin_Continue;
-    if (g_bPKMode.BoolValue)
+    if (g_cvPKMode.BoolValue)
     {
         int client = GetClientOfUserId(GetEventInt(e, "userid"));
         gA_Timers[client].fStartTime = GetGameTime();
@@ -136,7 +196,7 @@ public Action TIMER_START(Event e, const char[] n, bool b)
 
 public Action TIMER_END(Event e, const char[] n, bool b)
 {
-    if (!enable)
+    if (!g_cvEnableRT.BoolValue)
         return Plugin_Continue;
     int client = e.GetInt("player_id");
 
@@ -146,7 +206,7 @@ public Action TIMER_END(Event e, const char[] n, bool b)
     // Get SteamID
     gA_Timers[client].iSteamid = GetSteamAccountID(client);
     
-    if (g_bPKMode.BoolValue)
+    if (g_cvPKMode.BoolValue)
         gA_Timers[client].fFinalTime = GetGameTime() - gA_Timers[client].fStartTime;
     else
     {
@@ -224,12 +284,12 @@ public void SQL_OnFinish_Callback(Database db, DBResultSet results, const char[]
     {
         return;
     }
-    CPrintToChatAll("%t", "Complete", gA_Timers[client].sName, gA_Timers[client].sFinalTime, gA_Timers[client].iDeaths, gA_Timers[client].iKills, ++gA_Timers[client].iCounts);
+    CPrintToChatAll(0, "%t", "Complete", gA_Timers[client].sName, gA_Timers[client].sFinalTime, gA_Timers[client].iDeaths, gA_Timers[client].iKills, ++gA_Timers[client].iCounts);
 }
 
 public Action EVENT_DEATH(Event e, const char[] n, bool b)
 {
-    if (!enable)
+    if (!g_cvEnableRT.BoolValue)
         return Plugin_Continue;
     int client = GetClientOfUserId(e.GetInt("userid"));
 
@@ -239,7 +299,7 @@ public Action EVENT_DEATH(Event e, const char[] n, bool b)
 
 public Action EVENT_NPC(Event e, const char[] n, bool b)
 {
-    if (!enable)
+    if (!g_cvEnableRT.BoolValue)
         return Plugin_Continue;
     int client = e.GetInt("killeridx");
 

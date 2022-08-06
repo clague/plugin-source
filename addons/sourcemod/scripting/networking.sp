@@ -37,18 +37,24 @@ public Action EventPlayerSpawn(Handle event, const char[] name, bool dontBroadca
     int client = GetClientOfUserId(GetEventInt(event, "userid"));
     CheckNetSettings();
     ResetRates(client);
+
+    return Plugin_Continue;
 }
 
 public Action EventPlayerDeath(Event event, const char[] name, bool dontBroadcast) {
     int client = GetClientOfUserId(event.GetInt("userid"));
     CheckNetSettings();
     SetSpectatorRates(client);
+
+    return Plugin_Continue;
 }
 
 public Action EventPlayerExtracted(Event event, const char[] name, bool dontBroadcast) {
     int client = event.GetInt("player_id");
     CheckNetSettings();
     SetSpectatorRates(client);
+
+    return Plugin_Continue;
 }
 
 public void OnClientPostAdminCheck(int client) {
@@ -62,6 +68,8 @@ public Action CheckAlive(Handle timer, int client)
             SetSpectatorRates(client);
     }
     CheckNetSettings();
+
+    return Plugin_Handled;
 }
 
 public void CheckNetSettings()

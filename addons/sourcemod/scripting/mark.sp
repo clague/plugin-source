@@ -4,7 +4,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
-#include <colorvariables>
+#include <globalvariables>
 #include <getoverit>
 
 public Plugin MyInfo = {
@@ -109,7 +109,7 @@ Action CmdMark(int iClient, int nArgs) {
             g_fLastMarkTime[iClient] = GetEngineTime();
         }
         else {
-            CPrintToChat(iClient, "{green}[Mark] {white}You need wait for {red}%1.1f {white}seconds for your next action.",
+            CPrintToChat(iClient, 0, "{green}[Mark] {white}You need wait for {red}%1.1f {white}seconds for your next action.",
                 sm_mark_cooldown_interval.FloatValue - GetEngineTime() + g_fLastMarkTime[iClient]);
             return Plugin_Handled;
         }
@@ -125,7 +125,7 @@ Action CmdMark(int iClient, int nArgs) {
                 GetClientAbsOrigin(i, fClientPos);
                 float dis = GetVectorDistance(fClientPos, fHitPos);
                 if (dis <= 2000) {
-                    CPrintToChat(i, "{green}[Mark] %s 标记了 {green}%s", name, szHitClassname);
+                    CPrintToChat(i, 0, "{green}[Mark] %s 标记了 {green}%s", name, szHitClassname);
                     continue;
                 }
 
@@ -142,7 +142,7 @@ Action CmdMark(int iClient, int nArgs) {
                     Format(szDir, 10, "%s南", szDir);
                 }
                 
-                CPrintToChat(i, "{green}[Mark] %s {white}标记了 {green}%s{white}, 在{aqua}%s{white}方向, 距离你{red}%.1f{white}远",
+                CPrintToChat(i, 0, "{green}[Mark] %s {white}标记了 {green}%s{white}, 在{aqua}%s{white}方向, 距离你{red}%.1f{white}远",
             name, szHitClassname, szDir, dis);
             }
         }

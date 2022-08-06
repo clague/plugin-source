@@ -1,7 +1,7 @@
 #pragma semicolon 1
 #include <sdkhooks>
 #include <getoverit>
-#include <colorvariables>
+#include <globalvariables>
 
 #define PLUGIN_VERSION "2.0"
 
@@ -65,7 +65,7 @@ public Action:Event_PlayerStatus(Handle:timer, any:Client)
 				Infection[Client] = true;
 				char name[500];
 				FetchColoredName(Client, name, sizeof(name));
-				CPrintToChatAll("%s \x04%t", name, "Notifi_Infection");
+				CPrintToChatAll(0, "%s \x04%t", name, "Notifi_Infection");
 			}
 		}
 		
@@ -78,7 +78,7 @@ public Action:Event_PlayerStatus(Handle:timer, any:Client)
 				Bleeding[Client] = true;
 				char name[500];
 				FetchColoredName(Client, name, sizeof(name));
-				CPrintToChatAll("%s \x04%t", name, "Notifi_Bleeding");
+				CPrintToChatAll(0, "%s \x04%t", name, "Notifi_Bleeding");
 			}
 		}
 	}
@@ -103,7 +103,7 @@ public Event_PlayerHurt( Handle:hEvent, const String:szEventName[], bool:bDontBr
 		FetchColoredName(iVClient, victim_name, sizeof(victim_name));
 		FetchColoredName(iAClient, attack_name, sizeof(attack_name));
 		PrintToServer("%N attacked a teammate", iAClient);
-		CPrintToChatAll(" %s 痛击了队友 %s !", attack_name, victim_name);
+		CPrintToChatAll(0, " %s 痛击了队友 %s !", attack_name, victim_name);
 	}
 }
 
@@ -126,19 +126,19 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 	{
 		if(StrContains(szWeapon, "_turnedzombie", false ) > 0)
 		{
-			CPrintToChatAll("幸存者 %s 死于尸变队友的偷袭.", victim_name);
+			CPrintToChatAll(0, "幸存者 %s 死于尸变队友的偷袭.", victim_name);
 		}
 		else if(StrContains( szWeapon, "_kidzombie", false ) > 0)
 		{
-			CPrintToChatAll("幸存者 %s 被小孩拍死.", victim_name);
+			CPrintToChatAll(0, "幸存者 %s 被小孩拍死.", victim_name);
 		}
 		else if(StrContains( szWeapon, "zombie", false ) > 0)
 		{
-			CPrintToChatAll("幸存者 %s 被丧尸杀害.", victim_name);
+			CPrintToChatAll(0, "幸存者 %s 被丧尸杀害.", victim_name);
 		}
 		else
 		{
-			CPrintToChatAll("幸存者 %s 被残忍杀害.", victim_name);
+			CPrintToChatAll(0, "幸存者 %s 被残忍杀害.", victim_name);
 		}
 		PrintToServer("Death: '%N', NPC, '%s'", iVClient, szWeapon);
 	}
@@ -147,17 +147,17 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 		new Float:flInfDeathTime = GetEntPropFloat(iVClient, Prop_Send, "m_flInfectionDeathTime");
 		if( GetEntProp(iVClient, Prop_Send, "m_bDiedWhileInfected") || flInfDeathTime >= 0.0 && (GetGameTime() - flInfDeathTime) >= 0.0)
 		{
-			CPrintToChatAll("幸存者 %s 死于感染.", victim_name);
+			CPrintToChatAll(0, "幸存者 %s 死于感染.", victim_name);
 			PrintToServer("Death: '%N', infection, '%s'", iVClient, szWeapon);
 		}
 		else if(Bleeding[iVClient])
 		{
-			CPrintToChatAll("幸存者 %s 失血过多而亡.", victim_name);
+			CPrintToChatAll(0, "幸存者 %s 失血过多而亡.", victim_name);
 			PrintToServer("Death: '%N', blood loss, '%s'", iVClient, szWeapon);
 		}
 		else
 		{
-			CPrintToChatAll("幸存者 %s 不堪重负，结束了自己的生命.", victim_name);
+			CPrintToChatAll(0, "幸存者 %s 不堪重负，结束了自己的生命.", victim_name);
 			PrintToServer("Death: '%N', suicide, '%s'", iVClient, szWeapon);
 		}
 	}
@@ -165,20 +165,20 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 	{
 		char attack_name[500];
 		FetchColoredName(iAClient, attack_name, sizeof(attack_name));
-		CPrintToChatAll("幸存者 %s 被队友 %s 反补.", victim_name, attack_name);
+		CPrintToChatAll(0, "幸存者 %s 被队友 %s 反补.", victim_name, attack_name);
 		PrintToServer("Death: '%N', '%N', '%s'", iVClient, iAClient, szWeapon);
 	}
 	else if(iAttacker == 0)
 	{
 		if(strcmp(szWeapon, "fall") == 0) 
-			CPrintToChatAll("幸存者 %s 摔死了.", victim_name);
+			CPrintToChatAll(0, "幸存者 %s 摔死了.", victim_name);
 		else
-			CPrintToChatAll("幸存者 %s 被这个世界杀害.", victim_name);
+			CPrintToChatAll(0, "幸存者 %s 被这个世界杀害.", victim_name);
 		PrintToServer("Death: '%N', world, '%s'", iVClient, szWeapon);
 	}
 	else
 	{
-		CPrintToChatAll("幸存者 %s 挂了.", victim_name);
+		CPrintToChatAll(0, "幸存者 %s 挂了.", victim_name);
 		PrintToServer("Death: '%N', #%d, '%s'", iVClient, iAttacker, szWeapon);
 	}
 	

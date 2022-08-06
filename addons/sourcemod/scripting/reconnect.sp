@@ -3,7 +3,7 @@
 
 #include <sourcemod>
 #include <sdktools>
-#include <colorvariables>
+#include <globalvariables>
 #include <randomsupply>
 #include <dhooks>
 
@@ -112,7 +112,7 @@ int ChooseMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
             case 0: {
                 if (IsPlayerAlive(param1) && GetEntProp(param1, Prop_Send, "m_iPlayerState") == 0) {
                     g_hRestoredState.Remove(g_szPlayerAuth[param1]);
-                    CPrintToChat(param1, "{green}%t {white}%t", "Prefix", "AlreadyAlive");
+                    CPrintToChat(param1, 0, "{green}%t {white}%t", "Prefix", "AlreadyAlive");
                     return 0;
                 }
                 SetGived(param1, true);
@@ -141,7 +141,7 @@ public void OnClientPostAdminCheck(int iClient) {
     GetClientAuthId(iClient, AuthId_SteamID64, g_szPlayerAuth[iClient], 64);
 
     if (g_hRestoredState.GetArray(g_szPlayerAuth[iClient], g_aPlayerState[iClient], PLAYER_STATE_LEN)) {
-        CPrintToChat(iClient, "{green}%t {white}%t", "Prefix", "Notifi");
+        CPrintToChat(iClient, 0, "{green}%t {white}%t", "Prefix", "Notifi");
         g_hChooseMenu.Display(iClient, sm_reconnect_choose_time.IntValue);
     }
     // else {
@@ -227,7 +227,7 @@ void ForceSpawn(int iClient)
 Action CmdRSpawn(int iClient, int nArgs) {
     if (g_hRestoredState.GetArray(g_szPlayerAuth[iClient], g_aPlayerState[iClient], PLAYER_STATE_LEN)) {
         if (IsPlayerAlive(iClient) && GetEntProp(iClient, Prop_Send, "m_iPlayerState") == 0) {
-            CPrintToChat(iClient, "{green}%t {white}%t", "Prefix", "AlreadyAlive");
+            CPrintToChat(iClient, 0, "{green}%t {white}%t", "Prefix", "AlreadyAlive");
             return Plugin_Handled;
         }
         SetGived(iClient, true);

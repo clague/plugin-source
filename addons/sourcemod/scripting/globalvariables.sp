@@ -1,13 +1,11 @@
 #include <sourcemod>
-#include <colorvariables>
+#include <globalvariables>
 #include <mapchooser>
 
 #pragma newdecls required
 #pragma semicolon 1
 
 #define PLUGIN_VERSION  "1.0"
-
-#define MAX_MESSAGE_LEN 1024
 
 public Plugin myinfo =
 {
@@ -264,7 +262,7 @@ public any Native_CAddChatColor(Handle plugin, int num_params) {
 static void ProcessVariables(char[] szMessage, int nMaxLength, bool isColor = true, bool isVariable = false) {
     int iBufIndex = 0, i = 0, nNameLen = 0, iOldBufIndex = 0;
     char[] szBuffer = new char[nMaxLength];
-    char szName[32], szValue[256];
+    char szName[32], szValue[128];
     ConVar hConVar;
 
     while (szMessage[i] && iBufIndex < nMaxLength - 1) {
@@ -340,6 +338,31 @@ static void ProcessVariables(char[] szMessage, int nMaxLength, bool isColor = tr
     strcopy(szMessage, nMaxLength, szBuffer);
 }
 
+public void RemoveVariables(char[] szMessage, int nMaxLength) {
+    int iBufIndex = 0, i = 0, nNameLen = 0;
+    char[] szBuffer = new char[nMaxLength];
+
+    while (szMessage[i] && iBufIndex < nMaxLength - 1) {
+        if (szMessage[i] != '{' || (nNameLen = FindCharInString(szMessage[i + 1], '}')) == -1) {
+            szBuffer[iBufIndex++] = szMessage[i++];
+            continue;
+        }
+        i += nNameLen + 2;
+    }
+
+    szBuffer[iBufIndex] = '\0';
+    strcopy(szMessage, nMaxLength, szBuffer);
+}
+
+public any Native_CRemoveVariables(Handle plugin, int num_params) {
+    int nMaxLength = GetNativeCell(2);
+    char[] szMessage = new char[nMaxLength];
+    GetNativeString(1, szMessage, nMaxLength);
+
+    RemoveVariables(szMessage, nMaxLength);
+    return SetNativeString(1, szMessage, nMaxLength);
+}
+
 public any Native_CProcessVariables(Handle plugin, int num_params) {
     int nMaxLength = GetNativeCell(2);
     char[] szMessage = new char[nMaxLength];
@@ -351,12 +374,14 @@ public any Native_CProcessVariables(Handle plugin, int num_params) {
 
 public any Native_CPrintToChat(Handle plugin, int num_params) {
     char szMessage[MAX_MESSAGE_LEN];
+    szMessage[0] = '\x01'; // Must have a color in beginning, or will have unexpected results
+
     int iClient = GetNativeCell(1), iAuthor = GetNativeCell(2);
 
     SetGlobalTransTarget(iClient);
-    FormatNativeString(0, 3, 4, sizeof(szMessage), _, szMessage);
+    FormatNativeString(0, 3, 4, sizeof(szMessage) - 1, _, szMessage[1]);
 
-    if (iClient < 0 || iClient > MaxClients) {
+    if (iClient < 1 || iClient > MaxClients) {
         ThrowError("Invalid client index %d", iClient);
     }
 
@@ -366,14 +391,26 @@ public any Native_CPrintToChat(Handle plugin, int num_params) {
 
     ProcessVariables(szMessage, sizeof(szMessage));
 
-    SendPlayerMessage(iClient, szMessage, iAuthor);
+    if (0 < iAuthor <= MaxClients) {
+        // LogMessage("%s sent to %d", szMessage, iClient);
+        SayText2(iClient, iAuthor, szMessage, "", "");
+    }
+    else {
+        PrintToChat(iClient, szMessage);
+    }
 
     return SP_ERROR_NONE;
 }
 
 public any Native_CPrintToChatAll(Handle plugin, int num_params) {
     char szMessage[MAX_MESSAGE_LEN];
+    szMessage[0] = '\x01'; // Must have a color in beginning, or will have unexpected results
+
     int iAuthor = GetNativeCell(1);
+
+    if (iAuthor != -1 && (iAuthor < 1 || iAuthor > MaxClients)) {
+        iAuthor = 0;
+    }
 
     for (int iClient = 1; iClient <= MaxClients; iClient++) {
         if (!IsClientInGame(iClient)) {
@@ -381,48 +418,88 @@ public any Native_CPrintToChatAll(Handle plugin, int num_params) {
         }
 
         SetGlobalTransTarget(iClient);
-        FormatNativeString(0, 2, 3, sizeof(szMessage), _, szMessage);
-
+        FormatNativeString(0, 2, 3, sizeof(szMessage) - 1, _, szMessage[1]);
         ProcessVariables(szMessage, sizeof(szMessage));
-        SendPlayerMessage(iClient, szMessage, iAuthor);
+
+        if (iAuthor == -1) {
+            SayText2(iClient, iClient, szMessage, "", "");
+        }
+        else if (iAuthor == 0) {
+            PrintToChat(iClient, szMessage);
+        }
+        else {
+            SayText2(iClient, iAuthor, szMessage, "", "");
+        }
     }
 
     return SP_ERROR_NONE;
 }
 
-static void SendPlayerMessage(int iClient, char[] szMessage, int iAuthor  = 0)
-{
-    if (iAuthor < 1 || iAuthor > MaxClients || !IsClientInGame(iAuthor)) {
-        PrintToChat(iClient, szMessage);
-
-        if (iAuthor != 0) {
-            LogError("Client %d is not valid or in game", iAuthor);
-        }
-    } else {
-        Handle hMsg = StartMessageOne("SayText2", iClient, USERMSG_RELIABLE|USERMSG_BLOCKHOOKS);
-        if(g_bProtobuf) {
-            PbSetInt(hMsg, "ent_idx", iAuthor);
-            PbSetBool(hMsg, "chat", true);
-            PbSetString(hMsg, "msg_name", szMessage);
-            PbAddString(hMsg, "params", "");
-            PbAddString(hMsg, "params", "");
-            PbAddString(hMsg, "params", "");
-            PbAddString(hMsg, "params", "");
-        } else {
-            BfWriteByte(hMsg, iAuthor);
-            BfWriteByte(hMsg, true);
-            BfWriteString(hMsg, szMessage);
-        }
-        EndMessage();
+/// When in Protobuf, only the szText can be sent, the other strings will be ignored.
+static void SayText2(int iClient, int iAuthor, const char[] szFlags, const char[] szName, const char[] szText) {
+    Handle hMsg = StartMessageOne("SayText2", iClient, USERMSG_RELIABLE|USERMSG_BLOCKHOOKS);
+    if (g_bProtobuf) { 
+        PbSetInt(hMsg, "ent_idx", iAuthor);
+        PbSetBool(hMsg, "chat", true);
+        PbSetString(hMsg, "msg_name", szText);
+        PbAddString(hMsg, "params", "");
+        PbAddString(hMsg, "params", "");
+        PbAddString(hMsg, "params", "");
+        PbAddString(hMsg, "params", "");
     }
+    BfWriteByte(hMsg, iAuthor);
+    BfWriteByte(hMsg, true);
+    BfWriteString(hMsg, szFlags);
+    BfWriteString(hMsg, szName);
+    BfWriteString(hMsg, szText);
+    EndMessage();
 }
 
+public any Native_CSayText2(Handle plugin, int num_params) {
+    char szFlags[MAX_SAYTEXT2_LEN], szName[MAX_SAYTEXT2_LEN], szText[MAX_SAYTEXT2_LEN];
+
+    GetNativeString(3, szFlags, sizeof(szFlags));
+    GetNativeString(4, szName, sizeof(szName));
+    GetNativeString(5, szText, sizeof(szText));
+
+    SayText2(GetNativeCell(1), GetNativeCell(2), szFlags, szName, szText);
+
+    return SP_ERROR_NONE;
+}
+
+public any Native_CSayText2All(Handle plugin, int num_params) {
+    char szFlags[MAX_SAYTEXT2_LEN], szName[MAX_SAYTEXT2_LEN], szText[MAX_SAYTEXT2_LEN];
+    int iAuthor = GetNativeCell(1);
+    if (iAuthor < 1 || iAuthor > MaxClients) {
+        iAuthor = -1;
+    }
+
+    GetNativeString(2, szFlags, sizeof(szFlags));
+    GetNativeString(3, szName, sizeof(szName));
+    GetNativeString(4, szText, sizeof(szText));
+
+    for (int i = 1; i <= MaxClients; i++) {
+        if (IsClientInGame(i)) {
+            if (iAuthor == -1) {
+                SayText2(i, i, szFlags, szName, szText);
+            }
+            else {
+                SayText2(i, iAuthor, szFlags, szName, szText);
+            }
+        }
+    }
+
+    return SP_ERROR_NONE;
+}
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
     CreateNative("CAddChatColor", Native_CAddChatColor);
     CreateNative("CProcessVariables", Native_CProcessVariables);
+    CreateNative("CRemoveVariables", Native_CRemoveVariables);
     CreateNative("CPrintToChat", Native_CPrintToChat);
     CreateNative("CPrintToChatAll", Native_CPrintToChatAll);
+    CreateNative("CSayText2", Native_CSayText2);
+    CreateNative("CSayText2All", Native_CSayText2All);
 
     return APLRes_Success;
 }
@@ -444,6 +521,7 @@ public void OnPluginStart() {
     HookEventEx("player_extracted", Event_PlayerExtracted);
 
     RegAdminCmd("sm_testcolors", TestColor, ADMFLAG_GENERIC);
+    RegAdminCmd("sm_testsaytext2", TestSayText2, ADMFLAG_GENERIC);
 }
 
 public void OnPluginEnd() {
@@ -459,8 +537,8 @@ public void OnMapStart() {
 public Action TestColor(int iClient, int nArgs) {
     PrintToChat(iClient, "\x01x01");
     PrintToChat(iClient, "\x02x02\x01");
-    CPrintToChat(iClient, 0, "\x03x03 {gray} gray \x01");
-    CPrintToChat(iClient, 0, "\x04x04 {green} green \x01");
+    CPrintToChat(iClient, iClient, "\x03x03 {gray} gray \x01");
+    CPrintToChat(iClient, iClient, "\x04x04 {green} green \x01");
     PrintToChat(iClient, "\x05x05\x01");
     PrintToChat(iClient, "\x06x06\x01");
     PrintToChat(iClient, "\x07x07\x01");
@@ -474,8 +552,28 @@ public Action TestColor(int iClient, int nArgs) {
     PrintToChat(iClient, "\x0Fx0F\x01");
     PrintToChat(iClient, "\x10x10\x01");
 
-    CPrintToChat(iClient, 0, "{red}red{green}green{yellow}yellow{blue}blue");
     CPrintToChat(iClient, iClient, "{red}red{green}green{yellow}yellow{blue}blue");
+    CPrintToChat(iClient, iClient, "{red}red{green}green{yellow}yellow{blue}blue");
+
+
+    PrintToChatAll("\x01中文 \x07FF4040red");
+    PrintToChatAll("\x07FF4040red");
+    return Plugin_Handled;
+}
+
+public Action TestSayText2(int iClient, int nArgs) {
+    char szFlags[MAX_SAYTEXT2_LEN], szName[MAX_SAYTEXT2_LEN], szText[MAX_SAYTEXT2_LEN];
+    GetCmdArg(1, szFlags, sizeof(szFlags));
+    GetCmdArg(2, szName, sizeof(szName));
+    GetCmdArg(3, szText, sizeof(szText));
+
+    Handle hMsg = StartMessageOne("SayText2", iClient, USERMSG_RELIABLE|USERMSG_BLOCKHOOKS);
+    BfWriteByte(hMsg, iClient);
+    BfWriteByte(hMsg, true);
+    BfWriteString(hMsg, szFlags);
+    BfWriteString(hMsg, szName);
+    BfWriteString(hMsg, szText);
+    EndMessage();
     return Plugin_Handled;
 }
 

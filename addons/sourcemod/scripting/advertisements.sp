@@ -1,44 +1,48 @@
 #include <sourcemod>
 #include <mapchooser>
+#include <globalvariables>
 
 #pragma newdecls required
 #pragma semicolon 1
 
-#include "advertisements/chatcolors.sp"
 #include "advertisements/topcolors.sp"
 
-#define PLUGIN_VERSION  "2.1.1"
+#define PLUGIN_VERSION  "2.1.1c"
+
+#define MAX_MESSAGE_LEN 1024
 
 public Plugin myinfo =
 {
-    name        = "Advertisements",
-    author      = "Tsunami",
+    name        = "Advertisements Custom",
+    author      = "Tsunami & clagura",
     description = "Display advertisements",
     version     = PLUGIN_VERSION,
     url         = "http://www.tsunami-productions.nl"
 };
 
+enum MessageType {
+    Center,
+    Chat,
+    Hint,
+    MenuMess,
+    Top,
+}
 
 enum struct Advertisement
 {
-    char center[1024];
-    char chat[2048];
-    char hint[1024];
-    char menu[1024];
-    char top[1024];
+    MessageType type;
+    char szMessage[1024];
+    float intervals;
 }
-
 
 /**
  * Globals
  */
-bool g_bMapChooser;
-bool g_bSayText2;
 int g_iCurrentAd;
 ArrayList g_hAdvertisements;
 ConVar g_hEnabled;
 ConVar g_hFile;
-ConVar g_hInterval;
+ConVar g_hDefaultInterval;
 ConVar g_hRandom;
 Handle g_hTimer;
 
@@ -52,19 +56,19 @@ public void OnPluginStart()
     CreateConVar("sm_advertisements_version", PLUGIN_VERSION, "Display advertisements", FCVAR_NOTIFY);
     g_hEnabled  = CreateConVar("sm_advertisements_enabled",  "1",                  "Enable/disable displaying advertisements.");
     g_hFile     = CreateConVar("sm_advertisements_file",     "advertisements.txt", "File to read the advertisements from.");
-    g_hInterval = CreateConVar("sm_advertisements_interval", "30",                 "Number of seconds between advertisements.");
+    g_hDefaultInterval = CreateConVar("sm_advertisements_interval_default", "30",                 "Default number of seconds between advertisements.");
     g_hRandom   = CreateConVar("sm_advertisements_random",   "0",                  "Enable/disable random advertisements.");
 
-    g_hFile.AddChangeHook(ConVarChanged_File);
-    g_hInterval.AddChangeHook(ConVarChanged_Interval);
+    g_hEnabled.AddChangeHook(OnConVarChanged);
+    g_hFile.AddChangeHook(OnConVarChanged);
+    g_hDefaultInterval.AddChangeHook(OnConVarChanged);
+    g_hRandom.AddChangeHook(OnConVarChanged);
 
-    g_bMapChooser = LibraryExists("mapchooser");
-    g_bSayText2 = GetUserMessageId("SayText2") != INVALID_MESSAGE_ID;
     g_hAdvertisements = new ArrayList(sizeof(Advertisement));
 
     RegServerCmd("sm_advertisements_reload", Command_ReloadAds, "Reload the advertisements");
 
-    AddChatColors();
+    delete g_hTopColors;
     AddTopColors();
 }
 
@@ -74,20 +78,17 @@ public void OnConfigsExecuted()
     RestartTimer();
 }
 
-public void OnLibraryAdded(const char[] name)
-{
-    if (StrEqual(name, "mapchooser")) {
-        g_bMapChooser = true;
+public void OnConVarChanged(ConVar hConVar, const char[] szOld, const char[] szNew) {
+    if (hConVar == g_hEnabled && g_hEnabled.BoolValue) {
+        RestartTimer();
+    }
+    else {
+        ParseAds();
+        if (hConVar == g_hDefaultInterval) {
+            RestartTimer();
+        }
     }
 }
-
-public void OnLibraryRemoved(const char[] name)
-{
-    if (StrEqual(name, "mapchooser")) {
-        g_bMapChooser = false;
-    }
-}
-
 
 /**
  * ConVar Changes
@@ -127,90 +128,73 @@ public Action Timer_DisplayAd(Handle timer)
     if (!g_hEnabled.BoolValue) {
         return Plugin_Stop;
     }
-
-    Advertisement ad;
-    g_hAdvertisements.GetArray(g_iCurrentAd, ad);
-    char message[1024];
-
-    if (ad.center[0]) {
-        ProcessVariables(ad.center, g_szCenterAdText, sizeof(message));
-        PrintCenterTextAll(g_szCenterAdText);
-
-        CreateTimer(1.0, Timer_CenterAd, _, TIMER_FLAG_NO_MAPCHANGE|TIMER_REPEAT);
-    }
-    if (ad.chat[0]) {
-        bool teamColor[10];
-        char messages[10][256];
-        int messageCount = ExplodeString(ad.chat, "\n", messages, sizeof(messages), sizeof(messages[]));
-
-        for (int idx = 0; idx < messageCount; idx++) {
-            teamColor[idx] = StrContains(messages[idx], "{teamcolor}", false) != -1;
-            if (teamColor[idx] && !g_bSayText2) {
-                SetFailState("This game does not support {teamcolor}");
-            }
-
-            ProcessVariables(messages[idx], message, sizeof(message), true);
-            strcopy(messages[idx], sizeof(messages[]), message);
-        }
-
-        for (int idx; idx < messageCount; idx++) {
-            if (teamColor[idx]) {
-                for (int i = 1; i <= MaxClients; i++) {
-                    if (IsValidClient(i)) {
-                        SayText2(i, messages[idx]);
-                    }
-                }
-            } else {
-                PrintToChatAll(messages[idx]);
-            }
-        }
-    }
-    if (ad.hint[0]) {
-        ProcessVariables(ad.hint, message, sizeof(message));
-
-        PrintHintTextToAll(message);
-    }
-    if (ad.menu[0]) {
-        ProcessVariables(ad.menu, message, sizeof(message));
-
-        Panel hPl = new Panel();
-        hPl.DrawText(message);
-        hPl.CurrentKey = 10;
-
-        for (int i = 1; i <= MaxClients; i++) {
-            if (IsValidClient(i)) {
-                hPl.Send(i, MenuHandler_DoNothing, 10);
-            }
-        }
-
-        delete hPl;
-    }
-    if (ad.top[0]) {
-        int iStart    = 0,
-            aColor[4] = {255, 255, 255, 255};
-
-        ParseTopColor(ad.top, iStart, aColor);
-        ProcessVariables(ad.top[iStart], message, sizeof(message));
-
-        KeyValues hKv = new KeyValues("Stuff", "title", message);
-        hKv.SetColor4("color", aColor);
-        hKv.SetNum("level",    1);
-        hKv.SetNum("time",     10);
-
-        for (int i = 1; i <= MaxClients; i++) {
-            if (IsValidClient(i)) {
-                CreateDialog(i, hKv, DialogType_Msg);
-            }
-        }
-
-        delete hKv;
-    }
-
-    if (++g_iCurrentAd >= g_hAdvertisements.Length) {
+    if (g_iCurrentAd >= g_hAdvertisements.Length) {
         g_iCurrentAd = 0;
     }
 
-    return Plugin_Continue;
+    Advertisement ad;
+    g_hAdvertisements.GetArray(g_iCurrentAd, ad);
+    char szBuffer[1024];
+
+    switch (ad.type) {
+        case Center: {
+            strcopy(szBuffer, sizeof(szBuffer), ad.szMessage);
+
+            CProcessVariables(szBuffer, sizeof(szBuffer), false, true);
+            PrintCenterTextAll(g_szCenterAdText);
+            CreateTimer(1.0 , Timer_CenterAd, _, TIMER_FLAG_NO_MAPCHANGE|TIMER_REPEAT);
+        }
+        case Chat: {
+            CPrintToChatAll(0, ad.szMessage);
+        }
+        case Hint: {
+            strcopy(szBuffer, sizeof(szBuffer), ad.szMessage);
+
+            CProcessVariables(szBuffer, sizeof(szBuffer), false, true);
+            PrintHintTextToAll(szBuffer);
+        }
+        case MenuMess: {
+            strcopy(szBuffer, sizeof(szBuffer), ad.szMessage);
+
+            CProcessVariables(szBuffer, sizeof(szBuffer), false, true);
+
+            Panel hPl = new Panel();
+            hPl.DrawText(szBuffer);
+            hPl.CurrentKey = 10;
+
+            for (int i = 1; i <= MaxClients; i++) {
+                if (IsClientInGame(i) && !IsFakeClient(i)) {
+                    hPl.Send(i, MenuHandler_DoNothing, 10);
+                }
+            }
+
+            delete hPl;
+        }
+        case Top: {
+            int iStart = 0, aColor[4] = {255, 255, 255, 255};
+
+            ParseTopColor(ad.szMessage, iStart, aColor);
+            CProcessVariables(ad.szMessage[iStart], sizeof(ad.szMessage), false, true);
+
+            KeyValues hKv = new KeyValues("Stuff", "title", ad.szMessage);
+            hKv.SetColor4("color", aColor);
+            hKv.SetNum("level", 1);
+            hKv.SetNum("time", 10);
+
+            for (int i = 1; i <= MaxClients; i++) {
+                if (IsClientInGame(i) && !IsFakeClient(i)) {
+                    CreateDialog(i, hKv, DialogType_Msg);
+                }
+            }
+
+            delete hKv;
+        }
+    }
+    
+    g_iCurrentAd++;
+
+    g_hTimer = CreateTimer(ad.intervals, Timer_DisplayAd, _, TIMER_FLAG_NO_MAPCHANGE);
+    return Plugin_Stop;
 }
 
 public Action Timer_CenterAd(Handle timer)
@@ -223,18 +207,6 @@ public Action Timer_CenterAd(Handle timer)
 
     PrintCenterTextAll("%s", g_szCenterAdText);
     return Plugin_Continue;
-}
-
-
-/**
- * Functions
- */
-bool IsValidClient(int client)
-{
-    if (IsClientInGame(client)) {
-        return !IsFakeClient(client);
-    }
-    return false;
 }
 
 void ParseAds()
@@ -256,14 +228,34 @@ void ParseAds()
     hConfig.GotoFirstSubKey();
 
     Advertisement ad;
-    char flags[22];
+    char szType[16];
     do {
-        hConfig.GetString("center", ad.center, sizeof(Advertisement::center));
-        hConfig.GetString("chat",   ad.chat,   sizeof(Advertisement::chat));
-        hConfig.GetString("hint",   ad.hint,   sizeof(Advertisement::hint));
-        hConfig.GetString("menu",   ad.menu,   sizeof(Advertisement::menu));
-        hConfig.GetString("top",    ad.top,    sizeof(Advertisement::top));
-        hConfig.GetString("flags",  flags,     sizeof(flags));
+        hConfig.GetString("type", szType, sizeof(szType));
+
+        if (strcmp(szType, "chat", false)) {
+            ad.type = Chat;
+        }
+        else if (strcmp(szType, "center", false)) {
+            ad.type = Center;
+        }
+        else if (strcmp(szType, "hint", false)) {
+            ad.type = Hint;
+        }
+        else if (strcmp(szType, "menu", false)) {
+            ad.type = MenuMess;
+        }
+        else if (strcmp(szType, "top", false)) {
+            ad.type = Top;
+        }
+        else {
+            char szKey[128];
+            hConfig.GetSectionName(szKey, sizeof(szKey));
+            LogError("Unknown message type in key: %s", szKey);
+
+            continue;
+        }
+        hConfig.GetString("message", ad.szMessage, sizeof(Advertisement::szMessage));
+        ad.intervals = hConfig.GetFloat("intervals", g_hDefaultInterval.FloatValue);
 
         g_hAdvertisements.PushArray(ad);
     } while (hConfig.GotoNextKey());
@@ -275,80 +267,8 @@ void ParseAds()
     delete hConfig;
 }
 
-void ProcessVariables(const char[] message, char[] buffer, int maxlength, bool chat=false)
-{
-    char name[32], value[256];
-    int buf_idx, i, name_len;
-    ConVar hConVar;
-
-    while (message[i] && buf_idx < maxlength - 1) {
-        if (message[i] != '{' || (name_len = FindCharInString(message[i + 1], '}')) == -1) {
-            buffer[buf_idx++] = message[i++];
-            continue;
-        }
-
-        strcopy(name, name_len + 1, message[i + 1]);
-
-        if (StrEqual(name, "currentmap", false)) {
-            GetCurrentMap(value, sizeof(value));
-            GetMapDisplayName(value, value, sizeof(value));
-            buf_idx += strcopy(buffer[buf_idx], maxlength - buf_idx, value);
-        }
-        else if (StrEqual(name, "nextmap", false)) {
-            if (g_bMapChooser && EndOfMapVoteEnabled() && !HasEndOfMapVoteFinished()) {
-                buf_idx += strcopy(buffer[buf_idx], maxlength - buf_idx, "Pending Vote");
-            } else {
-                GetNextMap(value, sizeof(value));
-                GetMapDisplayName(value, value, sizeof(value));
-                buf_idx += strcopy(buffer[buf_idx], maxlength - buf_idx, value);
-            }
-        }
-        else if (StrEqual(name, "date", false)) {
-            FormatTime(value, sizeof(value), "%Y/%m/%d");
-            buf_idx += strcopy(buffer[buf_idx], maxlength - buf_idx, value);
-        }
-        else if (StrEqual(name, "time", false)) {
-            FormatTime(value, sizeof(value), "%I:%M:%S%p");
-            buf_idx += strcopy(buffer[buf_idx], maxlength - buf_idx, value);
-        }
-        else if (StrEqual(name, "time24", false)) {
-            FormatTime(value, sizeof(value), "%H:%M:%S");
-            buf_idx += strcopy(buffer[buf_idx], maxlength - buf_idx, value);
-        }
-        else if (StrEqual(name, "timeleft", false)) {
-            int mins, secs, timeleft;
-            if (GetMapTimeLeft(timeleft) && timeleft > 0) {
-                mins = timeleft / 60;
-                secs = timeleft % 60;
-            }
-
-            buf_idx += FormatEx(buffer[buf_idx], maxlength - buf_idx, "%d:%02d", mins, secs);
-        }
-        else if (chat) {
-            char color[10];
-            if (name[0] == '#') {
-                buf_idx += FormatEx(buffer[buf_idx], maxlength - buf_idx, "%c%s", (name_len == 9) ? 8 : 7, name[1]);
-            }
-            else if (g_hChatColors.GetString(name, color, sizeof(color))) {
-                buf_idx += strcopy(buffer[buf_idx], maxlength - buf_idx, color);
-            }
-        }
-        else if ((hConVar = FindConVar(name))) {
-            hConVar.GetString(value, sizeof(value));
-            buf_idx += strcopy(buffer[buf_idx], maxlength - buf_idx, value);
-        }
-        else {
-            buf_idx += FormatEx(buffer[buf_idx], maxlength - buf_idx, "{%s}", name);
-        }
-
-        i += name_len + 2;
-    }
-
-    buffer[buf_idx] = '\0';
-}
-
 void RestartTimer()
 {
     delete g_hTimer;
-    g_hTimer = CreateTimer(float(g_hInterval.IntValue), Timer_DisplayAd, _, TIMER_REPEAT);
+    g_hTimer = CreateTimer(g_hDefaultInterval.FloatValue, Timer_DisplayAd, _, TIMER_FLAG_NO_MAPCHANGE);
 }

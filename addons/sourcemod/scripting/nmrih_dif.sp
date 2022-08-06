@@ -3,7 +3,7 @@
 
 #include <sdktools>
 #include <sdkhooks>
-#include <colorvariables>
+#include <globalvariables>
 #include <getoverit>
 
 #define VOTE_NEEDED 0.74
@@ -44,8 +44,7 @@ ConVar hostname,
     sm_gamemode_default,
     sm_gamemode,
     sv_difficulty,
-    sv_spawn_density,
-    sv_spawn_density_default;
+    sv_spawn_density;
 
 bool g_bEnabled, g_bListenClient[MAXPLAYERS];
 
@@ -148,8 +147,14 @@ public void OnConVarChange(ConVar CVar, const char[] oldValue, const char[] newV
     }
     else if (CVar == sm_gamemode) {
         g_GameMode = view_as<GameMode>(sm_gamemode.IntValue);
-        if (g_GameMode == GameModeRunner || g_GameMode == GameModeKid) {
-            ShamblerConvertToRunner(g_GameMode == GameModeKid);
+        switch (g_GameMode) {
+            case GameModeDefault: {}
+            case GameModeKid: {
+                ShamblerConvertToRunner(g_GameMode == GameModeKid);
+            }
+            case GameModeRunner: {
+                ShamblerConvertToRunner(g_GameMode == GameModeKid);
+            }
         }
         ConVarSet(g_GameMode);
     }
@@ -360,7 +365,7 @@ void MenuInitialize() {
 
 public Action CmdTopMenu(int client, int args) {
     if (!g_bEnabled) {
-        CPrintToChat(client, "{red}%t %t", "ChatFlag", "ModeDisable");
+        CPrintToChat(client, 0, "{red}%t %t", "ChatFlag", "ModeDisable");
         return Plugin_Handled;
     }
     g_hTopMenu.Display(client, 20);
@@ -388,18 +393,18 @@ int TopMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
             }
             case 3: {
                 if (sm_inf_stamina == null) {
-                    CPrintToChat(param1, "{red}%t %t", "ChatFlag", "InfStaminaInvalid");
+                    CPrintToChat(param1, 0, "{red}%t %t", "ChatFlag", "InfStaminaInvalid");
                     g_hTopMenu.Display(param1, 20);
                     return 0;
                 }
                 if (sm_inf_stamina.IntValue <= 0) {
-                    FormatEx(g_szVoteCommand[param1 - 1], 128, "sm_inf_stamina 1;sm_record_enable 0");
+                    FormatEx(g_szVoteCommand[param1 - 1], 128, "sm_inf_stamina 1");
                     FormatEx(g_szVoteTitle[param1 - 1], 64, "InfStaminaEnableVoteTitle");
                     FormatEx(g_szVoteHint[param1 - 1], 256, "InfStaminaEnableVoteHint");
                     FormatEx(g_szVoteFinishHint[param1 - 1], 64, "InfStaminaEnableVoteFinishHint");
                 }
                 else {
-                    FormatEx(g_szVoteCommand[param1 - 1], 128, "sm_inf_stamina 0;sm_record_enable 1");
+                    FormatEx(g_szVoteCommand[param1 - 1], 128, "sm_inf_stamina 0");
                     FormatEx(g_szVoteTitle[param1 - 1], 64, "InfStaminaDisableVoteTitle");
                     FormatEx(g_szVoteHint[param1 - 1], 256, "InfStaminaDisableVoteHint");
                     FormatEx(g_szVoteFinishHint[param1 - 1], 64, "InfStaminaDisableVoteFinishHint");
@@ -409,18 +414,18 @@ int TopMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
             }
             case 4: {
                 if (sm_machete_enable == null) {
-                    CPrintToChat(param1, "{red}%t %t", "ChatFlag", "MacheteInvalid");
+                    CPrintToChat(param1, 0, "{red}%t %t", "ChatFlag", "MacheteInvalid");
                     g_hTopMenu.Display(param1, 20);
                     return 0;
                 }
                 if (sm_machete_enable.IntValue <= 0) {
-                    FormatEx(g_szVoteCommand[param1 - 1], 128, "sm_machete_enable 1;sm_record_enable 0");
+                    FormatEx(g_szVoteCommand[param1 - 1], 128, "sm_machete_enable 1");
                     FormatEx(g_szVoteTitle[param1 - 1], 64, "MacheteEnableVoteTitle");
                     FormatEx(g_szVoteHint[param1 - 1], 256, "MacheteEnableVoteHint");
                     FormatEx(g_szVoteFinishHint[param1 - 1], 64, "MacheteEnableVoteFinishHint");
                 }
                 else {
-                    FormatEx(g_szVoteCommand[param1 - 1], 128, "sm_machete_enable 0;sm_record_enable 1");
+                    FormatEx(g_szVoteCommand[param1 - 1], 128, "sm_machete_enable 0");
                     FormatEx(g_szVoteTitle[param1 - 1], 64, "MacheteDisableVoteTitle");
                     FormatEx(g_szVoteHint[param1 - 1], 256, "MacheteDisableVoteHint");
                     FormatEx(g_szVoteFinishHint[param1 - 1], 64, "MacheteDisableVoteFinishHint");
@@ -516,20 +521,20 @@ int DifMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
     else if (action == MenuAction_Select) {
         switch (param2) {
             case 0: {
-                FormatEx(g_szVoteCommand[param1 - 1], 128, "sv_difficulty classic;sm_record_enable 1;sm_cvar sv_spawn_density %f", sv_spawn_density.FloatValue);
+                FormatEx(g_szVoteCommand[param1 - 1], 128, "sv_difficulty classic;sm_cvar sv_spawn_density %f", sv_spawn_density.FloatValue);
                 FormatEx(g_szVoteTitle[param1 - 1], 64, "ClassicDifVoteTitle");
                 FormatEx(g_szVoteHint[param1 - 1], 256, "ClassicDifVoteHint");
                 FormatEx(g_szVoteFinishHint[param1 - 1], 64, "ClassicDifVoteFinishHint");
                 
             }
             case 1: {
-                FormatEx(g_szVoteCommand[param1 - 1], 128, "sv_difficulty casual;sm_record_enable 0;sm_cvar sv_spawn_density %f", sv_spawn_density.FloatValue);
+                FormatEx(g_szVoteCommand[param1 - 1], 128, "sv_difficulty casual;sm_cvar sv_spawn_density %f", sv_spawn_density.FloatValue);
                 FormatEx(g_szVoteTitle[param1 - 1], 64, "CasualDifVoteTitle");
                 FormatEx(g_szVoteHint[param1 - 1], 256, "CasualDifVoteHint");
                 FormatEx(g_szVoteFinishHint[param1 - 1], 64, "CasualDifVoteFinishHint");
             }
             case 2: {
-                FormatEx(g_szVoteCommand[param1 - 1], 128, "sv_difficulty nightmare;sm_record_enable 1;sm_cvar sv_spawn_density %f", sv_spawn_density.FloatValue);
+                FormatEx(g_szVoteCommand[param1 - 1], 128, "sv_difficulty nightmare;sm_cvar sv_spawn_density %f", sv_spawn_density.FloatValue);
                 FormatEx(g_szVoteTitle[param1 - 1], 64, "NightmareDifVoteTitle");
                 FormatEx(g_szVoteHint[param1 - 1], 256, "NightmareDifVoteHint");
                 FormatEx(g_szVoteFinishHint[param1 - 1], 64, "NightmareDifVoteFinishHint");
@@ -582,7 +587,7 @@ int DensityMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
             }
             case 4: {
                 g_bListenClient[param1] = true;
-                CPrintToChat(param1, "{red}%t {white}%t", "ChatFlag", "DensityCustomHint");
+                CPrintToChat(param1, 0, "{red}%t {white}%t", "ChatFlag", "DensityCustomHint");
                 return 0;
             }
         }
@@ -690,7 +695,7 @@ int ConfirmMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
 
 void DoVote(int client) {
     if (IsVoteInProgress()) {
-        CPrintToChat(client, "{red}%t %t", "ChatFlag", "VoteInProgress");
+        CPrintToChat(client, 0, "{red}%t %t", "ChatFlag", "VoteInProgress");
         g_hConfirmLast[client - 1].Display(client, 20);
     }
     if (IsClientInGame(client)) {
@@ -702,14 +707,14 @@ void DoVote(int client) {
             char buffer[256];
             FetchColoredName(client, buffer, 256);
             if (StrEqual(g_szVoteHint[g_iVoteClient - 1], "DensityVoteHint")) {
-                CPrintToChatAll("{green}%t {white}%t", "ChatFlag", g_szVoteHint[client - 1], buffer, g_fDensity[client - 1]);
+                CPrintToChatAll(0, "{green}%t {white}%t", "ChatFlag", g_szVoteHint[client - 1], buffer, g_fDensity[client - 1]);
             }
             else {
-                CPrintToChatAll("{green}%t {white}%t", "ChatFlag", g_szVoteHint[client - 1], buffer);
+                CPrintToChatAll(0, "{green}%t {white}%t", "ChatFlag", g_szVoteHint[client - 1], buffer);
             }
         }
         else {
-            CPrintToChat(client, "{red}%t %t", "ChatFlag", "VoteByAlive");
+            CPrintToChat(client, 0, "{red}%t %t", "ChatFlag", "VoteByAlive");
             g_hConfirmLast[client - 1].Display(client, 20);
         }
     }
@@ -738,18 +743,18 @@ int VoteMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
                 ServerCommand(g_szVoteCommand[g_iVoteClient - 1]);
 
                 if (StrEqual(g_szVoteFinishHint[g_iVoteClient - 1], "DensityVoteFinishHint")) {
-                    CPrintToChatAll("{green}%t {white}%t", "ChatFlag", g_szVoteFinishHint[g_iVoteClient - 1], g_fDensity[g_iVoteClient - 1]);
+                    CPrintToChatAll(0, "{green}%t {white}%t", "ChatFlag", g_szVoteFinishHint[g_iVoteClient - 1], g_fDensity[g_iVoteClient - 1]);
                 }
                 else {
-                    CPrintToChatAll("{green}%t {white}%t", "ChatFlag", g_szVoteFinishHint[g_iVoteClient - 1]);
+                    CPrintToChatAll(0, "{green}%t {white}%t", "ChatFlag", g_szVoteFinishHint[g_iVoteClient - 1]);
                 }
                 return 0;
             }
         }
-        CPrintToChatAll("{red}%t %t", "ChatFlag", "VoteFailed");
+        CPrintToChatAll(0, "{red}%t %t", "ChatFlag", "VoteFailed");
     }
     else if (action == MenuAction_VoteCancel) {
-        CPrintToChatAll("{red}%t %t", "ChatFlag", "NoVotesCast");
+        CPrintToChatAll(0, "{red}%t %t", "ChatFlag", "NoVotesCast");
     }
     else if (action == MenuAction_DisplayItem) {
         char buffer[64], display[64];
@@ -782,7 +787,7 @@ public Action GameInfoShowToClient(int client, int args)
         temp3 = sm_record_enable_rt.BoolValue;
     }
     if (client == 0) {
-        CPrintToChatAll("{green}%t {white}%t {green}%t {white}%t\n{green}%t {white}%.1f {green}%t {white}%t\n{green}%t {white}%t\n{red}%t %t",
+        CPrintToChatAll(0, "{green}%t {white}%t {green}%t {white}%t\n{green}%t {white}%.1f {green}%t {white}%t\n{green}%t {white}%t\n{red}%t %t",
             "ModeFlag",            szGameMode[view_as<int>(g_GameMode)],
             "DifFlag",            szGameDif[view_as<int>(g_GameDif)],
             "DensityFlag",        sv_spawn_density.FloatValue,
@@ -791,7 +796,7 @@ public Action GameInfoShowToClient(int client, int args)
             "ChatFlag",           temp3 ? "RecordEnable" : "RecordDisable");
     }
     else {
-        CPrintToChat(client, "{green}%t {white}%t {green}%t {white}%t\n{green}%t {white}%.1f {green}%t {white}%t\n{green}%t {white}%t\n{red}%t %t",
+        CPrintToChat(client, 0, "{green}%t {white}%t {green}%t {white}%t\n{green}%t {white}%.1f {green}%t {white}%t\n{green}%t {white}%t\n{red}%t %t",
             "ModeFlag",            szGameMode[view_as<int>(g_GameMode)],
             "DifFlag",            szGameDif[view_as<int>(g_GameDif)],
             "DensityFlag",        sv_spawn_density.FloatValue,

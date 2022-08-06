@@ -114,7 +114,7 @@ native bool ChatProcessor_SetChatColor(int client, const char[] color);
 *  - Plugin_Handled		Stops the message.
 *  - Plugin_Stop		Stops the message.
 **/
-forward Action CP_OnChatMessageSendPre(int sender, int reciever, char[] flag, char[] buffer, int maxlength);
+forward Action CP_OnChatMessageSendPre(int& sender, int& reciever, char[] flagstring, char[] message);
 
 /**
 * Called while sending a chat message before It's sent.
@@ -134,7 +134,7 @@ forward Action CP_OnChatMessageSendPre(int sender, int reciever, char[] flag, ch
 *  - Plugin_Handled		Fires the post-forward below but doesn't print a message.
 *  - Plugin_Stop		Stops the message.
 **/
-forward Action CP_OnChatMessage(int& author, ArrayList recipients, char[] flagstring, char[] name, char[] message, bool & processcolors, bool & removecolors);
+forward Action CP_OnChatMessage(int& author, ArrayList recipients, char[] flagstring, char[] name, char[] message, bool & processcolors);
 
 /**
 * Called after the chat message is sent to the designated clients by the author.
@@ -150,7 +150,7 @@ forward Action CP_OnChatMessage(int& author, ArrayList recipients, char[] flagst
 *
 * noreturn
 **/
-forward void CP_OnChatMessagePost(int author, ArrayList recipients, const char[] flagstring, const char[] formatstring, const char[] name, const char[] message, bool processcolors, bool removecolors);
+forward void CP_OnChatMessagePost(int author, ArrayList recipients, const char[] flagstring, const char[] formatstring, const char[] name, const char[] message);
 
 /**
 * Called after the client has had a new tag added.

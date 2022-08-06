@@ -120,7 +120,7 @@ public Action:GivePlayerSupply(Handle:timer, any:client)
         GiveItemIntoPlayer(client, melee_list[r]);
     }
     else {
-        GiveItemIntoPlayer(client, melee_list[GetRandomInt(5, 9)])
+        GiveItemIntoPlayer(client, melee_list[GetRandomInt(5, 9)]);
     }
     if (g_bMacheteEnable.BoolValue)
     {

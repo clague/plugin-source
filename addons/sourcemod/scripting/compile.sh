@@ -8,13 +8,13 @@ if [[ $# -ne 0 ]]; then
 	do
 		smxfile="`echo $sourcefile | sed -e 's/\.sp$/\.smx/'`"
 		echo -e "\nCompiling $sourcefile..."
-		/home/clague/Documents/Program/SourcePawn/SM/spcomp $sourcefile -o../plugins/$smxfile
+		/home/clague/Documents/Program/SourcePawn/SM/spcomp $sourcefile -i./include -o../plugins/$smxfile
 	done
 else
 	for sourcefile in *.sp
 	do
 		smxfile="`echo $sourcefile | sed -e 's/\.sp$/\.smx/'`"
 		echo -e "\nCompiling $sourcefile ..."
-		/home/clague/Documents/Program/SourcePawn/SM/spcomp $sourcefile -o../plugins/$smxfile
+		/home/clague/Documents/Program/SourcePawn/SM/spcomp $sourcefile -i./include -o../plugins/$smxfile
 	done
 fi

@@ -3,9 +3,9 @@
 
 #include <sdktools>
 #include <sdkhooks>
-#include <colorvariables>
+#include <globalvariables>
 
-public Plugin:myinfo = {
+public Plugin myInfo = {
     name = "Extraction Level",
     author = "clagura",
     description = "Rate players by extraction times and change their name color in chat",
@@ -13,26 +13,26 @@ public Plugin:myinfo = {
     url = ""
 }
 
-new Handle:db = INVALID_HANDLE;
-new String:g_user_name_color[MAXPLAYERS + 1][20];
+Handle db = INVALID_HANDLE;
+char g_user_name_color[MAXPLAYERS + 1][20];
 ConVar record_enable;
 bool enable = true;
 
-char g_rank_color[11][20] = {
-    "white",
-    "navajowhite",
-    "yellow",
-    "lawngreen",
-    "aqua",
-    "fuchsia",
-    "darkviolet",
-    "orange",
-    "crimson",
-    "darkred",
-    "rainbow"
+char g_rank_color[11][32] = {
+    "{white}",
+    "{navajowhite}",
+    "{yellow}",
+    "{lawngreen}",
+    "{aqua}",
+    "{fuchsia}",
+    "{darkviolet}",
+    "{orange}",
+    "{crimson}",
+    "{darkred}",
+    "{rainbow}"
 };
 
-char g_color_group[][][] = {
+char g_color_group[][][32] = {
     {"{red}", "{orangered}", "{crimson}", "{collectors}", "{darkred}"},
     {"{palegreen}", "{lawngreen}", "{green}", "{lime}", "{forestgreen}"},
     {"{aqua}", "{dodgerblue}", "{blue}", "{darkcyan}", "{teal}"},
@@ -57,23 +57,32 @@ public void OnPluginStart() {
 
 public void OnConfigsExecuted() {
     (record_enable = FindConVar("sm_record_enable")).AddChangeHook(OnConVarChange);
+
+    for (int i = 0; i < sizeof(g_color_group); i++) {
+        for (int j = 0; j < sizeof(g_color_group[]); j++) {
+            CProcessVariables(g_color_group[i][j], sizeof(g_color_group[][]));
+        }
+    }
+
+    for (int i = 0; i < sizeof(g_rank_color); i++) {
+        CProcessVariables(g_rank_color[i], sizeof(g_rank_color[]));
+    }
 }
 
-public OnConVarChange(Handle:CVar, const String:oldValue[], const String:newValue[])
+public OnConVarChange(Handle CVar, const char[] oldValue, const char[] newValue)
 {
     if (CVar == record_enable && !record_enable.BoolValue)
         enable = false;
 }
 
 public InitializeDB() {
-    new String:error[255];
+    char error[255];
     KeyValues kv = CreateKeyValues("");
     KvSetString(kv, "driver", "sqlite");
     KvSetString(kv, "database", "extraction_times");
 
     db = SQL_ConnectCustom(kv, error, sizeof(error), true);
-    if(db == INVALID_HANDLE)
-    {
+    if(db == INVALID_HANDLE) {
         SetFailState(error);
     }
     SQL_LockDatabase(db);
@@ -104,11 +113,11 @@ public void OnPlayerExtraction(Event e, const char[] n, bool b) {
     }
 }
 
-public void AfterQuery(Handle:owner, Handle:hndl, const String:error[], any:data) {
+public void AfterQuery(Handle owner, Handle hndl, const char[] error, any data) {
     if(!IsClientInGame(data))
         return;
 
-    char steam_id[20], name[500], buffer[500];
+    char steam_id[20], name[MAX_NAME_LEN], buffer[500];
     int times = 0;
     bool need_insert = false;
 
@@ -136,7 +145,7 @@ public void AfterQuery(Handle:owner, Handle:hndl, const String:error[], any:data
     SQL_TQuery(db, AfterReplace, buffer, data);
 }
 
-public void AfterReplace(Handle:owner, Handle:hndl, const String:error[], any:data) {
+public void AfterReplace(Handle owner, Handle hndl, const char[] error, any data) {
     if(!StrEqual("", error))
         PrintToServer("Last Connect SQL Error: %s", error);
 }
@@ -154,9 +163,9 @@ public Action OnClientPreAdminCheck(int client) {
     return Plugin_Continue;
 }
 
-public void ApplyNameColor(Handle:owner, Handle:hndl, const String:error[], any:data) {
+public void ApplyNameColor(Handle owner, Handle hndl, const char[] error, any data) {
     int times = 0;
-    char name[500], name_1[500], buffer[500];
+    char name[MAX_NAME_LEN], name_1[MAX_NAME_LEN], buffer[500];
     GetClientName(data, name_1, 128);
     if(hndl == INVALID_HANDLE) {
         PrintToServer("Error when query %s!", name);
@@ -166,7 +175,7 @@ public void ApplyNameColor(Handle:owner, Handle:hndl, const String:error[], any:
     else if(SQL_FetchRow(hndl)) {
         SQL_FetchString(hndl, 1, name, sizeof(name));
         times = SQL_FetchInt(hndl, 2);
-        if (times >= 100) strcopy(g_user_name_color[data], 20, "rainbow");
+        if (times >= 100) strcopy(g_user_name_color[data], 20, "{rainbow}");
         else strcopy(g_user_name_color[data], 20, g_rank_color[GetColorIndexFromTimes(times)]);
         if(strcmp(name, name_1) != 0) {
             Format(buffer, sizeof(buffer), "UPDATE extraction_times SET name = '%s' WHERE name = '%s'", name_1, name);
@@ -175,11 +184,11 @@ public void ApplyNameColor(Handle:owner, Handle:hndl, const String:error[], any:
     }
     else strcopy(g_user_name_color[data], 20, g_rank_color[0]);
     GetColoredName(data, name, sizeof(name));
-    Format(buffer, sizeof(buffer), "幸存者 %s {white}总撤离次数为 %i！", name, times);
-    CPrintToChatAll(buffer);
+    Format(buffer, MAX_SAYTEXT2_LEN, "幸存者 %s {white}总撤离次数为 %i！", name, times);
+    CPrintToChatAll(0, buffer);
 }
 
-public void AfterNameUpdate(Handle:owner, Handle:hndl, const String:error[], any:data) {
+public void AfterNameUpdate(Handle owner, Handle hndl, const char[] error, any data) {
     if(!StrEqual("", error))
         PrintToServer("Last Connect SQL Error: %s", error);
 }
@@ -188,75 +197,57 @@ public void OnClientDisconnect(int client) {
     g_user_name_color[client][0] = '\0';
 }
 
-// public Action CP_OnChatMessage(int& client, ArrayList recipients, char[] flagstring, char[] name, char[] message, bool &processcolors, bool &removecolors) {
-//     // char newname[500];
-//     // if (g_user_name_color[client][0] == '\0') {
-//     //     Format(name, 500, "{%s}%s", g_rank_color[0], name);
-//     // }
-//     // else if (strcmp(g_user_name_color[client], "rainbow") != 0) {
-//     //     Format(name, 500, "{%s}%s", g_user_name_color[client], name);
-//     // }
-//     // else {
-//     //     StringRainbow(name, newname, 500);
-//     //     strcopy(name, 500, newname);
-//     // }
-//     GetColoredName(client, name, 500);
-//     //ProcessChatColors(name, newname, 500);
-//     return Plugin_Changed;r
-// }
-
 void StringRainbow(const char[] input, char[] output, int maxLen) {
     int bytes = 0, buffs = 0;
-    int size = strlen(input)+1, color_index = GetRandomInt(0, 4);
+    int size = strlen(input), color_index = GetRandomInt(0, 4);
     int char_len = 0, chars_width[256];
     output[0] = '\0';
 
     for (int x = 0; x < size; ++x) {
-        if (IsChar(input[x])) {
-            if (buffs > 0) {
-                chars_width[char_len++] = buffs;
-                buffs = 0;
-            }
+        if (0 <= input[x] < 128) {
             chars_width[char_len++] = 1;
         }
-        else {
-            buffs++;
-            if(buffs >= 3) {
-                chars_width[char_len++] = buffs;
-                buffs = 0;
+        else if (input[x] >= 192) {
+            buffs = 0;
+            for (int i = 7; i >= 0; i--) {
+                if (input[x] & (1 << i)) {
+                    buffs++;
+                }
+                else {
+                    break;
+                }
             }
+            chars_width[char_len++] = buffs;
+            x += (buffs - 1);
         }
     }
 
-    bytes += StrCat(output, maxLen, g_color_group[color_index][0]);
-    int last = 0, index = 0;
-    for (int i = 1; i < 5; ++i) {
-        int insert_point = RoundToNearest(float(char_len) / 5.0 * i);
+    bytes += strcopy(output, maxLen, g_color_group[color_index][0]);
+    int last = 0, index = 0, insert_point, len = 0;
+    for (int i = 1; i < 5 && maxLen > bytes; ++i) {
+        insert_point = RoundToNearest(float(char_len) / 5.0 * i);
         if (insert_point != last) {
+            len = 0;
             for (int j = last; j < insert_point; j++) {
-                for (int k = 0; k < chars_width[j]; k++) {
-                     output[bytes++] = input[index++];
+                len += chars_width[j];
+                if (len > maxLen - bytes - 1) {
+                    len = maxLen - bytes - 1;
+                    break;
                 }
             }
-            bytes += StrCat(output, maxLen, g_color_group[color_index][i]);
+            len = strcopy(output[bytes], len + 1, input[index]);
+            index += len;
+            bytes += len;
+
+            bytes += strcopy(output[bytes], maxLen-bytes, g_color_group[color_index][i]);
             last = insert_point;
         }
     }
-    for (int j = last; j < char_len; j++) {
-        for (int k = 0; k < chars_width[j]; k++) {
-            output[bytes++] = input[index++];
-        }
-    }
+    bytes += strcopy(output[bytes], maxLen-bytes, input[index]);
+    bytes += strcopy(output[bytes], maxLen-bytes, "\x01");
 
-    bytes += StrCat(output, maxLen, "{white}");
     output[bytes] = '\0';
     //PrintToServer(output);
-}
-
-public bool IsChar(char c) {
-    if(0 <= c <= 126)
-        return true;
-    return false;
 }
 
 public Action ShowTopRankToClient_p1(int client, int args) {
@@ -271,36 +262,36 @@ public void ShowTopRankToClient_p2(Handle:owner, Handle:hndl, const String:error
         PrintToServer("Last Connect SQL Error: %s", error);
     }
     int top = 0, times = 0;
-    char buffer[10][500], name[500] = {0};
+    char buffer[10][MAX_SAYTEXT2_LEN], name[MAX_NAME_LEN] = {0};
     while(SQL_FetchRow(hndl) && top < 10) {
         char color[20];
         strcopy(color, 20, g_rank_color[0]);
-        SQL_FetchString(hndl, 0, name, 500);
+        SQL_FetchString(hndl, 0, name, sizeof(name));
         times = SQL_FetchInt(hndl, 1);
         top++;
         if (times >= 100) {
-            char newname[500];
-            StringRainbow(name, newname, 500);
-            Format(buffer[top-1], 500, "TOP %i：幸存者 %s {white}总共撤离 {red}%i {white}次", 
+            char newname[MAX_NAME_LEN];
+            StringRainbow(name, newname, sizeof(newname));
+            Format(buffer[top-1], sizeof(buffer[]), "TOP %i：幸存者 %s {white}总共撤离 {red}%i {white}次", 
                     top, newname, times);
         }
         else {
             strcopy(color, 20, g_rank_color[GetColorIndexFromTimes(times)]);
-            Format(buffer[top-1], 500, "TOP %i：幸存者 {%s}%s {white}总共撤离 {red}%i {white}次", 
+            Format(buffer[top-1], sizeof(buffer[]), "TOP %i：幸存者 {%s}%s {white}总共撤离 {red}%i {white}次", 
                     top, color, name, times);
         }
     }
     if (buffer[0][0] == '\0') {
-        strcopy(buffer[0], 500, "{red}当前没有任何记录！");
+        strcopy(buffer[0], sizeof(buffer[]), "{red}当前没有任何记录！");
         top = 1;
     }
     if (data == 0) {
         for(int i = top - 1; i >= 0; i--)
-            CPrintToChatAll(buffer[i]);
+            CPrintToChatAll(0, buffer[i]);
     }
     else if (IsClientInGame(data) && IsClientConnected(data) && !IsFakeClient(data) && !IsClientSourceTV(data)) {
         for(int i = top - 1; i >= 0; i--)
-            CPrintToChat(data, buffer[i]);
+            CPrintToChat(data, 0, buffer[i]);
     }
 }
 
@@ -317,10 +308,10 @@ public void GetColoredName(int client, char[] new_name, int max_len) {
     char[] name = new char[max_len];
     GetClientName(client, name, max_len);
     if (g_user_name_color[client][0] == '\0') {
-        Format(new_name, max_len, "{%s}%s{white}", g_rank_color[0], name);
+        Format(new_name, max_len, "%s%s\x01", g_rank_color[0], name);
     }
-    else if (strcmp(g_user_name_color[client], "rainbow") != 0) {
-        Format(new_name, max_len, "{%s}%s{white}", g_user_name_color[client], name);
+    else if (strcmp(g_user_name_color[client], "{rainbow}") != 0) {
+        Format(new_name, max_len, "%s%s\x01", g_user_name_color[client], name);
     }
     else {
         StringRainbow(name, new_name, max_len);

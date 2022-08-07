@@ -39,6 +39,9 @@ public void OnPluginStart() {
     RegAdminCmd("sm_makemess", MakeMessage, ADMFLAG_GENERIC);
 }
 
+public void OnClientDisconnect(int iClient) {
+    delete g_hUpdatePointMessageTimer[iClient];
+}
 
 Action CmdMark(int iClient, int nArgs) {
     float fEyePos[3], fEyeAngle[3], fDir[3], fEndPos[3], fMaxHull[3], fMinHull[3], fHitPos[3];
@@ -237,10 +240,7 @@ public bool TraceEntityFilterPlayer(int iHitEntity, int iContentsMask)
 public int SendPointMessage(char szMessage[64], int iEntity, float pos[3]) {
     Handle msg = StartMessageAll("PointMessage", USERMSG_BLOCKHOOKS);
     BfWrite bf = UserMessageToBfWrite(msg);
-    
-    if (!IsValidEntity(iEntity)) {
-        return -1;
-    }
+
     bf.WriteString(szMessage); //message
     bf.WriteShort(iEntity); //entity
     bf.WriteShort(2);  //flags

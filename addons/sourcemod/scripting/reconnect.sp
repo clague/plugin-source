@@ -279,7 +279,7 @@ void SetPlayerState(int iClient) {
     }
     if (RoundFloat(aPlayerState[10]) == 1) {
         iHealth -=  RoundFloat(fInterval / 5.0);
-        if (iHealth < 2) iHealth = 2;
+        if (iHealth < 5) iHealth = 5;
         //SetEntProp(iClient, Prop_Send, "_bleedingOut", 1);
         SetCommandFlags("bleedout", GetCommandFlags("bleedout")^FCVAR_CHEAT);
         FakeClientCommand(iClient, "bleedout");

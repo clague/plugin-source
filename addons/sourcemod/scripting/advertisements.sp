@@ -135,27 +135,23 @@ public Action Timer_DisplayAd(Handle timer)
     Advertisement ad;
     g_hAdvertisements.GetArray(g_iCurrentAd, ad);
     char szBuffer[1024];
+    strcopy(szBuffer, sizeof(szBuffer), ad.szMessage);
 
     switch (ad.type) {
         case Center: {
-            strcopy(szBuffer, sizeof(szBuffer), ad.szMessage);
-
             CProcessVariables(szBuffer, sizeof(szBuffer), false, true);
             PrintCenterTextAll(g_szCenterAdText);
             CreateTimer(1.0 , Timer_CenterAd, _, TIMER_FLAG_NO_MAPCHANGE|TIMER_REPEAT);
         }
         case Chat: {
-            CPrintToChatAll(0, ad.szMessage);
+            CProcessVariables(szBuffer, sizeof(szBuffer), true, true);
+            CPrintToChatAll(0, szBuffer);
         }
         case Hint: {
-            strcopy(szBuffer, sizeof(szBuffer), ad.szMessage);
-
             CProcessVariables(szBuffer, sizeof(szBuffer), false, true);
             PrintHintTextToAll(szBuffer);
         }
         case MenuMess: {
-            strcopy(szBuffer, sizeof(szBuffer), ad.szMessage);
-
             CProcessVariables(szBuffer, sizeof(szBuffer), false, true);
 
             Panel hPl = new Panel();
@@ -173,10 +169,10 @@ public Action Timer_DisplayAd(Handle timer)
         case Top: {
             int iStart = 0, aColor[4] = {255, 255, 255, 255};
 
-            ParseTopColor(ad.szMessage, iStart, aColor);
-            CProcessVariables(ad.szMessage[iStart], sizeof(ad.szMessage), false, true);
+            ParseTopColor(szBuffer, iStart, aColor);
+            CProcessVariables(szBuffer[iStart], sizeof(szBuffer), false, true);
 
-            KeyValues hKv = new KeyValues("Stuff", "title", ad.szMessage);
+            KeyValues hKv = new KeyValues("Stuff", "title", szBuffer);
             hKv.SetColor4("color", aColor);
             hKv.SetNum("level", 1);
             hKv.SetNum("time", 10);
@@ -232,19 +228,19 @@ void ParseAds()
     do {
         hConfig.GetString("type", szType, sizeof(szType));
 
-        if (strcmp(szType, "chat", false)) {
+        if (strcmp(szType, "chat", false) == 0) {
             ad.type = Chat;
         }
-        else if (strcmp(szType, "center", false)) {
+        else if (strcmp(szType, "center", false) == 0) {
             ad.type = Center;
         }
-        else if (strcmp(szType, "hint", false)) {
+        else if (strcmp(szType, "hint", false) == 0) {
             ad.type = Hint;
         }
-        else if (strcmp(szType, "menu", false)) {
+        else if (strcmp(szType, "menu", false) == 0) {
             ad.type = MenuMess;
         }
-        else if (strcmp(szType, "top", false)) {
+        else if (strcmp(szType, "top", false) == 0) {
             ad.type = Top;
         }
         else {
@@ -259,6 +255,8 @@ void ParseAds()
 
         g_hAdvertisements.PushArray(ad);
     } while (hConfig.GotoNextKey());
+
+    LogMessage("%d messages have been loaded", g_hAdvertisements.Length);
 
     if (g_hRandom.BoolValue) {
         g_hAdvertisements.Sort(Sort_Random, Sort_Integer);

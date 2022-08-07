@@ -1,7 +1,7 @@
 #!/bin/bash -e
 cd "$(dirname "$0")"
 
-test -e compiled || mkdir compiled
+test -e ../plugins || mkdir ../plugins
 
 if [[ $# -ne 0 ]]; then
 	for sourcefile in "$@"

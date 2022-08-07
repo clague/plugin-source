@@ -52,6 +52,7 @@ StringMap g_MessageFormats;
 bool g_Proto;
 
 int g_iFlags;
+bool g_bHaveMessage[MAXPLAYERS + 1];
 
 //Tags
 ArrayList g_Tags[MAXPLAYERS + 1];
@@ -181,7 +182,7 @@ public Action OnSayText2(UserMsg msg_id, BfRead hMsg, const int[] players, int p
     //Check if the plugin is disabled.
     if (!convar_Status.BoolValue)
         return Plugin_Continue;
-        
+
     int iAuthor;
     char szFlags[MAXLENGTH_FLAG], szFormat[MAXLENGTH_BUFFER], szName[MAXLENGTH_NAME], szText[MAXLENGTH_MESSAGE];
     //Retrieve the client sending the message to other clients.
@@ -205,12 +206,18 @@ public Action OnSayText2(UserMsg msg_id, BfRead hMsg, const int[] players, int p
         }
     }
     //LogMessage("SayText2 message received, %s, %s, %s", szFlags, szName, szText);
+
+    // When client say text, the SayText2 message will fire multiple times when it's sent to every client.
+    // But we only need to deal with one of them.
+    if (g_bHaveMessage[iAuthor])
+        return Plugin_Stop;
+
     if (iAuthor <= 0)
         return Plugin_Continue;
-    
+
     if (convar_RestrictDeadChat.BoolValue && !IsPlayerAlive(iAuthor)) {
         PrintToChat(iAuthor, "Dead chat is currently restricted.");
-        return Plugin_Continue;
+        return Plugin_Stop;
     }
     
     //Trim the tag so there's no potential issues with retrieving the specified format rules.
@@ -275,7 +282,7 @@ public Action OnSayText2(UserMsg msg_id, BfRead hMsg, const int[] players, int p
     }
     if (iResults == Plugin_Stop) {
         delete aRecipients;
-        return Plugin_Continue;
+        return Plugin_Stop;
     }
 
     //Process colors based on the final results we have.
@@ -297,6 +304,13 @@ public Action OnSayText2(UserMsg msg_id, BfRead hMsg, const int[] players, int p
 
     ReplaceString(szFormat, sizeof(szFormat), "%s1", szName);
     ReplaceString(szFormat, sizeof(szFormat), "%s2", szText);
+
+    // We need set this flag to true here and set false in the RequestFrame function
+    // to ensure that only one of SayText2 can be processed.
+    // Lately setting true is to avoid error causing client won't be able to say text
+    if (!g_bHaveMessage[iAuthor]) {
+        g_bHaveMessage[iAuthor] = true;
+    }
 
     DataPack pack = new DataPack();
     pack.WriteCell(iAuthor);
@@ -343,6 +357,7 @@ public void Frame_OnChatMessage(DataPack pack)
             if (error != SP_ERROR_NONE) {
                 delete aRecipients;
                 ThrowNativeError(error, "Global Forward 'CP_OnChatMessageSendPre' has failed to fire. [Error code: %i]", error);
+                g_bHaveMessage[iAuthor] = false;
                 return;
             }
         
@@ -360,6 +375,9 @@ public void Frame_OnChatMessage(DataPack pack)
     Call_PushString(szFlags);
     Call_PushString(szFormat);
     Call_Finish();
+
+    // We have done all the things, now client don't have message in progress.
+    g_bHaveMessage[iAuthor] = false;
 
     //Close the recipients handle.
     delete aRecipients;
@@ -428,6 +446,8 @@ public void OnClientConnected(int client)
 {
     delete g_Tags[client];
     g_Tags[client] = new ArrayList(ByteCountToCells(MAXLENGTH_NAME));
+
+    g_bHaveMessage[client] = false;
 }
 
 public void OnClientDisconnect_Post(int client)

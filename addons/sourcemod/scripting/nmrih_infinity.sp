@@ -16,7 +16,7 @@ new Handle:hMaxStamina, Float:fMaxStamina,
     Handle:hInfAmmo, iInfAmmo,
     Handle:hInfStamina, bool:bInfStamina,
     bool:bTrue, bool:bMacheteEnable;
-ConVar hRecordEnable, hPKMode, hMacheteEnable;
+ConVar hPKMode, hMacheteEnable;
 
 public Plugin:myinfo =
 {
@@ -54,7 +54,6 @@ public OnPluginStart()
 
 public void OnConfigsExecuted()
 {
-    hRecordEnable = FindConVar("sm_record_enable");
     hPKMode = FindConVar("sm_pk_mode");
     hMacheteEnable = FindConVar("sm_machete_enable");
 }
@@ -228,7 +227,6 @@ public int Handle_VoteMenu(Menu menu, MenuAction action, int param1, int param2)
                 else
                 {
                     ServerCommand("sm_inf_stamina 1");
-                    hRecordEnable.IntValue = 0;
                 }
                 CPrintToChatAll(0, "{green}[系统]{white}已成功切换无限体力参数！");
             }	
@@ -298,7 +296,6 @@ public int Handle_VoteMenu2(Menu menu, MenuAction action, int param1, int param2
                 else
                 {
                     ServerCommand("sm_machete_enable 1");
-                    hRecordEnable.IntValue = 0;
                 }
                 CPrintToChatAll(0, "{green}[系统]{white}已成功切换全砍刀模式！");
             }	

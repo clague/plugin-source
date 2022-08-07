@@ -62,7 +62,7 @@ public Action PrintCountryInfo(Handle hTimer, any iClient) {
             strcopy(g_aszCode2[iClient], sizeof(g_aszCode2[]), "??");
         }
         FetchColoredName(iClient, szName, sizeof(szName));
-        if(GeoipRegion(szIp, szRegion, sizeof(szRegion), iClient))
+        if(GeoipCountryEx(szIp, szRegion, sizeof(szRegion), iClient))
         {
             CPrintToChatAll(0, "%t", "Announcer country found", szName, szRegion);
         }

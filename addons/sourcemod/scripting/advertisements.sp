@@ -267,6 +267,8 @@ void ParseAds()
 
 void RestartTimer()
 {
-    delete g_hTimer;
+    if (IsValidHandle(g_hTimer)) {
+        delete g_hTimer;
+    }
     g_hTimer = CreateTimer(g_hDefaultInterval.FloatValue, Timer_DisplayAd, _, TIMER_FLAG_NO_MAPCHANGE);
 }

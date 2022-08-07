@@ -1,0 +1,39 @@
+﻿"Phrases"
+{
+	"MenuTitle"
+	{
+		"en"	"Detect unexpected disconnect, restore your state?"
+		"chi"	"检测到掉线重连，是否恢复到掉线时的状态？"
+		"zho"	"檢測到掉線重連，是否恢復到掉線時的狀態？"
+	}
+	"Yes"
+	{
+		"en"	"Yes"
+		"chi"	"是"
+		"zho"	"是"
+	}
+	"No"
+	{
+		"en"	"No"
+		"chi"	"否"
+		"zho"	"否"
+	}
+	"Prefix"
+	{
+		"en"	"[Reconnect]"
+		"chi"	"[系统]"
+		"zho"	"[系統]"
+	}
+	"AlreadyAlive"
+	{
+		"en"	"You are already alive!"
+		"chi"	"你已经重生！"
+		"zho"	"你已經重生！"
+	}
+	"Notifi"
+	{
+		"en"	"You can choose to spawn yourself in 30s. Type !rspawn if you cannot see the menu."
+		"chi"	"你可以在30s内选择重生，如果无法看见菜单请发送{green}!rspawn{white}。"
+		"zho"	"你可以在30s內選擇重生，如果無法看見菜單請發送{green}!rspawn{white}。"
+	}
+}

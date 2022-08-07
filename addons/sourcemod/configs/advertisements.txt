@@ -2,54 +2,67 @@
 {
     "1"
     {
-        "chat"		"{green}[提示]{white} 当前地图：{red}{currentmap}"
+        "type"      "chat"
+        "message"   "{green}[提示]{white} 当前地图：{red}{currentmap}"
     }
     "2"
     {
-        "chat"		"{green}[提示]{white} 当前时间：{red}{date} {time24}"
+        "type"      "chat"
+        "message"   "{green}[提示]{white} 当前时间：{red}{date} {time24}"
     }
     "3"
     {
-    	"chat"		"{red}[提示]{white} 全跑模式难度较大，若技术不熟练，最好不要冲在前排送死"
+        "type"      "chat"
+        "message"   "{red}[提示]{white} 全跑模式难度较大，若技术不熟练，最好不要冲在前排送死"
     }
     "4"
     {
-        "chat"		"{green}[提示]{white} 输入{green}!top{white}或按{green}t{white}键查看总撤离次数排行榜"
+        "type"      "chat"
+        "message"   "{green}[提示]{white} 输入{green}!top{white}或按{green}t{white}键查看总撤离次数排行榜"
     }
     "5"
     {
-        "chat"		"{green}[提示]{white} 输入{green}!wr{white}查看本地图通关排行"
+        "type"      "chat"
+        "message"   "{green}[提示]{white} 输入{green}!wr{white}查看本地图通关排行"
     }
     "6"
     {
-        "chat"		"{green}[提示]{white} 撤离次数会改变名字的颜色"
+        "type"      "chat"
+        "message"   "{green}[提示]{white} 撤离次数会改变名字的颜色"
     }
     "7"
     {
-        "chat"		"{green}[提示]{white} 输入{green}!rm{white}自杀"
+        "type"      "chat"
+        "message"   "{green}[提示]{white} 输入{green}!rm{white}自杀"
     }
     "8"
     {
-        "chat"		"{green}[提示]{white} 输入{green}!auto{white}开启自动连跳"
+        "type"      "chat"
+        "message"   "{green}[提示]{white} 输入{green}!auto{white}开启自动连跳"
     }
     "9"
     {
-        "chat"		"{green}[提示]{white} 输入{green}!inf{white}发起投票切换无限体力，开启后将不记录通关"
+        "type"      "chat"
+        "message"   "{green}[提示]{white} 输入{green}!inf{white}发起投票切换无限体力，开启后将不记录通关"
     }
     "10"
     {
-        "chat"		"{green}[提示]{white} 输入{green}!model{white}或按m切换模型"
+        "type"      "chat"
+        "message"   "{green}[提示]{white} 输入{green}!model{white}或按m切换模型"
     }
     "11"
     {
-    	"chat"		"{green}[提示]{white} 输入{green}!m或!mb{white}+空格+{aqua}歌名{white}进行点歌，{green}!mb{white}会让歌曲在后台播放"
+        "type"      "chat"
+        "message"   "{green}[提示]{white} 输入{green}!m或!mb{white}+空格+{aqua}歌名{white}进行点歌，{green}!mb{white}会让歌曲在后台播放"
     }
     "12"
     {
-    	"chat"		"{green}[提示]{white} 输入{green}!jk {white}解卡"
+        "type"      "chat"
+        "message"   "{green}[提示]{white} 输入{green}!jk {white}解卡"
     }
     "13"
     {
-    	"chat"		"{green}[提示]{white} B站关注{green}嘉然今天吃什么"
+        "type"      "chat"
+        "message"   "{green}[提示]{white} B站关注{green}嘉然今天吃什么"
     }
 }

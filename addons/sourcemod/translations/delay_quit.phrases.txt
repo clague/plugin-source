@@ -1,0 +1,19 @@
+"Phrases"
+{
+	"Prefix"
+	{
+		"en"	"[SM]"
+        		"chi"	"[系统]"
+	}
+	"DelayQuitSet"
+	{
+		"en"	"Delay quit is set, when this round fail, this server will restart!"
+        		"chi"	"延迟重启已设置，当本轮失败时，服务器将重启！"
+	}
+	"ServerQuit"
+	{
+		"en"	"Server is quitting..."
+        		"chi"	"服务器正在重启..."
+	}
+}
+

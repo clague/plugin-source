@@ -67,7 +67,7 @@ methodmap TypedStringMap < StringMap
     /** @see StringMap.ContainsKey */
     public bool HasKey(const char[] key)
     {
-        #if TRIE_SUPPORTS_CONTAINSKEY
+        #if defined TRIE_SUPPORTS_CONTAINSKEY
         return this.ContainsKey(key);
         #else
         int dummy_int;

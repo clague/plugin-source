@@ -1293,3 +1293,7 @@ char[] GetTextFilePath()
 		BuildPath(Path_SM, path, PLATFORM_MAX_PATH, "data/mapchooser_history.txt");
 	return path;
 }
+
+any Native_GetMapList(Handle hPlugin, int nParams) {
+	return g_MapList;
+}

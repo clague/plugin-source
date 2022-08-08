@@ -38,7 +38,7 @@ public void OnPluginStart() {
 
     lang_count = ExplodeString(lang_str, " ", lang_list, 64, 10);
 
-    RegAdminCmd("sm_test", Test, ADMFLAG_GENERIC);
+    RegAdminCmd("sm_reloadtrans", CommandReloadTrans, ADMFLAG_GENERIC);
     RegAdminCmd("sm_trans", CommandTranslate, ADMFLAG_GENERIC);
     HookEvent("state_change", OnStateChange, EventHookMode_Pre);
 }
@@ -71,7 +71,7 @@ public void OnClientConnected(int client) {
     FormatEx(client_lang[client], sizeof(client_lang[]), "Original");
 }
 
-public void OnMapStart() {
+public void OnConfigsExecuted() { // we need wait for obj_translate_lang to be set
     GetCurrentMap(current_map_name, sizeof(current_map_name));
     GetMapDisplayName(current_map_name, current_map_name, sizeof(current_map_name));
 
@@ -152,9 +152,9 @@ public bool GetTranslatedMessage(int client, char[] obj_id,  char[] translated, 
     return true;
 }
 
-public Action Test(int client, int args) {
+public Action CommandReloadTrans(int client, int args) {
     UnhookUserMessage(GetUserMessageId("HudMsg"), GameTextHook, true);
-    OnMapStart();
+    OnConfigsExecuted();
     return Plugin_Handled;
 }
 
@@ -235,7 +235,7 @@ int ReadFromConfigs(const char map_name[128]) {
             kv.JumpToKey(lang_list[i], true);
             if (!objectives_original.GotoFirstSubKey(false))
             {
-                PrintToServer("[obj_translator] WARNING: No objective! Please check nmo file.");
+                LogError("No objective! Please check nmo file.");
                 return -1;
             }
             do {
@@ -275,7 +275,7 @@ int ReadFromNmo(const char map_name[128]) {
     File f = OpenFile(path, "rb", true,  NULL_STRING);
 
     if (!f) {
-        PrintToServer("[obj_translator] WARNING: Can't read %s.nmo", map_name);
+        LogError("Can't load %s.nmo", map_name);
         return -1;
     }
 
@@ -286,7 +286,7 @@ int ReadFromNmo(const char map_name[128]) {
     if (head != 'v' || version != 1)
     {
         CloseHandle(f);
-        PrintToServer("[obj_translator] WARNING: Invalid nmo file! Plugin outdate?");
+        LogError("Invalid nmo file! Plugin outdate?");
         return -1;
     }
 

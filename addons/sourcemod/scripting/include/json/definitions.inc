@@ -96,7 +96,7 @@ char JSON_PP_NEWLINE[32] = "\n";
 /** The longest representable integer ("-2147483648") + NULL terminator */
 #define JSON_INT_BUFFER_SIZE 12
 
-#if SM_INT64_SUPPORTED
+#if defined SM_INT64_SUPPORTED
 /** The longest representable int64 ("-9223372036854775808") + NULL terminator */
 #define JSON_INT64_BUFFER_SIZE 21
 #endif
@@ -126,7 +126,7 @@ enum JSONCellType {
     JSON_Type_Invalid = -1,
     JSON_Type_String = 0,
     JSON_Type_Int,
-    #if SM_INT64_SUPPORTED
+    #if defined SM_INT64_SUPPORTED
     JSON_Type_Int64,
     #endif
     JSON_Type_Float,

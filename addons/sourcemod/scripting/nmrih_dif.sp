@@ -134,7 +134,8 @@ public void OnConfigsExecuted() {
     ov_runner_chance_default = ov_runner_chance.FloatValue;
     ov_runner_kid_chance_default = ov_runner_kid_chance.FloatValue;
 
-    sm_gamemode.FloatValue = sm_gamemode_default.FloatValue;
+    sm_gamemode.IntValue = sm_gamemode_default.IntValue;
+    g_GameMode = view_as<GameMode>(sm_gamemode.IntValue);
     ConVarSet(g_GameMode);
 
     SetHostName();
@@ -203,11 +204,6 @@ void SetHostName() {
     
     FormatEx(buffer, 128, "%s（%.1f倍%s）", g_szHostName, density, difficulty);
     hostname.SetString(buffer);
-}
-
-public void OnMapStart() {
-    sm_gamemode.FloatValue = sm_gamemode_default.FloatValue;
-    g_GameMode = view_as<GameMode>(sm_gamemode_default.IntValue);
 }
 
 public void OnPluginEnd() {

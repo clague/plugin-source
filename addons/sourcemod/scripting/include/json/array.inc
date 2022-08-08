@@ -317,7 +317,7 @@ methodmap JSON_Array < JSON_Object
         return this.Super.GetInt(key, default_value);
     }
 
-    #if SM_INT64_SUPPORTED
+    #if defined SM_INT64_SUPPORTED
     /**
      * Converts index to a string ('key') and calls the relevant Super method.
      *
@@ -421,7 +421,7 @@ methodmap JSON_Array < JSON_Object
         return this.Super.SetInt(key, value);
     }
 
-    #if SM_INT64_SUPPORTED
+    #if defined SM_INT64_SUPPORTED
     /**
      * Converts index to a string ('key') and calls the relevant Super method.
      *
@@ -535,7 +535,7 @@ methodmap JSON_Array < JSON_Object
         return index;
     }
 
-    #if SM_INT64_SUPPORTED
+    #if defined SM_INT64_SUPPORTED
     /**
      * Pushes an int64 to the end of the array.
      *
@@ -713,7 +713,7 @@ methodmap JSON_Array < JSON_Object
                 case JSON_Type_Int: {
                     this.SetInt(newIndex, this.GetInt(oldIndex));
                 }
-                #if SM_INT64_SUPPORTED
+                #if defined SM_INT64_SUPPORTED
                 case JSON_Type_Int64: {
                     int value[2];
                     this.GetInt64(oldIndex, value);
@@ -791,7 +791,7 @@ methodmap JSON_Array < JSON_Object
                 case JSON_Type_Int: {
                     this.PushInt(from.GetInt(i));
                 }
-                #if SM_INT64_SUPPORTED
+                #if defined SM_INT64_SUPPORTED
                 case JSON_Type_Int64: {
                     int value[2];
                     from.GetInt64(i, value);

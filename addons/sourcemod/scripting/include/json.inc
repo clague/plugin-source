@@ -114,7 +114,7 @@ stock int json_encode_size(JSON_Object obj, int options = JSON_NONE, int depth =
             case JSON_Type_Int: {
                 size += JSON_INT_BUFFER_SIZE;
             }
-            #if SM_INT64_SUPPORTED
+            #if defined SM_INT64_SUPPORTED
             case JSON_Type_Int64: {
                 size += JSON_INT64_BUFFER_SIZE;
             }
@@ -217,7 +217,7 @@ stock void json_encode(
             case JSON_Type_Int: {
                 cell_length = JSON_INT_BUFFER_SIZE;
             }
-            #if SM_INT64_SUPPORTED
+            #if defined SM_INT64_SUPPORTED
             case JSON_Type_Int64: {
                 cell_length = JSON_INT64_BUFFER_SIZE;
             }
@@ -246,7 +246,7 @@ stock void json_encode(
                 int value = obj.GetInt(key);
                 IntToString(value, cell, cell_length);
             }
-            #if SM_INT64_SUPPORTED
+            #if defined SM_INT64_SUPPORTED
             case JSON_Type_Int64: {
                 int value[2];
                 obj.GetInt64(key, value);
@@ -579,7 +579,7 @@ stock JSON_Object json_decode(
 
                 if (json_is_int(cell)) {
                     int value = StringToInt(cell);
-                    #if SM_INT64_SUPPORTED
+                    #if defined SM_INT64_SUPPORTED
                     if (json_is_int64(cell, value)) {
                         int values[2];
                         StringToInt64(cell, values);

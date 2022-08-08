@@ -401,7 +401,7 @@ methodmap JSON_Object < MetaStringMap
      * @section Getters
      */
 
-    #if SM_INT64_SUPPORTED
+    #if defined SM_INT64_SUPPORTED
     /**
      * Retrieves the int64 stored at a key.
      *
@@ -463,7 +463,7 @@ methodmap JSON_Object < MetaStringMap
             && this.TrackKeyOrder(key);
     }
 
-    #if SM_INT64_SUPPORTED
+    #if defined SM_INT64_SUPPORTED
     /**
      * Sets the int64 stored at a key.
      *
@@ -586,7 +586,7 @@ methodmap JSON_Object < MetaStringMap
             case JSON_Type_Int: {
                 this.SetInt(to, this.GetInt(from));
             }
-            #if SM_INT64_SUPPORTED
+            #if defined SM_INT64_SUPPORTED
             case JSON_Type_Int64: {
                 int value[2];
                 this.GetInt64(from, value);
@@ -663,7 +663,7 @@ methodmap JSON_Object < MetaStringMap
                 case JSON_Type_Int: {
                     this.SetInt(key, from.GetInt(key));
                 }
-                #if SM_INT64_SUPPORTED
+                #if defined SM_INT64_SUPPORTED
                 case JSON_Type_Int64: {
                     int value[2];
                     from.GetInt64(key, value);

@@ -18,7 +18,6 @@ public Plugin myinfo =
 
 StringMap g_hChatColors;
 bool g_bMapChooser;
-bool g_bExtracted[MAXPLAYERS + 1];
 bool g_bProtobuf;
 
 static void AddChatColors() {
@@ -518,20 +517,8 @@ public void OnPluginStart() {
         g_bProtobuf = false;
     }
 
-    HookEventEx("player_extracted", Event_PlayerExtracted);
-
     RegAdminCmd("sm_testcolors", TestColor, ADMFLAG_GENERIC);
     RegAdminCmd("sm_testsaytext2", TestSayText2, ADMFLAG_GENERIC);
-}
-
-public void OnPluginEnd() {
-    UnhookEvent("player_extracted", Event_PlayerExtracted);
-}
-
-public void OnMapStart() {
-    for (int i = 0; i <= MaxClients; i++) {
-        g_bExtracted[i] = false;
-    }
 }
 
 public Action TestColor(int iClient, int nArgs) {
@@ -575,10 +562,6 @@ public Action TestSayText2(int iClient, int nArgs) {
     BfWriteString(hMsg, szText);
     EndMessage();
     return Plugin_Handled;
-}
-
-public void Event_PlayerExtracted(Event hEvent, const char[] szName, bool bDontBroadcast) {
-
 }
 
 public void OnLibraryAdded(const char[] name)

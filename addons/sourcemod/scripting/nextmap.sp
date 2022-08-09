@@ -130,7 +130,7 @@ public Action Command_List(int client, int args)
   
 void FindAndSetNextMap()
 {
-    Handle mapList = INVALID_HANDLE;
+    ArrayList mapList;
     if ((mapList = GetMapList()) == INVALID_HANDLE) {
         LogError("FATAL: Cannot load map cycle. Nextmap not loaded.");
         SetFailState("Mapcycle Not Found");
@@ -138,9 +138,8 @@ void FindAndSetNextMap()
     if (IsValidHandle(g_MapList) && mapList != g_MapList) {
         delete g_MapList;
     }
-    g_MapList = view_as<ArrayList>(mapList);
+    g_MapList = mapList;
     
-    int mapCount = g_MapList.Length;
     char mapName[PLATFORM_MAX_PATH];
     
     if (g_MapPos == -1)
@@ -148,16 +147,7 @@ void FindAndSetNextMap()
         char current[PLATFORM_MAX_PATH];
         GetCurrentMap(current, sizeof(current));
 
-        for (int i = 0; i < mapCount; i++)
-        {
-            g_MapList.GetString(i, mapName, sizeof(mapName));
-            if (FindMap(mapName, mapName, sizeof(mapName)) != FindMap_NotFound && 
-                strcmp(current, mapName, false) == 0)
-            {
-                g_MapPos = i;
-                break;
-            }
-        }
+        g_MapPos = g_MapList.FindString(current);
         
         if (g_MapPos == -1)
         {
@@ -166,7 +156,7 @@ void FindAndSetNextMap()
     }
     
     g_MapPos++;
-    if (g_MapPos >= mapCount)
+    if (g_MapPos >= g_MapList.Length)
     {
         g_MapPos = 0;
     }

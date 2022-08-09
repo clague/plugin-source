@@ -33,79 +33,76 @@
 
 #pragma semicolon 1
 #include <sourcemod>
+#include <mapchooser>
 
 #pragma newdecls required
 
 public Plugin myinfo =
 {
-	name = "RandomCycle",
-	author = "AlliedModders LLC",
-	description = "Randomly chooses the next map.",
-	version = SOURCEMOD_VERSION,
-	url = "http://www.sourcemod.net/"
+    name = "RandomCycle",
+    author = "AlliedModders LLC",
+    description = "Randomly chooses the next map.",
+    version = SOURCEMOD_VERSION,
+    url = "http://www.sourcemod.net/"
 };
 
 ConVar g_Cvar_ExcludeMaps;
 
 ArrayList g_MapList = null;
 ArrayList g_OldMapList = null;
-int g_mapListSerial = -1;
 
 public void OnPluginStart()
 {
-	int arraySize = ByteCountToCells(PLATFORM_MAX_PATH);	
-	g_MapList = new ArrayList(arraySize);
-	g_OldMapList = new ArrayList(arraySize);
+    int arraySize = ByteCountToCells(PLATFORM_MAX_PATH);	
+    g_MapList = new ArrayList(arraySize);
+    g_OldMapList = new ArrayList(arraySize);
 
-	g_Cvar_ExcludeMaps = CreateConVar("sm_randomcycle_exclude", "5", "Specifies how many past maps to exclude from the vote.", _, true, 0.0);
-	
-	AutoExecConfig(true, "randomcycle");
+    g_Cvar_ExcludeMaps = CreateConVar("sm_randomcycle_exclude", "5", "Specifies how many past maps to exclude from the vote.", _, true, 0.0);
+    
+    AutoExecConfig(true, "randomcycle");
 }
 
 public void OnConfigsExecuted()
 {
-	if (ReadMapList(g_MapList, 
-					g_mapListSerial, 
-					"randomcycle", 
-					MAPLIST_FLAG_CLEARARRAY|MAPLIST_FLAG_MAPSFOLDER)
-		== null)
-	{
-		if (g_mapListSerial == -1)
-		{
-			LogError("Unable to create a valid map list.");
-		}
-	}
-	
-	CreateTimer(5.0, Timer_RandomizeNextmap, _, TIMER_FLAG_NO_MAPCHANGE); // Small delay to give Nextmap time to complete OnMapStart()
+    Handle mapList = INVALID_HANDLE;
+    if ((mapList = GetMapList()) == INVALID_HANDLE) {
+        LogError("Unable to create a valid map list.");
+    }
+    if (IsValidHandle(g_MapList) && mapList != g_MapList) {
+        delete g_MapList;
+    }
+    g_MapList = view_as<ArrayList>(mapList);
+    
+    CreateTimer(5.0, Timer_RandomizeNextmap, _, TIMER_FLAG_NO_MAPCHANGE); // Small delay to give Nextmap time to complete OnMapStart()
 }
 
 public Action Timer_RandomizeNextmap(Handle timer)
 {
-	char map[PLATFORM_MAX_PATH];
-	char resolvedMap[PLATFORM_MAX_PATH];
+    char map[PLATFORM_MAX_PATH];
+    char resolvedMap[PLATFORM_MAX_PATH];
 
-	bool oldMaps = false;
-	if (g_Cvar_ExcludeMaps.IntValue && g_MapList.Length > g_Cvar_ExcludeMaps.IntValue)
-	{
-		oldMaps = true;
-	}
-	
-	do
-	{
-		int b = GetRandomInt(0, g_MapList.Length - 1);
-		g_MapList.GetString(b, map, sizeof(map));
-		FindMap(map, resolvedMap, sizeof(resolvedMap));
-	} while (oldMaps && g_OldMapList.FindString(resolvedMap) != -1);
-	
-	g_OldMapList.PushString(resolvedMap);
-	SetNextMap(map);
+    bool oldMaps = false;
+    if (g_Cvar_ExcludeMaps.IntValue && g_MapList.Length > g_Cvar_ExcludeMaps.IntValue)
+    {
+        oldMaps = true;
+    }
+    
+    do
+    {
+        int b = GetRandomInt(0, g_MapList.Length - 1);
+        g_MapList.GetString(b, map, sizeof(map));
+        FindMap(map, resolvedMap, sizeof(resolvedMap));
+    } while (oldMaps && g_OldMapList.FindString(resolvedMap) != -1);
+    
+    g_OldMapList.PushString(resolvedMap);
+    SetNextMap(map);
 
-	if (g_OldMapList.Length > g_Cvar_ExcludeMaps.IntValue)
-	{
-		g_OldMapList.Erase(0);
-	}
+    if (g_OldMapList.Length > g_Cvar_ExcludeMaps.IntValue)
+    {
+        g_OldMapList.Erase(0);
+    }
 
-	LogAction(-1, -1, "RandomCycle has chosen %s for the nextmap.", map);	
+    LogAction(-1, -1, "RandomCycle has chosen %s for the nextmap.", map);	
 
-	return Plugin_Stop;
+    return Plugin_Stop;
 }

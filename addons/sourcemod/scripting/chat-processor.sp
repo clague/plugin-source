@@ -305,13 +305,6 @@ public Action OnSayText2(UserMsg msg_id, BfRead hMsg, const int[] players, int p
     ReplaceString(szFormat, sizeof(szFormat), "%s1", szName);
     ReplaceString(szFormat, sizeof(szFormat), "%s2", szText);
 
-    // We need set this flag to true here and set false in the RequestFrame function
-    // to ensure that only one of SayText2 can be processed.
-    // Lately setting true is to avoid error causing client won't be able to say text
-    if (!g_bHaveMessage[iAuthor]) {
-        g_bHaveMessage[iAuthor] = true;
-    }
-
     DataPack pack = new DataPack();
     pack.WriteCell(iAuthor);
     pack.WriteCell(aRecipients);
@@ -320,6 +313,13 @@ public Action OnSayText2(UserMsg msg_id, BfRead hMsg, const int[] players, int p
     pack.WriteCell(iResults);
     
     RequestFrame(Frame_OnChatMessage, pack);
+
+    // We need set this flag to true here and set false in the RequestFrame function
+    // to ensure that only one of SayText2 can be processed.
+    // Lately setting true is to avoid error causing client won't be able to say text
+    if (!g_bHaveMessage[iAuthor]) {
+        g_bHaveMessage[iAuthor] = true;
+    }
 
     return Plugin_Stop;
 }

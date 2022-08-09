@@ -118,6 +118,20 @@ native void InitiateMapChooserVote(MapChange when, ArrayList inputarray=null);
 native bool HasEndOfMapVoteFinished();
 
 /**
+ * Get the map list so other plugins won't need to require multiple times
+ *
+ * @return              Map list if complete, INVALID_HANDLE if can't find a valid maplist.
+ */
+native ArrayList GetMapList();
+
+/**
+ * Get the map display name list so other plugins won't need to require multiple times
+ *
+ * @return              Map display name list if complete, INVALID_HANDLE if can't find a valid maplist.
+ */
+native ArrayList GetMapDisplayNameList();
+
+/**
  * Checks if MapChooser is set to run an end of map vote.
  *
  * @return              True if enabled, false otherwise.

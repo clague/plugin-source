@@ -79,6 +79,7 @@ Handle g_RetryTimer = null;
 // g_OldMapList and g_NextMapList are resolved. g_NominateList depends on the nominations implementation.
 /* Data Handles */
 ArrayList g_MapList;
+ArrayList g_MapDisplayNameList;
 ArrayList g_NominateList;
 ArrayList g_NominateOwners;
 ArrayList g_OldMapList;
@@ -113,6 +114,7 @@ public void OnPluginStart()
 	
 	int arraySize = ByteCountToCells(PLATFORM_MAX_PATH);
 	g_MapList = new ArrayList(arraySize);
+	g_MapDisplayNameList = new ArrayList(arraySize);
 	g_NominateList = new ArrayList(arraySize);
 	g_NominateOwners = new ArrayList();
 	g_OldMapList = new ArrayList(arraySize);
@@ -200,23 +202,16 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("GetExcludeMapList", Native_GetExcludeMapList);
 	CreateNative("GetNominatedMapList", Native_GetNominatedMapList);
 	CreateNative("EndOfMapVoteEnabled", Native_EndOfMapVoteEnabled);
+	CreateNative("GetMapList", Native_GetMapList);
+	CreateNative("GetMapDisplayNameList", Native_GetMapDisplayNameList);
 
 	return APLRes_Success;
 }
 
 public void OnConfigsExecuted()
 {
-	if (ReadMapList(g_MapList,
-					 g_mapFileSerial, 
-					 "mapchooser",
-					 MAPLIST_FLAG_CLEARARRAY|MAPLIST_FLAG_MAPSFOLDER)
-		!= null)
-		
-	{
-		if (g_mapFileSerial == -1)
-		{
-			LogError("Unable to create a valid map list.");
-		}
+	if (INVALID_HANDLE == LoadMapList(true)) {
+		LogError("Unable to create a valid map list.");
 	}
 	
 	/* First-load previous maps from a text file when persistency is enabled. */
@@ -976,42 +971,41 @@ void CreateNextVote()
 {
 	g_NextMapList.Clear();
 	
-	char map[PLATFORM_MAX_PATH];
-	// tempMaps is a resolved map list
-	ArrayList tempMaps = new ArrayList(ByteCountToCells(PLATFORM_MAX_PATH));
-	
-	for (int i = 0; i < g_MapList.Length; i++)
-	{
-		g_MapList.GetString(i, map, sizeof(map));
-		if (FindMap(map, map, sizeof(map)) != FindMap_NotFound)
-		{
-			tempMaps.PushString(map);
-		}
-	}
-	
-	//GetCurrentMap always returns a resolved map
-	GetCurrentMap(map, sizeof(map));
-	RemoveStringFromArray(tempMaps, map);
-	
-	if (g_Cvar_ExcludeMaps.IntValue && tempMaps.Length > g_Cvar_ExcludeMaps.IntValue)
-	{
-		for (int i = 0; i < g_OldMapList.Length; i++)
-		{
-			g_OldMapList.GetString(i, map, sizeof(map));
-			RemoveStringFromArray(tempMaps, map);
-		}
-	}
+	char map[PLATFORM_MAX_PATH], currentmap[PLATFORM_MAX_PATH];
 
-	int limit = (g_Cvar_IncludeMaps.IntValue < tempMaps.Length ? g_Cvar_IncludeMaps.IntValue : tempMaps.Length);
-	for (int i = 0; i < limit; i++)
-	{
-		int b = GetRandomInt(0, tempMaps.Length - 1);
-		tempMaps.GetString(b, map, sizeof(map));		
-		g_NextMapList.PushString(map);
-		tempMaps.Erase(b);
+	// tempMaps is a resolved map list
+	int[] tempMaps = new int[g_MapList.Length];
+	int len = g_MapList.Length;
+
+	for (int i = 0; i < g_MapList.Length; i++) {
+		tempMaps[i] = i;
 	}
 	
-	delete tempMaps;
+	bool bExcludeOldMaps = (g_Cvar_ExcludeMaps.IntValue && g_MapList.Length > g_Cvar_ExcludeMaps.IntValue);
+
+	int limit = g_MapList.Length - g_OldMapList.Length;
+	limit = (g_Cvar_IncludeMaps.IntValue < limit ? g_Cvar_IncludeMaps.IntValue : limit);
+
+	bool bCheckCurrent = true;
+	//GetCurrentMap always returns a resolved map
+	GetCurrentMap(currentmap, sizeof(currentmap));
+
+	int i = 0;
+	while (i < limit && len > 0)
+	{
+		int b = GetRandomInt(0, len - 1);
+		g_MapList.GetString(tempMaps[b], map, sizeof(map));
+		if (bExcludeOldMaps && g_OldMapList.FindString(map) != -1) {}
+		else if (bCheckCurrent && strcmp(map, currentmap)) {
+			bCheckCurrent = false;
+		}
+		else {
+			g_NextMapList.PushString(map);
+			i++;
+		}
+		tempMaps[b] = tempMaps[len - 1];
+		len--;
+	}
 }
 
 bool CanVoteStart()
@@ -1295,5 +1289,48 @@ char[] GetTextFilePath()
 }
 
 any Native_GetMapList(Handle hPlugin, int nParams) {
+	return LoadMapList();
+}
+
+any Native_GetMapDisplayNameList(Handle hPlugin, int nParams) {
+	LoadMapList();
+	return g_MapDisplayNameList;
+}
+
+Handle LoadMapList(bool bForceLoad=false) {
+	if ((!IsValidHandle(g_MapList) || g_MapList.Length <= 0) || bForceLoad) {
+		if (INVALID_HANDLE == ReadMapList(g_MapList,
+			g_mapFileSerial, 
+			"mapchooser",
+			MAPLIST_FLAG_CLEARARRAY|MAPLIST_FLAG_MAPSFOLDER)) {
+			
+			LogMessage("ReadMapList return INVALID_HANDLE, g_MapList's Length: %d, serial: %d", g_MapList.Length, g_mapFileSerial);
+			if (g_mapFileSerial == -1) {
+				return INVALID_HANDLE;
+			}
+		}
+		else {
+			char map[PLATFORM_MAX_PATH], displayName[PLATFORM_MAX_PATH];
+			FindMapResult res;
+			for (int i = 0; i < g_MapList.Length; i++)
+			{
+				g_MapList.GetString(i, map, sizeof(map));
+				res = FindMap(map, map, sizeof(map));
+				if (res == FindMap_NotFound)
+				{
+					g_MapList.Erase(i);
+					i--;
+				}
+				else {
+					if (res != FindMap_Found) {
+						g_MapList.SetString(i, map);
+					}
+					GetMapDisplayName(map, displayName, sizeof(displayName));
+					g_MapDisplayNameList.PushString(displayName);
+				}
+			}
+		}
+		LogMessage("After reading, g_MapList's Length: %d, Serial: %d", g_MapList.Length, g_mapFileSerial);
+	}
 	return g_MapList;
 }

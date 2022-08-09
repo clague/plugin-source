@@ -52,7 +52,6 @@ ConVar g_Cvar_MaxMatches;
 
 Menu g_MapMenu = null;
 ArrayList g_MapList = null;
-int g_mapFileSerial = -1;
 
 #define MAPSTATUS_ENABLED (1<<0)
 #define MAPSTATUS_DISABLED (1<<1)
@@ -83,21 +82,20 @@ public void OnPluginStart()
 
 public void OnConfigsExecuted()
 {
-    LogMessage("Start build map menu!");
-    if (ReadMapList(g_MapList,
-                    g_mapFileSerial,
-                    "nominations",
-                    MAPLIST_FLAG_CLEARARRAY|MAPLIST_FLAG_MAPSFOLDER)
-        == null)
-    {
-        if (g_mapFileSerial == -1)
-        {
-            SetFailState("Unable to create a valid map list.");
-        }
+    LogMessage("Start read map list");
+    Handle mapList = INVALID_HANDLE;
+    if ((mapList = GetMapList()) == INVALID_HANDLE) {
+        SetFailState("Unable to create a valid map list.");
     }
-    LogMessage("Finish read map list!");
+    if (IsValidHandle(g_MapList) && mapList != g_MapList) {
+        delete g_MapList;
+    }
+    g_MapList = view_as<ArrayList>(mapList);
+
+    LogMessage("Finish read map list and Build map menu");
     BuildMapMenu();
-    LogMessage("Finish build map menu!");
+
+    LogMessage("Finish build map menu");
 }
 
 public void OnNominationRemoved(const char[] map, int owner)
@@ -243,13 +241,15 @@ public Action Command_Nominate(int client, int args)
         // Display results to the client and end
         Menu menu = new Menu(MenuHandler_MapSelect, MENU_ACTIONS_DEFAULT|MenuAction_DrawItem|MenuAction_DisplayItem);
         menu.SetTitle("Select map");
+
+        ArrayList displayNameList = GetMapDisplayNameList();
+        char displayName[PLATFORM_MAX_PATH];
         
         for (int i = 0; i < results.Length; i++)
         {
             g_MapList.GetString(results.Get(i), mapResult, sizeof(mapResult));
 
-            char displayName[PLATFORM_MAX_PATH];
-            GetMapDisplayName(mapResult, displayName, sizeof(displayName));
+            displayNameList.GetString(results.Get(i), displayName, sizeof(displayName));
 
             menu.AddItem(mapResult, displayName);
         }
@@ -314,7 +314,7 @@ void AttemptNominate(int client, const char[] map, int size)
         return;		
     }
     
-    if ((status & MAPSTATUS_DISABLED) == MAPSTATUS_DISABLED) 
+    if ((status & MAPSTATUS_DISABLED) == MAPSTATUS_DISABLED)
     {
         if ((status & MAPSTATUS_EXCLUDE_CURRENT) == MAPSTATUS_EXCLUDE_CURRENT)
         {
@@ -379,15 +379,15 @@ void BuildMapMenu()
     
     g_MapMenu = new Menu(MenuHandler_MapSelect, MENU_ACTIONS_DEFAULT|MenuAction_DrawItem|MenuAction_DisplayItem);
 
-    char map[PLATFORM_MAX_PATH], displayName[PLATFORM_MAX_PATH], index[5];
+    char map[PLATFORM_MAX_PATH], displayName[PLATFORM_MAX_PATH];
     
+    ArrayList mapDisplayNameList = GetMapDisplayNameList();
     for (int i = 0; i < g_MapList.Length; i++) {
-        IntToString(i, index, 5);
         g_MapList.GetString(i, map, sizeof(map));
-        GetMapDisplayName(map, displayName, sizeof(displayName));
+        mapDisplayNameList.GetString(i, displayName, sizeof(displayName));
         
-        g_MapMenu.AddItem(index, displayName);
-        g_mapTrie.SetValue(index, MAPSTATUS_ENABLED);
+        g_MapMenu.AddItem(map, displayName);
+        g_mapTrie.SetValue(map, MAPSTATUS_ENABLED);
     }
 
     if (g_Cvar_ExcludeOld.BoolValue) {

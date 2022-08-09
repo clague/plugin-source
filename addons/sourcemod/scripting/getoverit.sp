@@ -13,12 +13,15 @@ public Plugin myInfo = {
     url = ""
 }
 
+#define MAX_COLOR_LEN 32
+#define MAX_QUERY_LEN 512
+
 Handle db = INVALID_HANDLE;
-char g_user_name_color[MAXPLAYERS + 1][20];
+char g_user_name_color[MAXPLAYERS + 1][MAX_COLOR_LEN];
 ConVar record_enable;
 bool enable = true;
 
-char g_rank_color[11][32] = {
+char g_rank_color[11][MAX_COLOR_LEN] = {
     "{white}",
     "{navajowhite}",
     "{yellow}",
@@ -76,7 +79,7 @@ public OnConVarChange(Handle CVar, const char[] oldValue, const char[] newValue)
 }
 
 public InitializeDB() {
-    char error[255];
+    char error[MAX_SAYTEXT2_LEN];
     KeyValues kv = CreateKeyValues("");
     KvSetString(kv, "driver", "sqlite");
     KvSetString(kv, "database", "extraction_times");
@@ -102,8 +105,8 @@ public void OnPlayerExtraction(Event e, const char[] n, bool b) {
         return;
     int client = e.GetInt("player_id");
 
-    char steam_id[40] = {0};
-    char buffer[200] = {0};
+    char steam_id[64] = {0};
+    char buffer[MAX_QUERY_LEN] = {0};
 
     if(client && IsClientConnected(client) && !IsFakeClient(client)) {
         GetClientAuthId(client, AuthId_SteamID64, steam_id, sizeof(steam_id));
@@ -117,7 +120,7 @@ public void AfterQuery(Handle owner, Handle hndl, const char[] error, any data) 
     if(!IsClientInGame(data))
         return;
 
-    char steam_id[20], name[MAX_NAME_LEN], buffer[500];
+    char steam_id[64], name[MAX_NAME_LEN], buffer[MAX_QUERY_LEN];
     int times = 0;
     bool need_insert = false;
 
@@ -132,7 +135,7 @@ public void AfterQuery(Handle owner, Handle hndl, const char[] error, any data) 
         times = SQL_FetchInt(hndl, 2);
     else need_insert = true;
     times++;
-    strcopy(g_user_name_color[data], 20, g_rank_color[GetColorIndexFromTimes(times)]);
+    strcopy(g_user_name_color[data], sizeof(g_user_name_color[]), g_rank_color[GetColorIndexFromTimes(times)]);
 
     //GetColoredName(data, colored_name, sizeof(colored_name));
     //Format(buffer, sizeof(buffer), "{white}幸存者** %s {white}**已经撤离！", colored_name);
@@ -151,8 +154,8 @@ public void AfterReplace(Handle owner, Handle hndl, const char[] error, any data
 }
 
 public Action OnClientPreAdminCheck(int client) {
-    char steam_id[40] = {0};
-    char buffer[200] = {0};
+    char steam_id[64] = {0};
+    char buffer[MAX_QUERY_LEN] = {0};
     if(client && IsClientConnected(client) && !IsFakeClient(client)) {
         GetClientAuthId(client, AuthId_SteamID64, steam_id, sizeof(steam_id));
 
@@ -165,24 +168,24 @@ public Action OnClientPreAdminCheck(int client) {
 
 public void ApplyNameColor(Handle owner, Handle hndl, const char[] error, any data) {
     int times = 0;
-    char name[MAX_NAME_LEN], name_1[MAX_NAME_LEN], buffer[500];
+    char name[MAX_NAME_LEN], name_1[MAX_NAME_LEN], buffer[MAX_QUERY_LEN];
     GetClientName(data, name_1, 128);
     if(hndl == INVALID_HANDLE) {
         PrintToServer("Error when query %s!", name);
-        strcopy(g_user_name_color[data], 20, g_rank_color[0]);
+        strcopy(g_user_name_color[data], sizeof(g_user_name_color[]), g_rank_color[0]);
         return ;
     }
     else if(SQL_FetchRow(hndl)) {
         SQL_FetchString(hndl, 1, name, sizeof(name));
         times = SQL_FetchInt(hndl, 2);
-        if (times >= 100) strcopy(g_user_name_color[data], 20, "{rainbow}");
-        else strcopy(g_user_name_color[data], 20, g_rank_color[GetColorIndexFromTimes(times)]);
+        if (times >= 100) strcopy(g_user_name_color[data], sizeof(g_user_name_color[]), "rainbow");
+        else strcopy(g_user_name_color[data], sizeof(g_user_name_color[]), g_rank_color[GetColorIndexFromTimes(times)]);
         if(strcmp(name, name_1) != 0) {
             Format(buffer, sizeof(buffer), "UPDATE extraction_times SET name = '%s' WHERE name = '%s'", name_1, name);
             SQL_TQuery(db, AfterNameUpdate, buffer, data);
         }
     }
-    else strcopy(g_user_name_color[data], 20, g_rank_color[0]);
+    else strcopy(g_user_name_color[data], sizeof(g_user_name_color[]), g_rank_color[0]);
     GetColoredName(data, name, sizeof(name));
     Format(buffer, MAX_SAYTEXT2_LEN, "幸存者 %s {white}总撤离次数为 %i！", name, times);
     CPrintToChatAll(0, buffer);
@@ -200,7 +203,7 @@ public void OnClientDisconnect(int client) {
 void StringRainbow(const char[] input, char[] output, int maxLen) {
     int bytes = 0, buffs = 0;
     int size = strlen(input), color_index = GetRandomInt(0, 4);
-    int char_len = 0, chars_width[256];
+    int char_len = 0, chars_width[MAX_SAYTEXT2_LEN];
     output[0] = '\0';
 
     for (int x = 0; x < size; ++x) {
@@ -251,8 +254,8 @@ void StringRainbow(const char[] input, char[] output, int maxLen) {
 }
 
 public Action ShowTopRankToClient_p1(int client, int args) {
-    char buffer[200];
-    Format(buffer, 200, "SELECT name, times FROM extraction_times ORDER BY times DESC LIMIT 10");
+    char buffer[MAX_QUERY_LEN];
+    Format(buffer, sizeof(buffer), "SELECT name, times FROM extraction_times ORDER BY times DESC LIMIT 10");
     SQL_TQuery(db, ShowTopRankToClient_p2, buffer, client);
     return Plugin_Continue;
 }
@@ -262,22 +265,21 @@ public void ShowTopRankToClient_p2(Handle:owner, Handle:hndl, const String:error
         PrintToServer("Last Connect SQL Error: %s", error);
     }
     int top = 0, times = 0;
-    char buffer[10][MAX_SAYTEXT2_LEN], name[MAX_NAME_LEN] = {0};
+    char buffer[10][MAX_SAYTEXT2_LEN], name[MAX_NAME_LEN] = {0}, color[MAX_COLOR_LEN];
     while(SQL_FetchRow(hndl) && top < 10) {
-        char color[20];
-        strcopy(color, 20, g_rank_color[0]);
+        strcopy(color, sizeof(color), g_rank_color[0]);
         SQL_FetchString(hndl, 0, name, sizeof(name));
         times = SQL_FetchInt(hndl, 1);
         top++;
         if (times >= 100) {
             char newname[MAX_NAME_LEN];
             StringRainbow(name, newname, sizeof(newname));
-            Format(buffer[top-1], sizeof(buffer[]), "TOP %i：幸存者 %s {white}总共撤离 {red}%i {white}次", 
+            FormatEx(buffer[top-1], sizeof(buffer[]), "TOP %i：幸存者 %s {white}总共撤离 {red}%i {white}次", 
                     top, newname, times);
         }
         else {
-            strcopy(color, 20, g_rank_color[GetColorIndexFromTimes(times)]);
-            Format(buffer[top-1], sizeof(buffer[]), "TOP %i：幸存者 {%s}%s {white}总共撤离 {red}%i {white}次", 
+            strcopy(color, sizeof(g_rank_color[]), g_rank_color[GetColorIndexFromTimes(times)]);
+            FormatEx(buffer[top-1], sizeof(buffer[]), "TOP %i：幸存者 %s%s {white}总共撤离 {red}%i {white}次", 
                     top, color, name, times);
         }
     }
@@ -310,7 +312,7 @@ public void GetColoredName(int client, char[] new_name, int max_len) {
     if (g_user_name_color[client][0] == '\0') {
         Format(new_name, max_len, "%s%s\x01", g_rank_color[0], name);
     }
-    else if (strcmp(g_user_name_color[client], "{rainbow}") != 0) {
+    else if (strcmp(g_user_name_color[client], "rainbow") != 0) {
         Format(new_name, max_len, "%s%s\x01", g_user_name_color[client], name);
     }
     else {

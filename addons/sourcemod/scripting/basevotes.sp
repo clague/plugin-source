@@ -34,6 +34,7 @@
 #pragma semicolon 1
 
 #include <sourcemod>
+#include <mapchooser>
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
 

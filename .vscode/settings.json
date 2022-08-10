@@ -1,5 +1,5 @@
 {
-    "sourcepawn.MainPath": "/home/clague/Documents/Program/plugin-source/addons/sourcemod/scripting/mapchooser.sp",
+    "sourcepawn.MainPath": "${file}",
     "sourcepawn.outputDirectoryPath": "/home/clague/Documents/Program/plugin-source/addons/sourcemod/plugins/",
     "sourcepawn.SourcemodHome": "/home/clague/Documents/Program/plugin-source/addons/sourcemod/scripting/include"
 }

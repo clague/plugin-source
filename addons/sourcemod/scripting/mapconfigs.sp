@@ -124,6 +124,7 @@ public ExecuteMapSpecificConfigs() {
 
 	if(size == 0) {
 		PushArrayString(adt_configs, "default.cfg");
+		size++;
 	}
 	
 	for (new i=0; i<size; ++i) {

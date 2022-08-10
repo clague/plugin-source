@@ -32,7 +32,7 @@ char g_rank_color[11][MAX_COLOR_LEN] = {
     "{orange}",
     "{crimson}",
     "{darkred}",
-    "{rainbow}"
+    "rainbow"
 };
 
 char g_color_group[][][32] = {

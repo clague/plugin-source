@@ -210,9 +210,13 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnConfigsExecuted()
 {
+	float time = GetEngineTime();
 	if (INVALID_HANDLE == LoadMapList(true)) {
 		LogError("Unable to create a valid map list.");
 	}
+
+	time  = GetEngineTime() - time;
+	LogMessage("A force map list reload cost %f seconds", time);
 	
 	/* First-load previous maps from a text file when persistency is enabled. */
 	static bool g_FirstConfigExec = true;

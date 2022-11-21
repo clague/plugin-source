@@ -1,68 +1,93 @@
-﻿"Advertisements"
+"Advertisements"
 {
-    "1"
-    {
-        "type"      "chat"
-        "message"   "{green}[提示]{white} 当前地图：{red}{currentmap}"
-    }
-    "2"
-    {
-        "type"      "chat"
-        "message"   "{green}[提示]{white} 当前时间：{red}{date} {time24}"
-    }
-    "3"
-    {
-        "type"      "chat"
-        "message"   "{red}[提示]{white} 全跑模式难度较大，若技术不熟练，最好不要冲在前排送死"
-    }
-    "4"
-    {
-        "type"      "chat"
-        "message"   "{green}[提示]{white} 输入{green}!top{white}或按{green}t{white}键查看总撤离次数排行榜"
-    }
-    "5"
-    {
-        "type"      "chat"
-        "message"   "{green}[提示]{white} 输入{green}!wr{white}查看本地图通关排行"
-    }
-    "6"
-    {
-        "type"      "chat"
-        "message"   "{green}[提示]{white} 撤离次数会改变名字的颜色"
-    }
-    "7"
-    {
-        "type"      "chat"
-        "message"   "{green}[提示]{white} 输入{green}!rm{white}自杀"
-    }
-    "8"
-    {
-        "type"      "chat"
-        "message"   "{green}[提示]{white} 输入{green}!auto{white}开启自动连跳"
-    }
-    "9"
-    {
-        "type"      "chat"
-        "message"   "{green}[提示]{white} 输入{green}!inf{white}发起投票切换无限体力，开启后将不记录通关"
-    }
-    "10"
-    {
-        "type"      "chat"
-        "message"   "{green}[提示]{white} 输入{green}!model{white}或按m切换模型"
-    }
-    "11"
-    {
-        "type"      "chat"
-        "message"   "{green}[提示]{white} 输入{green}!m或!mb{white}+空格+{aqua}歌名{white}进行点歌，{green}!mb{white}会让歌曲在后台播放"
-    }
-    "12"
-    {
-        "type"      "chat"
-        "message"   "{green}[提示]{white} 输入{green}!jk {white}解卡"
-    }
-    "13"
-    {
-        "type"      "chat"
-        "message"   "{green}[提示]{white} B站关注{green}嘉然今天吃什么"
-    }
+	"1"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} 当前地图：{red}{currentmap}"
+	}
+	"2"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} 当前时间：{red}{date} {time24}"
+	}
+	"3"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} 服务器5点自动更新地图，6点自动重启"
+	}
+	"4"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} 输入!motd查看更新日志"
+	}
+	"5"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} 输入{green}!top{white}查看总撤离次数排行榜"
+	}
+	"6"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} 输入{green}!wr{white}查看本地图通关排行"
+	}
+	"7"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} 撤离次数会改变名字的颜色"
+	}
+	"8"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} 输入{green}!rm{white}自杀"
+	}
+	"9"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} 输入{green}!auto{white}开启自动连跳"
+	}
+	"10"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} 输入{green}!dif{white}自定义难度，输入{green}!difshow{white}显示当前难度"
+	}
+	"11"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} 输入{green}!model{white}或按m切换模型"
+	}
+	"12"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} 输入{green}!speed{white}显示速度"
+	}
+	"13"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} 输入{green}!jk{white}解卡"
+	}
+	"14"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} 使用 {springgreen}/{white} 代替 {turquoise}!{white} 作为前缀可以静默发送指令"
+	}
+	"15"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} {green}!mark{white}指令可以标记你眼前的物品，绑定键位更加方便"
+	}
+	"16"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} 目前是否记录通关：{sm_record_enable_rt}，下回合开始时是否记录通关：{sm_record_enable}"
+	}
+	"17"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} 所有地图图文列表：https://b23.tv/YHt2Nlf"
+	}
+	"18"
+	{
+		"type"		"chat"
+		"message"	"{green}[提示]{white} B站关注{green}嘉然今天吃什么"
+	}
 }

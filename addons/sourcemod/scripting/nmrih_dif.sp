@@ -84,7 +84,7 @@ public Plugin myinfo = {
 }
 
 public void OnPluginStart() {
-    LoadTranslations("nmrih.diff.phrases");
+    LoadTranslations("nmrih.dif.phrases");
     hostname = FindConVar("hostname");
 
     sv_max_runner_chance = FindConVar("sv_max_runner_chance");

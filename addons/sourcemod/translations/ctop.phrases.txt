@@ -3,8 +3,8 @@
 	"Complete"
 	{
 		"#format"	"{1:s},{2:s},{3:d},{4:d},{5:d}"
-		"en"		"\x0A {1}\x01 finished in\x0F {2}\x01 with\x02 {3}\x01 deaths and\x07 {4}\x01 kills (\x06 {5}\x01 completions)"
-		"chi"		"\x0A {1}\x01 在\x0F {2}\x01 时间内以\x02 {3}\x01 次死亡、\x07 {4}\x01 次击杀撤离！(通关\x06{5}\x01 次)"
+		"en"		"{aqua} {1}{white} finished in{green} {2}{white} with{red} {3}{white} deaths and{red} {4}{white} kills ({deeppink} {5}{white} completions)"
+		"chi"		"{aqua} {1}{white} 在{green} {2}{white} 时间内以{red} {3}{white} 次死亡、{red} {4}{white} 次击杀撤离！(通关{deeppink}{5}{white} 次)"
 	}
 	"Chat"
 	{

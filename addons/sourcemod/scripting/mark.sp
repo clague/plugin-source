@@ -15,7 +15,7 @@ public Plugin MyInfo = {
 };
 
 int g_iMarkItemEntRef[MAXPLAYERS + 1];
-float g_fHitposRelative[MAXPLAYERS + 1][3];
+int g_iMarkMessageEntRef[MAXPLAYERS + 1];
 float g_fLastMarkTime[MAXPLAYERS + 1];
 Handle g_hMarkTimer[MAXPLAYERS + 1];
 Handle g_hUpdatePointMessageTimer[MAXPLAYERS + 1];
@@ -27,7 +27,7 @@ ConVar sm_mark_hull_size;
 ConVar sm_mark_message_radius;
 
 public void OnPluginStart() {
-    LoadTranslations("mark.phrases");
+    //LoadTranslations("mark.phrases");
 
     sm_mark_inactive_interval = CreateConVar("sm_mark_inactive_interval", "10.0", "Interval that a mark automatically disappear, in seconds.");
     sm_mark_cooldown_interval = CreateConVar("sm_mark_cooldown_interval", "1.0", "Interval between two mark action for a player, in seconds.");
@@ -80,7 +80,7 @@ Action CmdMark(int iClient, int nArgs) {
 
         //disglow last mark
         if (g_iMarkItemEntRef[iClient] != 0) {
-            UnmarkEntity(g_iMarkItemEntRef[iClient], iClient);
+            UnmarkEntity(iClient);
 
             if (EntRefToEntIndex(g_iMarkItemEntRef[iClient]) == iHitEntity) {
                 g_iMarkItemEntRef[iClient] = 0;
@@ -160,33 +160,8 @@ void MarkEntity(int iEntity, int iClient, float fHitPos[3])
     }
     g_iMarkItemEntRef[iClient] = EntIndexToEntRef(iEntity);
 
-    g_hUpdatePointMessageTimer[iClient] = CreateTimer(0.25, Timer_UpdatePointMessage, iClient, TIMER_REPEAT);
+    int iMessageEnt = CreateEntityByName("point_message_multiplayer");
 
-    float fEntOrigin[3];
-    GetEntPropVector(iEntity, Prop_Send, "m_vecOrigin", fEntOrigin);
-    g_fHitposRelative[iClient][0] = fHitPos[0] - fEntOrigin[0];
-    g_fHitposRelative[iClient][1] = fHitPos[1] - fEntOrigin[1];
-    g_fHitposRelative[iClient][2] = fHitPos[2] - fEntOrigin[2];
-
-    Timer_UpdatePointMessage(INVALID_HANDLE, iClient);
-    
-    DispatchKeyValue(iEntity, "glowable", "1");
-    DispatchKeyValueFloat(iEntity, "glowdistance", 99999999999.0);
-    DispatchKeyValue(iEntity, "glowcolor", /*isFull ? "255 0 0" :*/ "0 255 0"); // same as item pickup
-
-    RequestFrame(FrameMarkEntity, iClient);
-    
-    if (IsValidHandle(g_hMarkTimer[iClient])) {
-        CloseHandle(g_hMarkTimer[iClient]);
-    }
-    g_hMarkTimer[iClient] = CreateTimer(sm_mark_inactive_interval.FloatValue, TimerUnmarkForClient, iClient);
-}
-Action Timer_UpdatePointMessage(Handle timer, int iClient) {
-    int iEntity = EntRefToEntIndex(g_iMarkItemEntRef[iClient]);
-    if (!IsValidEntity(iEntity)) {
-        StopPointMessage(iClient);
-        return Plugin_Stop;
-    }
     char szMessage[64];
     if (IsClientInGame(iClient)) {
         FormatEx(szMessage, 128, "%N 的标记", iClient);
@@ -194,86 +169,53 @@ Action Timer_UpdatePointMessage(Handle timer, int iClient) {
     else {
         FormatEx(szMessage, 128, "某离开服务器玩家的标记");
     }
+    DispatchKeyValue(iMessageEnt, "message", szMessage);
+    DispatchKeyValue(iMessageEnt, "font", "PointMessageDefault");
+    DispatchKeyValue(iMessageEnt, "color", "105 105 105");
+    DispatchKeyValueInt(iMessageEnt, "fontproportional", 1);
+    DispatchKeyValueInt(iMessageEnt, "fontdropshadow", 1);
+    DispatchKeyValueFloat(iMessageEnt, "radius", sm_mark_message_radius.FloatValue);
+    DispatchSpawn(iMessageEnt);
 
-    float fEntOrigin[3];
-    GetEntPropVector(iEntity, Prop_Send, "m_vecOrigin", fEntOrigin);
-    fEntOrigin[0] += g_fHitposRelative[iClient][0];
-    fEntOrigin[1] += g_fHitposRelative[iClient][1];
-    fEntOrigin[2] += g_fHitposRelative[iClient][2];
+    TeleportEntity(iMessageEnt, fHitPos, NULL_VECTOR, NULL_VECTOR);
 
-    SendPointMessage(szMessage, iClient, fEntOrigin);
-    return Plugin_Continue;
-}
+    SetVariantString("!activator");
+    AcceptEntityInput(iMessageEnt, "SetParent", iEntity);
 
-void FrameMarkEntity(int iClient) {
-    int iEntity = EntRefToEntIndex(g_iMarkItemEntRef[iClient]);
-    if (IsValidEntity(iEntity)) {
-        AcceptEntityInput(iEntity, "enableglow");
+    g_iMarkMessageEntRef[iClient] = EntIndexToEntRef(iMessageEnt);
+    
+    DispatchKeyValue(iEntity, "glowable", "1");
+    DispatchKeyValueFloat(iEntity, "glowdistance", 99999999999.0);
+    DispatchKeyValue(iEntity, "glowcolor", /*isFull ? "255 0 0" :*/ "0 255 0"); // same as item pickup
+    AcceptEntityInput(iEntity, "enableglow");
+    
+    if (IsValidHandle(g_hMarkTimer[iClient])) {
+        CloseHandle(g_hMarkTimer[iClient]);
     }
+    g_hMarkTimer[iClient] = CreateTimer(sm_mark_inactive_interval.FloatValue, TimerUnmarkForClient, iClient);
 }
 
 Action TimerUnmarkForClient(Handle hTimer, int iClient) {
-    UnmarkEntity(g_iMarkItemEntRef[iClient], iClient);
+    UnmarkEntity(iClient);
     return Plugin_Stop;
 }
 
-void UnmarkEntity(int iEntRef, int iClient)
+void UnmarkEntity(iClient)
 {
-    int iEntity = EntRefToEntIndex(iEntRef);
-    if (IsValidEntity(iEntity)) {
-        AcceptEntityInput(iEntity, "disableglow");
+    if (IsValidEntity(g_iMarkItemEntRef[iClient])) {
+        AcceptEntityInput(g_iMarkItemEntRef[iClient], "disableglow");
         g_iMarkItemEntRef[iClient] = -1;
         //DispatchKeyValue(iEntity, "glowable", "0");
         //RequestFrame(FrameDisglowEntity, iEntRef);
     }
-    if (IsValidHandle(g_hUpdatePointMessageTimer[iClient])) {
-        delete g_hUpdatePointMessageTimer[iClient];
-        StopPointMessage(iClient);
+    if (IsValidEntity(g_iMarkMessageEntRef[iClient])) {
+        AcceptEntityInput(g_iMarkMessageEntRef[iClient], "kill");
     }
 }
 
 public bool TraceEntityFilterPlayer(int iHitEntity, int iContentsMask) 
 {
     return iHitEntity > MaxClients;
-}
-
-public int SendPointMessage(char szMessage[64], int iEntity, float pos[3]) {
-    Handle msg = StartMessageAll("PointMessage", USERMSG_BLOCKHOOKS);
-    BfWrite bf = UserMessageToBfWrite(msg);
-
-    bf.WriteString(szMessage); //message
-    bf.WriteShort(iEntity); //entity
-    bf.WriteShort(2);  //flags
-    bf.WriteVecCoord(pos); //coord
-    bf.WriteFloat(sm_mark_message_radius.FloatValue); //radius
-    bf.WriteString("DebugFixedSmall"); //font
-    bf.WriteByte(0); //r
-    bf.WriteByte(255); //g
-    bf.WriteByte(255); //b
-    
-    EndMessage();
-    return 0;
-}
-
-public int StopPointMessage(int iEntity) {
-    Handle msg = StartMessageAll("PointMessage", USERMSG_BLOCKHOOKS);
-    BfWrite bf = UserMessageToBfWrite(msg);
-    
-    if (!IsValidEntity(iEntity)) {
-        return -1;
-    }
-    bf.WriteString(""); //message
-    bf.WriteShort(iEntity); //entity
-    bf.WriteShort(0);  //flags
-    bf.WriteVecCoord(NULL_VECTOR); //coord
-    bf.WriteFloat(0.0); //radius
-    bf.WriteString(""); //font
-    bf.WriteByte(0); //r
-    bf.WriteByte(0); //g
-    bf.WriteByte(0); //b
-    
-    EndMessage();
-    return 0;
 }
 
 Action MakeMessage(int iClient, int nArgs) {
@@ -292,8 +234,8 @@ Action MakeMessage(int iClient, int nArgs) {
 
     if (DispatchSpawn(iMessageEnt)) {
         TeleportEntity(iMessageEnt, fPos);
-        //SetVariantString("!activator");
-        //AcceptEntityInput(iMessageEnt, "SetParent", iClient);
+        SetVariantString("!activator");
+        AcceptEntityInput(iMessageEnt, "SetParent", iClient);
     }
     else {
         PrintToServer("Spawn message failed!");

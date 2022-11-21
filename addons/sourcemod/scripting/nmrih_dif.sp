@@ -36,6 +36,9 @@ ConVar hostname,
     ov_runner_chance,
     ov_runner_kid_chance,
 
+    sm_kidchance_classic,
+    sm_kidchance_nightmare,
+
     sm_inf_stamina,
     sm_machete_enable,
     sm_record_enable_rt,
@@ -51,11 +54,10 @@ bool g_bEnabled, g_bListenClient[MAXPLAYERS];
 float sv_max_runner_chance_default,
     ov_runner_chance_default,
     ov_runner_kid_chance_default,
-    
+    g_fKidChance,
     g_fDensity[MAXPLAYERS];
 
-char g_szHostName[100],
-    g_szVoteCommand[MAXPLAYERS][128],
+char g_szVoteCommand[MAXPLAYERS][128],
     g_szVoteHint[MAXPLAYERS][256],
     g_szVoteFinishHint[MAXPLAYERS][64],
     g_szVoteTitle[MAXPLAYERS][64];
@@ -88,14 +90,15 @@ public void OnPluginStart() {
     sv_max_runner_chance = FindConVar("sv_max_runner_chance");
     ov_runner_chance = FindConVar("ov_runner_chance");
     ov_runner_kid_chance = FindConVar("ov_runner_kid_chance");
-    ov_runner_kid_chance.FloatValue = 0.3;
-    ov_runner_kid_chance_default = 0.3;
     
     (sm_dif_enable = CreateConVar("sm_dif_enable", "1", "Enable/Disable plugin.", FCVAR_NOTIFY, true, 0.0, true, 1.0)).AddChangeHook(OnConVarChange);
     g_bEnabled = sm_dif_enable.BoolValue;
 
     (sm_gamemode_default = CreateConVar("sm_gamemode_default", "1", "sm_gamemode's default value", 0, true, 0.0, true, 2.0)).AddChangeHook(OnConVarChange);
     (sm_gamemode = CreateConVar("sm_gamemode", "1", "0 - default gamemode, 1 - All runners, 2 - All kids", 0, true, 0.0, true, 2.0)).AddChangeHook(OnConVarChange);
+
+    (sm_kidchance_classic = CreateConVar("sm_kidchance_classic", "0.3", "Kid chance in classic difficulty.", FCVAR_NOTIFY, true, 0.0, true, 1.0)).AddChangeHook(OnConVarChange);
+    (sm_kidchance_nightmare = CreateConVar("sm_kidchance_nightmare", "0.15", "Kid chance in nightmare difficulty.", FCVAR_NOTIFY, true, 0.0, true, 1.0)).AddChangeHook(OnConVarChange);
 
     (sv_difficulty = FindConVar("sv_difficulty")).AddChangeHook(OnConVarChange);
     (sv_spawn_density = FindConVar("sv_spawn_density")).AddChangeHook(OnConVarChange);
@@ -116,7 +119,13 @@ public void OnPluginStart() {
     HookEvent("nmrih_round_begin", OnRoundStart);
 }
 
+public void OnMapStart() {
+    sm_gamemode.FloatValue = sm_gamemode_default.FloatValue;
+    g_GameMode = view_as<GameMode>(sm_gamemode_default.IntValue);
+}
+
 public void OnRoundStart(Event e, const char[] n, bool b) {
+    ConVarSet(g_GameMode);
     CreateTimer(1.0, TimerShowGameInfo);
 }
 
@@ -138,72 +147,74 @@ public void OnConfigsExecuted() {
     g_GameMode = view_as<GameMode>(sm_gamemode.IntValue);
     ConVarSet(g_GameMode);
 
-    SetHostName();
+    SetDifficulty();
 }
 
 public void OnConVarChange(ConVar CVar, const char[] oldValue, const char[] newValue) {
     if (!g_bEnabled) return;
     if (CVar == sm_dif_enable) {
-        g_bEnabled = StringToInt(newValue) > 0;
+        g_bEnabled = sm_dif_enable.BoolValue;
     }
     else if (CVar == sm_gamemode) {
         g_GameMode = view_as<GameMode>(sm_gamemode.IntValue);
-        switch (g_GameMode) {
-            case GameModeDefault: {}
-            case GameModeKid: {
-                ShamblerConvertToRunner(g_GameMode == GameModeKid);
-            }
-            case GameModeRunner: {
-                ShamblerConvertToRunner(g_GameMode == GameModeKid);
-            }
+        if (g_GameMode == GameModeRunner || g_GameMode == GameModeKid) {
+            ShamblerConvertToRunner(g_GameMode == GameModeKid);
         }
         ConVarSet(g_GameMode);
     }
     else if (CVar == sv_difficulty || CVar == sv_spawn_density) {
-        SetHostName();
+        SetDifficulty();
+    }
+    else if (CVar == sm_kidchance_classic && g_GameDif != GameDifNightmare) {
+        g_fKidChance = sm_kidchance_classic.FloatValue;
+        ov_runner_chance.FloatValue = g_fKidChance;
+    }
+    else if (CVar == sm_kidchance_nightmare && g_GameDif == GameDifNightmare) {
+        g_fKidChance = sm_kidchance_nightmare.FloatValue;
+        ov_runner_chance.FloatValue = g_fKidChance;
     }
 }
 
-void SetHostName() {
-    char buffer[128], difficulty[24];
-    hostname.GetString(buffer, 100);
-    if (SplitString(buffer, "（", g_szHostName, 100) == -1) {
-        FormatEx(g_szHostName, 100, buffer);
+void SetDifficulty() {
+    char szBuffer[128], szHostName[128], szDifficulty[24];
+    hostname.GetString(szBuffer, sizeof(szBuffer));
+    if (SplitString(szBuffer, "（", szHostName, 100) == -1) {
+        strcopy(szHostName, 100, szBuffer);
     }
     
-    sv_difficulty.GetString(buffer, 128);
-    if (StrEqual(buffer, "classic")) {
+    sv_difficulty.GetString(szBuffer, 128);
+    if (StrEqual(szBuffer, "classic")) {
         g_GameDif = GameDifClassic;
-        FormatEx(difficulty, 24, "经典");
+        g_fKidChance = sm_kidchance_classic.FloatValue;
+        FormatEx(szDifficulty, 24, "经典");
     }
-    else if (StrEqual(buffer, "casual")) {
+    else if (StrEqual(szBuffer, "casual")) {
         g_GameDif = GameDifCasual;
-        FormatEx(difficulty, 24, "休闲");
+        g_fKidChance = sm_kidchance_classic.FloatValue;
+        FormatEx(szDifficulty, 24, "休闲");
     }
-    else if (StrEqual(buffer, "nightmare")) {
+    else if (StrEqual(szBuffer, "nightmare")) {
         g_GameDif = GameDifNightmare;
-        FormatEx(difficulty, 24, "噩梦");
+        g_fKidChance = sm_kidchance_nightmare.FloatValue;
+        FormatEx(szDifficulty, 24, "噩梦");
     }
 
-    float density = sv_spawn_density.FloatValue;
-    if (density == 1.0) {
-        g_GameDensity = GameDensity10;
-    }
-    else if (density == 1.5) {
+    float fDensity = sv_spawn_density.FloatValue;
+    if (fDensity == 1.5) {
         g_GameDensity = GameDensity15;
     }
-    else if (density == 3.0) {
+    else if (fDensity == 3.0) {
         g_GameDensity = GameDensity30;
     }
-    else if (density == 5.0) {
+    else if (fDensity == 5.0) {
         g_GameDensity = GameDensity50;
     }
     else {
         g_GameDensity = GameDensityCustom;
     }
     
-    FormatEx(buffer, 128, "%s（%.1f倍%s）", g_szHostName, density, difficulty);
-    hostname.SetString(buffer);
+    FormatEx(szBuffer, 128, "%s（%.1f倍%s）", szHostName, fDensity, szDifficulty);
+    hostname.SetString(szBuffer);
 }
 
 public void OnPluginEnd() {
@@ -211,17 +222,17 @@ public void OnPluginEnd() {
     ConVarSet(GameModeDefault); // Reset convar
 }
 
-public void OnEntityCreated(int entity, const char[] classname) {
+public void OnEntityCreated(int iEntity, const char[] classname) {
     if(!g_bEnabled || g_GameMode == GameModeDefault) return;
 
-    if(IsValidShamblerZombie(entity))
-        SDKHook(entity, SDKHook_SpawnPost, SDKHookCBZombieSpawnPost);
+    if(IsValidShamblerZombie(iEntity))
+        SDKHook(iEntity, SDKHook_SpawnPost, SDKHookCBZombieSpawnPost);
 }
 
-bool IsValidShamblerZombie(int entity) {
-    char classname[128];
-    if (GetEntityClassname(entity, classname, sizeof(classname))) {
-        return StrEqual(classname, "npc_nmrih_shamblerzombie", false);
+bool IsValidShamblerZombie(int iEntity) {
+    char szClassname[128];
+    if (GetEntityClassname(iEntity, szClassname, sizeof(szClassname))) {
+        return StrEqual(szClassname, "npc_nmrih_shamblerzombie", false);
     }
     return false;
 }
@@ -234,31 +245,32 @@ public void SDKHookCBZombieSpawnPost(int zombie) {
     }
 }
 
-int ShamblerToRunnerFromPosion(int zombie, bool isKid = false) {
-    float pos[3];
-    GetEntPropVector(zombie, Prop_Send, "m_vecOrigin", pos);
-    SDKUnhook(zombie, SDKHook_SpawnPost, SDKHookCBZombieSpawnPost);
+int ShamblerToRunnerFromPosion(int iZombie, bool isKid = false) {
+    float fPos[3];
+    GetEntPropVector(iZombie, Prop_Send, "m_vecOrigin", fPos);
+    SDKUnhook(iZombie, SDKHook_SpawnPost, SDKHookCBZombieSpawnPost);
 
-    if (isKid || GetRandomInt(0, 100) < 100 * ov_runner_kid_chance.FloatValue) {
-        AcceptEntityInput(zombie, "kill");
-        zombie = CreateEntityByName("npc_nmrih_kidzombie");
+    if (isKid || GetRandomInt(0, 100) < 100 * g_fKidChance) {
+        AcceptEntityInput(iZombie, "kill");
+        iZombie = CreateEntityByName("npc_nmrih_kidzombie");
 
-        if(!IsValidEntity(zombie)) return -1;
-        if(DispatchSpawn(zombie)) TeleportEntity(zombie, pos, NULL_VECTOR, NULL_VECTOR);
-        return zombie;
+        if(!IsValidEntity(iZombie))
+            return -1;
+        if(DispatchSpawn(iZombie))
+            TeleportEntity(iZombie, fPos, NULL_VECTOR, NULL_VECTOR);
     }
     else {
-        AcceptEntityInput(zombie, "BecomeRunner");
-        return zombie;
+        AcceptEntityInput(iZombie, "BecomeRunner");
     }
+    return iZombie;
 }
 
-void ShamblerConvertToRunner(bool kid) {
-    int MaxEnt = GetMaxEntities();
-    for(int zombie = MaxClients + 1; zombie <= MaxEnt; zombie++)
+void ShamblerConvertToRunner(bool bKid=false) {
+    int nMaxEnts = GetMaxEntities();
+    for(int iZombie = MaxClients + 1; iZombie <= nMaxEnts; iZombie++)
     {
-        if(!IsValidShamblerZombie(zombie)) continue;
-        ShamblerToRunnerFromPosion(zombie, kid);
+        if(IsValidShamblerZombie(iZombie))
+            ShamblerToRunnerFromPosion(iZombie, bKid);
     }
 }
 
@@ -267,20 +279,14 @@ void ConVarSet(GameMode mode) {
     {
         case GameModeRunner:
         {
-            sv_max_runner_chance_default = sv_max_runner_chance.FloatValue;
-            ov_runner_chance_default = ov_runner_chance.FloatValue;
-            ov_runner_kid_chance_default = ov_runner_kid_chance.FloatValue;
-
-            sv_max_runner_chance.FloatValue = ov_runner_chance.FloatValue = 3.0;
-            ov_runner_kid_chance.FloatValue = 0.3;
+            sv_max_runner_chance.FloatValue = 3.0;
+            ov_runner_chance.FloatValue = 3.0;
+            ov_runner_kid_chance.FloatValue = g_fKidChance;
         }
         case GameModeKid:
         {
-            sv_max_runner_chance_default = sv_max_runner_chance.FloatValue;
-            ov_runner_chance_default = ov_runner_chance.FloatValue;
-            ov_runner_kid_chance_default = ov_runner_kid_chance.FloatValue;
-
-            sv_max_runner_chance.FloatValue = ov_runner_chance.FloatValue = 3.0;
+            sv_max_runner_chance.FloatValue = 3.0;
+            ov_runner_chance.FloatValue = 3.0;
             ov_runner_kid_chance.FloatValue = 1.0;
         }
         case GameModeDefault:
@@ -783,7 +789,7 @@ public Action GameInfoShowToClient(int client, int args)
         temp3 = sm_record_enable_rt.BoolValue;
     }
     if (client == 0) {
-        CPrintToChatAll(0, "{green}%t {white}%t {green}%t {white}%t\n{green}%t {white}%.1f {green}%t {white}%t\n{green}%t {white}%t\n{red}%t %t",
+        CPrintToChatAll(0, "{green}%t {white}%t {green}%t {white}%t\n{green}%t {white}%.1f {green}%t {white}%t\n{green}%t {white}%t\n{mediumvioletred}%t %t",
             "ModeFlag",            szGameMode[view_as<int>(g_GameMode)],
             "DifFlag",            szGameDif[view_as<int>(g_GameDif)],
             "DensityFlag",        sv_spawn_density.FloatValue,
@@ -792,7 +798,7 @@ public Action GameInfoShowToClient(int client, int args)
             "ChatFlag",           temp3 ? "RecordEnable" : "RecordDisable");
     }
     else {
-        CPrintToChat(client, 0, "{green}%t {white}%t {green}%t {white}%t\n{green}%t {white}%.1f {green}%t {white}%t\n{green}%t {white}%t\n{red}%t %t",
+        CPrintToChat(client, 0, "{green}%t {white}%t {green}%t {white}%t\n{green}%t {white}%.1f {green}%t {white}%t\n{green}%t {white}%t\n{mediumvioletred}%t %t",
             "ModeFlag",            szGameMode[view_as<int>(g_GameMode)],
             "DifFlag",            szGameDif[view_as<int>(g_GameDif)],
             "DensityFlag",        sv_spawn_density.FloatValue,

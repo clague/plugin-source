@@ -3,6 +3,7 @@ import requests
 import time
 import sys
 import os
+import json
 import shutil
 
 COLLECTION_ID = "2525649339"
@@ -52,7 +53,7 @@ collection = []
 if workshop_enable:
     while retry_time > 0:
         try:
-            collection = [id["publishedfileid"] for id in requests.post("https://api.steampowered.com/ISteamRemoteStorage/GetCollectionDetails/v1/", data={"collectioncount": 1, "publishedfileids[0]": COLLECTION_ID}).json()["response"]["collectiondetails"][0]["children"]]
+            collection = [id["publishedfileid"] for id in requests.post("https://clague.moe/stm-proxy/ISteamRemoteStorage/GetCollectionDetails/v1/", data={"collectioncount": 1, "publishedfileids[0]": COLLECTION_ID}).json()["response"]["collectiondetails"][0]["children"]]
         except:
             pass
         if len(collection) > 20:

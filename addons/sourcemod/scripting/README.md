@@ -100,3 +100,8 @@ advertisements.txt和原版不一样
 优化载入速度
 
 只需mapchooser读取地图列表，其他插件仅调用，由于mapchooser读取数据很多，需要调高sourcemod的SlowScriptTimeout参数（core.cfg）
+
+## antistuck
+解卡
+
+需要翻译文本

@@ -4,7 +4,9 @@
 #include <sdktools>
 #include <sdkhooks>
 
-public Plugin:myinfo = {
+#pragma newdecls required
+
+public Plugin myinfo = {
 	name = "Respawn With Random Supply",
 	author = "hsccc",
 	description = "Respawn With Random Supply",
@@ -32,7 +34,7 @@ char item_list[3][20] = {
     "item_pills",
 };
 
-bool gived[MAXPLAYERS + 1] = {false};
+bool g_bGived[MAXPLAYERS + 1] = {false};
 ConVar g_bEnable, g_bMacheteEnable;
 bool g_bMacheteGived;
 
@@ -55,61 +57,67 @@ public void OnPluginStart()
 
 public void OnMapReset(Event e, const char[] n, bool b) {
     g_bMacheteGived = false;
+    for (int i = 1; i <= MaxClients; i++)
+    {
+        g_bGived[i] = false;
+    }
 }
 
-public void OnClientDisconnect(int client) {
-    gived[client] = false;
+public void OnClientDisconnect(int iClient) {
+    g_bGived[iClient] = false;
 }
 
 public void OnMapStart() {
-    for (int i = 0;i <= MAXPLAYERS; i++)
+    for (int i = 1; i <= MaxClients; i++)
     {
-        gived[i] = false;
+        g_bGived[i] = false;
     }
 }
 
-public Action:EventPlayerRespawn(Handle:event, const String:name[], bool:dontBroadcast) 
+public Action EventPlayerRespawn(Event e, const char[] szName, bool bDontBroadcast) 
 {
-    if (g_bEnable.IntValue != 1)
-        return;
-    int client = GetClientOfUserId(GetEventInt(event, "userid"));
-    
-    if(!gived[client]) {
-        PrintToServer("hook respawn!");
-        CreateTimer(0.2, GivePlayerSupply, client);
-        gived[client] = true;
+    if (g_bEnable.BoolValue) {
+        int iClient = GetClientOfUserId(e.GetInt("userid"));
+        
+        if(!g_bGived[iClient]) {
+            CreateTimer(0.2, GivePlayerSupply, iClient);
+            g_bGived[iClient] = true;
+        }
+        else {
+            PrintToServer("Already gived, skip giving.");
+        }
     }
-    else {
-        PrintToServer("Already gived, skip giving.");
+    return Plugin_Continue;
+}
+
+public Action EventPlayerDeath(Event e, const char[] szName, bool bDontBroadcast) 
+{
+    if (g_bEnable.BoolValue) {
+        int iClient = GetClientOfUserId(e.GetInt("userid"));
+        g_bGived[iClient] = false;
     }
+    return Plugin_Continue;
 }
 
-public Action:EventPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast) 
+public Action EventPlayerExtracted(Event e, const char[] szName, bool bDontBroadcast) 
 {
-    if (g_bEnable.IntValue != 1)
-        return;
-    int client = GetClientOfUserId(GetEventInt(event, "userid"));
-    gived[client] = false;
+    if (g_bEnable.BoolValue) {
+        int iClient = e.GetInt("player_id");
+        g_bGived[iClient] = false;
+    }
+    return Plugin_Continue;
 }
 
-public Action:EventPlayerExtracted(Event:event, const String:name[], bool:dontBroadcast) 
+public Action GivePlayerSupply(Handle hTimer, any iClient)
 {
-    if (g_bEnable.IntValue != 1)
-        return;
-    int client = event.GetInt("player_id");
-    gived[client] = false;
-}
-
-public Action:GivePlayerSupply(Handle:timer, any:client)
-{
-    if(!IsPlayerAlive(client)) {
+    if(!IsPlayerAlive(iClient)) {
         PrintToServer("Not alive, skip giving.");
-        gived[client] = false;
-        return;
+        g_bGived[iClient] = false;
+        return Plugin_Stop;
     }
     if (g_bMacheteEnable.BoolValue)
     {
-        GiveItemIntoPlayer(client, "me_machete");
+        GiveItemIntoPlayer(iClient, "me_machete");
     }
     else if (!g_bMacheteGived)
     {
@@ -117,41 +125,43 @@ public Action:GivePlayerSupply(Handle:timer, any:client)
         if (r == 10) {
             g_bMacheteGived = true;
         }
-        GiveItemIntoPlayer(client, melee_list[r]);
+        GiveItemIntoPlayer(iClient, melee_list[r]);
     }
     else {
-        GiveItemIntoPlayer(client, melee_list[GetRandomInt(5, 9)]);
+        GiveItemIntoPlayer(iClient, melee_list[GetRandomInt(5, 9)]);
     }
     if (g_bMacheteEnable.BoolValue)
     {
-        GiveItemIntoPlayer(client, item_list[0]);
-        GiveItemIntoPlayer(client, item_list[1]);
-        GiveItemIntoPlayer(client, item_list[2]);
+        GiveItemIntoPlayer(iClient, item_list[0]);
+        GiveItemIntoPlayer(iClient, item_list[1]);
+        GiveItemIntoPlayer(iClient, item_list[2]);
     }
     else {
         if(GetRandomInt(0, 1) == 0) {
-            GiveItemIntoPlayer(client, item_list[0]);
+            GiveItemIntoPlayer(iClient, item_list[0]);
         }
         if(GetRandomInt(0, 1) == 0) {
-            GiveItemIntoPlayer(client, item_list[1]);
+            GiveItemIntoPlayer(iClient, item_list[1]);
         }
         if(GetRandomInt(0, 1) == 0) {
-            GiveItemIntoPlayer(client, item_list[2]);
+            GiveItemIntoPlayer(iClient, item_list[2]);
         }
     }
-    gived[client] = false;
+    g_bGived[iClient] = false;
+
+    return Plugin_Stop;
 }
 
-public GiveItemIntoPlayer(int client, char[] item_name)
+public void GiveItemIntoPlayer(int iClient, const char[] item_name)
 {
-    int item = GivePlayerItem(client, item_name); 
-    if (-1 == item) PrintToServer("Can't give item '%s' to '%N'", item_name, client);
-    else if(!AcceptEntityInput(item, "use", client, client)) LogError("Can't AcceptEntityInput 'use' for item '%s'", item_name);
+    int item = GivePlayerItem(iClient, item_name); 
+    if (-1 == item) PrintToServer("Can't give item '%s' to '%N'", item_name, iClient);
+    else if(!AcceptEntityInput(item, "use", iClient, iClient)) LogError("Can't AcceptEntityInput 'use' for item '%s'", item_name);
 }
 
 public any NativeSetGived(Handle plugin, int num_params) {
-    int client = GetNativeCell(1);
+    int iClient = GetNativeCell(1);
     bool m_gived = GetNativeCell(2);
-    gived[client] = m_gived;
+    g_bGived[iClient] = m_gived;
     return 0;
 }

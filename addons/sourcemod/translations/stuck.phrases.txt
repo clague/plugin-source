@@ -1,0 +1,40 @@
+"Phrases"
+{
+    "Prefix"
+    {
+        "en"        "[Stuck]"
+        "chi"       "[系统]"
+    }
+    "MustAlive"
+    {
+        "en"        "You must be alive to use this command!"
+        "chi"       "你必须活着才能使用解卡"
+    }
+    "WaitFor"
+    {
+        "#format"   "{1:d}"
+        "en"        "You must wait for {orange}{1} {white}seconds before using this command again."
+        "chi"       "你必须再等 {orange}{1} {white} 秒才能使用该指令"
+    }
+    "InProgress"
+    {
+        "#format"   "{1:d}"
+        "en"        "Unstuck is already in progress, {aqua}{1} {white}checks completed so far."
+        "chi"       "你有正在进行的解卡，目前已尝试 {aqua}{1} {white}次"
+    }
+    "NeedHelp"
+    {
+        "en"        "Can't handle your problem, please contact the admin for help."
+        "chi"       "你完全卡住了，请让管理员帮助您（如果有的话）"
+    }
+    "NotStuck"
+    {
+        "en"        "You do not appear to be stuck."
+        "chi"       "你似乎没有卡住"
+    }
+    "Unstuck"
+    {
+        "en"        "Your position has been fixed, you should now be unstuck."
+        "chi"       "已成功解卡"
+    }
+}

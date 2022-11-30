@@ -180,7 +180,7 @@ stock void LoadModels()
 		TrimString(buffer);
 
 		// Skip non existing files(and Comments)
-		if(FileExists(buffer))
+		if(FileExists(buffer, true))
 		{
 			// Tell Clients to download files
 			AddFileToDownloadsTable(buffer);
@@ -208,8 +208,11 @@ stock void ReadDownloads()
 	int len;
 	while(ReadFileLine(fileh, buffer, sizeof(buffer)))
 	{
+		if (StrContains(buffer, "//") == 0) {
+			buffer[0] = 0;
+		}
 		len = strlen(buffer);
-		if(buffer[len-1] == '\n') buffer[--len] = '\0';
+		if(len > 0 && buffer[len-1] == '\n') buffer[--len] = '\0';
 
 		TrimString(buffer);
 
@@ -232,9 +235,9 @@ stock void ReadFileFolder(char[] path)
 
 	TrimString(path);
 
-	if(DirExists(path))
+	if(DirExists(path, true))
 	{
-		dirh = OpenDirectory(path);
+		dirh = OpenDirectory(path, true);
 		while(ReadDirEntry(dirh, buffer, sizeof(buffer), type))
 		{
 			len = strlen(buffer);
@@ -293,7 +296,10 @@ stock void ReadItem(char[] buffer)
 	{
 		if(StrContains(buffer, "//") > -1) ReplaceString(buffer, 255, "//", "");
 	}
-	else if(buffer[0] && FileExists(buffer)) AddFileToDownloadsTable(buffer);
+	else if(buffer[0] && FileExists(buffer, true)) {
+		AddFileToDownloadsTable(buffer);
+		LogMessage("Add %s to download list", buffer);
+	}
 }
 
 stock Menu BuildMainMenu(int client)

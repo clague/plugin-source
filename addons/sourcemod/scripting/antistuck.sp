@@ -151,7 +151,7 @@ public void OnPluginStart() {
 
 public Action TestRay(int iClient, any args) {
 	float vecOrigin[3];
-	GetClientAbsOrigin(iClient, vecOrigin);
+	GetClientEyePosition(iClient, vecOrigin);
 
 	DataPack data = new DataPack();
 	data.WriteCell(iClient);
@@ -168,9 +168,9 @@ public Action TimerTestRay(Handle hTimer, DataPack data) {
 	iClient = data.ReadCell();
 	data.ReadFloatArray(vecOrigin, 3);
 
-	GetClientAbsOrigin(iClient, vecEnd);
+	GetClientEyePosition(iClient, vecEnd);
 
-	TR_TraceRayFilter(vecOrigin, vecEnd, MASK_SHOT, RayType_EndPoint, TraceEntitiesAndWorld);
+	TR_TraceRayFilter(vecOrigin, vecEnd, MASK_PLAYERSOLID_BRUSHONLY, RayType_EndPoint, TraceEntitiesAndWorld);
 	PrintToChat(iClient, "Start pos: %f %f %f, end pos: %f %f %f", vecOrigin[0], vecOrigin[1], vecOrigin[2], vecEnd[0], vecEnd[1], vecEnd[2]);
 	TR_GetEndPosition(vecEnd);
 	PrintToChat(iClient, "hit position: %f %f %f, start solid: %d, all solid: %d", vecEnd[0], vecEnd[1], vecEnd[2], TR_StartSolid(), TR_AllSolid());
@@ -407,7 +407,8 @@ public Action TimerCheckMovePost(Handle hTimer, DataPack data) {
 			g_iStuckStatus[iClient]++;
 			if (bInfix) {
 				TeleportEntity(iClient, g_fOriginalPos[iClient]);
-				TryFixPosition(iClient, sm_stuck_radius.FloatValue, fStep, view_as<Direction>(view_as<int>(currentDir)+1)); //Continue where we left off
+
+				TryFixPosition(iClient, sm_stuck_radius.FloatValue, fStep, false, view_as<Direction>((view_as<int>(currentDir)+1)%DIRECTION_COUNT));//Continue where we left off
 			}
 			else {
 				TryFixPosition(iClient, sm_stuck_radius.FloatValue, fStep);
@@ -444,7 +445,7 @@ public Action TimerCheckMovePost(Handle hTimer, DataPack data) {
 //									Fix Position
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-stock void TryFixPosition(int iClient, float fRadius, float fStep, Direction dir=Forward) {
+stock void TryFixPosition(int iClient, float fRadius, float fStep, bool bFirst=true, Direction dir=Forward) {
 	int aDist[DIRECTION_COUNT];
 	float vecDir[3], vecDirScaled[3], vecOrigin[3], vecOut[3];
 	GetClientAbsOrigin(iClient, vecOrigin);
@@ -455,7 +456,7 @@ stock void TryFixPosition(int iClient, float fRadius, float fStep, Direction dir
 		endpoint += DIRECTION_COUNT;
 	}
 
-	if (dir == Forward) {
+	if (bFirst) {
 		for (int i = 0; i < DIRECTION_COUNT; i++) {
 			GetDirectionVec(view_as<Direction>(i), vecDir);
 			vecDirScaled = vecDir;
@@ -467,7 +468,7 @@ stock void TryFixPosition(int iClient, float fRadius, float fStep, Direction dir
 				continue;
 			}
 
-			TR_TraceRayFilter(vecOut, vecOrigin, MASK_PLAYERSOLID, RayType_EndPoint, TraceEntitiesAndWorld);
+			TR_TraceRayFilter(vecOut, vecOrigin, MASK_PLAYERSOLID_BRUSHONLY, RayType_EndPoint, TraceEntitiesAndWorld);
 			if (TR_AllSolid() || TR_StartSolid()) {
 				aDist[i] = i;
 				continue;
@@ -476,11 +477,8 @@ stock void TryFixPosition(int iClient, float fRadius, float fStep, Direction dir
 			if (TR_DidHit()) {
 				TR_GetEndPosition(vecOrigin);
 			}
-			else {
-				aDist[i] = RoundFloat(fRadius*fStep) * 26 + i;
-			}
 
-			aDist[i] = RoundFloat(GetVectorDistance(vecOrigin, vecOut, true)) * 26 + i;
+			aDist[i] = RoundFloat(GetVectorDistance(vecOrigin, vecOut, true)) * DIRECTION_COUNT + i;
 		}
 		SortIntegers(aDist, DIRECTION_COUNT, Sort_Descending);
 		g_aLooseDist[iClient] = aDist;
@@ -488,18 +486,21 @@ stock void TryFixPosition(int iClient, float fRadius, float fStep, Direction dir
 	else {
 		aDist = g_aLooseDist[iClient];
 	}
-	for (int i = view_as<int>(dir); i < DIRECTION_COUNT; i++)
-	{
-		float fDist = float(aDist[i] / 26);
-		int currentDir = aDist[i] % 26;
-		if (fDist > (Pow(vecDir[0]*16.0, 2.0) + Pow(vecDir[1]*16.0, 2.0) + Pow(vecDir[2]*36.0, 2.0))) {
-			LogMessage("A possible position find!");
-			if (TryFixPositionFromDirection(iClient, view_as<Direction>(currentDir), fRadius, fStep)) {
-				return;
+
+	if (dir != Forward || bFirst) {
+		for (int i = view_as<int>(dir); i < DIRECTION_COUNT; i++)
+		{
+			float fDist = float(aDist[i] / DIRECTION_COUNT);
+			int currentDir = aDist[i] % DIRECTION_COUNT;
+			if (fDist > (Pow(vecDir[0]*16.0, 2.0) + Pow(vecDir[1]*16.0, 2.0) + Pow(vecDir[2]*36.0, 2.0))) {
+				//LogMessage("A possible position find!");
+				if (TryFixPositionFromDirection(iClient, view_as<Direction>(currentDir), fRadius, fStep)) {
+					return;
+				}
 			}
 		}
 	}
-	LogMessage("fStep: %f", fStep + sm_stuck_step.FloatValue);
+	//LogMessage("fStep: %f", fStep + sm_stuck_step.FloatValue);
 	CheckIfPlayerCanMove(iClient, 0, 0, false, Forward, fStep+sm_stuck_step.FloatValue);
 }
 
@@ -521,17 +522,24 @@ stock bool TryFixPositionFromDirection(int iClient, Direction dir, float fRadius
 	ScaleVector(vecDir, fStep*fRadius);
 	AddVectors(vecDir, vecOrigin, vecTryDown);
 	vecTryUp = vecTryDown;
-	vecTryUp[2] += 72; // 最好检查蹲姿
+	vecTryUp[2] += 70.0; // 最好检查蹲姿
 
 	vecMins = {-8.0, -8.0, 0.0};
-	vecMaxs = {8.0, 8.0, 0.0};
+	vecMaxs = {8.0, 8.0, 2.0}; // 2.0+70.0=72.0 为人物身高
 	if (!TR_PointOutsideWorld(vecTryUp) && !TR_PointOutsideWorld(vecTryDown)) {
-		TR_TraceHullFilter(vecTryUp, vecTryDown, vecMins, vecMaxs, MASK_PLAYERSOLID, TraceEntitiesAndWorld);
+		TR_TraceHullFilter(vecTryDown, vecTryUp, vecMins, vecMaxs, MASK_PLAYERSOLID_BRUSHONLY, TraceEntitiesAndWorld);
 
-		if (!TR_DidHit() && !TR_AllSolid()) {
-			TeleportEntity(iClient, vecTryDown);
-			CheckIfPlayerCanMove(iClient, 0, 0, true, dir, fStep); // 最好指定检测初始方向（第三个参数）
-			return true;
+		if (!TR_DidHit() && !TR_AllSolid() && !TR_StartSolid()) {
+			float vecDown[3] = {0.0, 0.0, -1.0};
+			TR_TraceRayFilter(vecTryDown, vecDown, MASK_PLAYERSOLID_BRUSHONLY, RayType_Infinite, TraceEntitiesAndWorld);
+			if (TR_DidHit()) {
+				TR_GetEndPosition(vecOrigin);
+				if (GetVectorDistance(vecOrigin, vecTryDown) < 300.0) {
+					TeleportEntity(iClient, vecTryDown);
+					CheckIfPlayerCanMove(iClient, 0, 0, true, dir, fStep); // 最好指定检测初始方向（第三个参数）
+					return true;
+				}
+			}
 		}
 	}
 	return false;

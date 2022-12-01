@@ -73,49 +73,49 @@ stock void GetDirectionVec(Direction dir, float vecDir[3]) {
 		case Right: 
 			vecDir = {0.0, -1.0, 0.0};
 		case Up: 
-			vecDir = {0.0, 0.0, 2.25};
+			vecDir = {0.0, 0.0, 1.0};
 		case Down: 
-			vecDir = {0.0, 0.0, -2.25};
+			vecDir = {0.0, 0.0, -1.0};
 		case ForwardLeft: 
 			vecDir = {1.0, 1.0, 0.0};
 		case ForwardRight: 
 			vecDir = {1.0, -1.0, 0.0};
 		case ForwardUp: 
-			vecDir = {1.0, 0.0, 2.25};
+			vecDir = {1.0, 0.0, 1.0};
 		case ForwardDown: 
-			vecDir = {1.0, 0.0, -2.25};
+			vecDir = {1.0, 0.0, -1.0};
 		case BackLeft: 
 			vecDir = {-1.0, 1.0, 0.0};
 		case BackRight: 
 			vecDir = {-1.0, -1.0, 0.0};
 		case BackUp: 
-			vecDir = {-1.0, 0.0, 2.25};
+			vecDir = {-1.0, 0.0, 1.0};
 		case BackDown: 
-			vecDir = {-1.0, 0.0, -2.25};
+			vecDir = {-1.0, 0.0, -1.0};
 		case LeftUp: 
-			vecDir = {0.0, 1.0, 2.25};
+			vecDir = {0.0, 1.0, 1.0};
 		case LeftDown: 
-			vecDir = {0.0, 1.0, -2.25};
+			vecDir = {0.0, 1.0, -1.0};
 		case RightUp: 
-			vecDir = {0.0, 0.0, 2.25};
+			vecDir = {0.0, 0.0, 1.0};
 		case RightDown: 
-			vecDir = {0.0, 0.0, -2.25};
+			vecDir = {0.0, 0.0, -1.0};
 		case ForwardLeftUp: 
-			vecDir = {1.0, 1.0, 2.25};
+			vecDir = {1.0, 1.0, 1.0};
 		case ForwardLeftDown: 
-			vecDir = {1.0, 1.0, -2.25};
+			vecDir = {1.0, 1.0, -1.0};
 		case ForwardRightUp: 
-			vecDir = {1.0, -1.0, 2.25};
+			vecDir = {1.0, -1.0, 1.0};
 		case ForwardRightDown: 
-			vecDir = {1.0, -1.0, -2.25};
+			vecDir = {1.0, -1.0, -1.0};
 		case BackLeftUp: 
-			vecDir = {-1.0, 1.0, 2.25};
+			vecDir = {-1.0, 1.0, 1.0};
 		case BackLeftDown: 
-			vecDir = {-1.0, 1.0, -2.25};
+			vecDir = {-1.0, 1.0, -1.0};
 		case BackRightUp: 
-			vecDir = {-1.0, -1.0, 2.25};
+			vecDir = {-1.0, -1.0, 1.0};
 		case BackRightDown: 
-			vecDir = {-1.0, -1.0, -2.25};
+			vecDir = {-1.0, -1.0, -1.0};
 	}
 }
 

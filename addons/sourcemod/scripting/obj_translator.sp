@@ -44,7 +44,6 @@ public void OnPluginStart() {
 }
 
 public void OnPluginEnd() {
-    UnhookEvent("state_change", OnStateChange);
     delete objectives_translate;
     delete objectives_original;
 }

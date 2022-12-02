@@ -158,11 +158,19 @@ public Action TestRay(int iClient, any args) {
 	data.WriteFloatArray(vecOrigin, 3);
 	CreateTimer(1.0, TimerTestRay, data, TIMER_DATA_HNDL_CLOSE);
 
+	float vecDir1[3], vecDir2[3];
+	GetDirectionVec(view_as<Direction>(26), vecDir1);
+
+	PrintToChat(iClient, "26 view_as direction is %f %f %f", vecDir2[0], vecDir2[1], vecDir2[2]);
+	PrintToChat(iClient, "Forward == 26 view_as direction: %d, Forward == 0: %d", Forward==view_as<Direction>(26), Forward==view_as<Direction>(0));
+
+	GetDirectionVec(view_as<Direction>(GetRandomInt(26, 100)), vecDir1);
+	PrintToChat(iClient, "random 26~100 is %f %f %f", vecDir1[0], vecDir1[1], vecDir1[2]);
 	return Plugin_Stop;
 }
 public Action TimerTestRay(Handle hTimer, DataPack data) {
 	int iClient;
-	float vecOrigin[3], vecEnd[3];
+	float vecOrigin[3], vecEnd[3], vecHit[3];
 
 	data.Reset();
 	iClient = data.ReadCell();
@@ -171,10 +179,12 @@ public Action TimerTestRay(Handle hTimer, DataPack data) {
 	GetClientEyePosition(iClient, vecEnd);
 
 	TR_TraceRayFilter(vecOrigin, vecEnd, MASK_PLAYERSOLID_BRUSHONLY, RayType_EndPoint, TraceEntitiesAndWorld);
+	TR_GetEndPosition(vecHit);
 	PrintToChat(iClient, "Start pos: %f %f %f, end pos: %f %f %f", vecOrigin[0], vecOrigin[1], vecOrigin[2], vecEnd[0], vecEnd[1], vecEnd[2]);
-	TR_GetEndPosition(vecEnd);
-	PrintToChat(iClient, "hit position: %f %f %f, start solid: %d, all solid: %d", vecEnd[0], vecEnd[1], vecEnd[2], TR_StartSolid(), TR_AllSolid());
-	PrintToChat(iClient, "ouside world: %d", TR_PointOutsideWorld(vecEnd));
+	PrintToChat(iClient, "hit: %d, hit position: %f %f %f", TR_DidHit(), vecHit[0], vecHit[1], vecHit[2]); 
+	PrintToChat(iClient, "start solid: %d, all solid: %d", TR_StartSolid(), TR_AllSolid());
+	PrintToChat(iClient, "start ouside world: %d, end outside world: %d", TR_PointOutsideWorld(vecOrigin), TR_PointOutsideWorld(vecEnd));
+	PrintToChat(iClient, "fraction: %f, left solid fraction: %f", TR_GetFraction(), TR_GetFractionLeftSolid());
 
 	return Plugin_Stop;
 }
@@ -261,6 +271,11 @@ public Action StuckCmd(int iClient, any args) {
 		CPrintToChat(iClient, 0, "{green}%t {white}%t", "Prefix", "MustAlive");
 		return Plugin_Stop;
 	}
+
+	if (g_iStuckStatus[iClient] != -1 || g_hDelayTimer[iClient] != null ) {
+		CPrintToChat(iClient, 0, "{green}%t {white}%t", "Prefix", "InProgress", g_iStuckStatus[iClient]);
+		return Plugin_Stop;
+	}
 	
 	//Check if g_iCounter is enabled
 	if (sm_stuck_limit.IntValue > 0) {
@@ -286,11 +301,7 @@ public Action StuckCmd(int iClient, any args) {
 		//g_iCounter not yet reached limit, add to g_iCounter
 		g_iCounter[iClient]++;
 	}
-	
-	if (g_hDelayTimer[iClient] != null || g_iStuckStatus[iClient] != -1) {
-		CPrintToChat(iClient, 0, "{green}%t {white}%t", "Prefix", "InProgress", g_iStuckStatus[iClient]);
-		return Plugin_Stop;
-	}
+
 	StartStuckDetection(iClient);
 
 	return Plugin_Continue;
@@ -358,7 +369,7 @@ stock void GetVeloFromTestID(int iTestID, float[] vecVelo) {
 	}
 }
 
-stock void CheckIfPlayerCanMove(int iClient, int iTestID, int iTestCount = 0, bool bInFix = false, Direction currentDir=Forward, float fStep=1.0) {
+stock void CheckIfPlayerCanMove(int iClient, int iTestID, int iTestCount = 0, float fStep=1.0, bool bInFix=false, Direction currentDir=Forward) {
 	// In few case there are issues with IsPlayerStuck() like clip
 	float vecVelo[3];
 	float vecOrigin[3];
@@ -402,13 +413,13 @@ public Action TimerCheckMovePost(Handle hTimer, DataPack data) {
 		iTestCount += 1;
 		iTestID = (iTestID + 1) % 6;
 		if(iTestCount < 6) {
-			CheckIfPlayerCanMove(iClient, iTestID, iTestCount, bInfix, currentDir, fStep);
+			CheckIfPlayerCanMove(iClient, iTestID, iTestCount, fStep, bInfix, currentDir);
 		} else if (fStep <= sm_stuck_max_steps.FloatValue){
 			g_iStuckStatus[iClient]++;
 			if (bInfix) {
 				TeleportEntity(iClient, g_fOriginalPos[iClient]);
-
-				TryFixPosition(iClient, sm_stuck_radius.FloatValue, fStep, false, view_as<Direction>((view_as<int>(currentDir)+1)%DIRECTION_COUNT));//Continue where we left off
+				//Continue where we left off
+				TryFixPosition(iClient, sm_stuck_radius.FloatValue, fStep, false, view_as<Direction>((view_as<int>(currentDir)+1)%DIRECTION_COUNT));
 			}
 			else {
 				TryFixPosition(iClient, sm_stuck_radius.FloatValue, fStep);
@@ -469,7 +480,7 @@ stock void TryFixPosition(int iClient, float fRadius, float fStep, bool bFirst=t
 			}
 
 			TR_TraceRayFilter(vecOut, vecOrigin, MASK_PLAYERSOLID_BRUSHONLY, RayType_EndPoint, TraceEntitiesAndWorld);
-			if (TR_AllSolid() || TR_StartSolid()) {
+			if (TR_StartSolid()) {
 				aDist[i] = i;
 				continue;
 			}
@@ -501,7 +512,7 @@ stock void TryFixPosition(int iClient, float fRadius, float fStep, bool bFirst=t
 		}
 	}
 	//LogMessage("fStep: %f", fStep + sm_stuck_step.FloatValue);
-	CheckIfPlayerCanMove(iClient, 0, 0, false, Forward, fStep+sm_stuck_step.FloatValue);
+	CheckIfPlayerCanMove(iClient, 0, 0, fStep+sm_stuck_step.FloatValue);
 }
 
 public int SortDesc(int[] x, int[] y, int[][] array, Handle data) {
@@ -529,14 +540,14 @@ stock bool TryFixPositionFromDirection(int iClient, Direction dir, float fRadius
 	if (!TR_PointOutsideWorld(vecTryUp) && !TR_PointOutsideWorld(vecTryDown)) {
 		TR_TraceHullFilter(vecTryDown, vecTryUp, vecMins, vecMaxs, MASK_PLAYERSOLID_BRUSHONLY, TraceEntitiesAndWorld);
 
-		if (!TR_DidHit() && !TR_AllSolid() && !TR_StartSolid()) {
+		if (!TR_DidHit() && !TR_StartSolid()) {
 			float vecDown[3] = {0.0, 0.0, -1.0};
 			TR_TraceRayFilter(vecTryDown, vecDown, MASK_PLAYERSOLID_BRUSHONLY, RayType_Infinite, TraceEntitiesAndWorld);
 			if (TR_DidHit()) {
 				TR_GetEndPosition(vecOrigin);
-				if (GetVectorDistance(vecOrigin, vecTryDown) < 300.0) {
+				if (GetVectorDistance(vecOrigin, vecTryDown) < 250.0) {
 					TeleportEntity(iClient, vecTryDown);
-					CheckIfPlayerCanMove(iClient, 0, 0, true, dir, fStep); // 最好指定检测初始方向（第三个参数）
+					CheckIfPlayerCanMove(iClient, 0, 0, fStep, true, dir); // 最好指定检测初始方向（第三个参数）
 					return true;
 				}
 			}

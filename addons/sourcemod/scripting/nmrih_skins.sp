@@ -192,7 +192,7 @@ stock void LoadModels()
 			}
 		}
 	}
-	if(fileh != null) CloseHandle(fileh);
+	if(IsValidHandle(fileh)) CloseHandle(fileh);
 	iForcedSkins = models_count;
 }
 
@@ -220,7 +220,7 @@ stock void ReadDownloads()
 
 		if(IsEndOfFile(fileh)) break;
 	}
-	if(fileh != null) CloseHandle(fileh);
+	if(IsValidHandle(fileh)) CloseHandle(fileh);
 }
 
 stock void ReadFileFolder(char[] path)
@@ -255,7 +255,7 @@ stock void ReadFileFolder(char[] path)
 		}
 	}
 	else if(downloadtype) ReadItem(path);
-	if(dirh != null) CloseHandle(dirh);
+	if(IsValidHandle(dirh)) CloseHandle(dirh);
 }
 
 public void OnClientPostAdminCheck(int client)

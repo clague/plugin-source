@@ -77,18 +77,47 @@ public void OnMapStart()
 }
 
 public void OnConfigsExecuted() {
-    (g_cvInfStamina = FindConVar("sm_inf_stamina")).AddChangeHook(OnConVarChange);
-    (g_cvMachete = FindConVar("sm_machete_enable")).AddChangeHook(OnConVarChange);
-    (g_cvGameMode = FindConVar("sm_gamemode")).AddChangeHook(OnConVarChange);
-    (g_cvDensity = FindConVar("sv_spawn_density")).AddChangeHook(OnConVarChange);
-    (g_cvDifficulty = FindConVar("sv_difficulty")).AddChangeHook(OnConVarChange);
-
-    // When a convar is set cheat previously, ignore that convar in check (usually because map neeed)
-    g_bIgnoreDensity = !CheckDensity();
-    g_bIgnoreGameMode = !CheckGameMode();
-    g_bIgnoreInfStamina = !CheckInfStamina();
-    g_bIgnoreMachete = !CheckMachete();
-    g_bIgnoreDifficulty = !CheckDifficulty();
+    g_cvInfStamina = FindConVar("sm_inf_stamina");
+    g_cvMachete = FindConVar("sm_machete_enable");
+    g_cvGameMode = FindConVar("sm_gamemode");
+    g_cvDensity = FindConVar("sv_spawn_density");
+    g_cvDifficulty = FindConVar("sv_difficulty");
+    if (IsValidHandle(g_cvInfStamina)) {
+        g_cvInfStamina.AddChangeHook(OnConVarChange);
+        // When a convar is set cheat previously, ignore that convar in check (usually because map neeed)
+        g_bIgnoreInfStamina = !CheckInfStamina();
+    }
+    else {
+        g_bIgnoreInfStamina = true;
+    }
+    if (IsValidHandle(g_cvMachete)) {
+        g_cvMachete.AddChangeHook(OnConVarChange);
+        g_bIgnoreMachete = !CheckMachete();
+    }
+    else {
+        g_bIgnoreMachete = true;
+    }
+    if (IsValidHandle(g_cvGameMode)) {
+        g_cvGameMode.AddChangeHook(OnConVarChange);
+        g_bIgnoreGameMode = !CheckGameMode();
+    }
+    else {
+        g_bIgnoreGameMode = true;
+    }
+    if (IsValidHandle(g_cvDensity)) {
+        g_cvDensity.AddChangeHook(OnConVarChange);
+        g_bIgnoreDensity = !CheckDensity();
+    }
+    else {
+        g_bIgnoreDensity = true;
+    }
+    if (IsValidHandle(g_cvDifficulty)) {
+        g_cvDifficulty.AddChangeHook(OnConVarChange);
+        g_bIgnoreDifficulty = !CheckDifficulty();
+    }
+    else {
+        g_bIgnoreDifficulty = true;
+    }
 }
 
 public void OnClientPutInServer(int client)
@@ -131,10 +160,10 @@ public void OnConVarChange(Handle CVar, const char[] oldValue, const char[] newV
             }
         }
         else {
-            if (g_cvEnableRT.BoolValue) {
+            if (g_cvEnableRT.BoolValue || g_cvEnable.BoolValue) {
+                CPrintToChatAll(0, "{green}[系统] {default}停止记录通关！");
                 g_cvEnable.BoolValue = false;
                 g_cvEnableRT.BoolValue = false;
-                CPrintToChatAll(0, "{green}[系统] {default}停止记录通关！");
             }
         }
     }

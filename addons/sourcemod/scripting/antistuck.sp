@@ -153,10 +153,10 @@ public Action TestRay(int iClient, any args) {
 	float vecOrigin[3];
 	GetClientEyePosition(iClient, vecOrigin);
 
-	DataPack data = new DataPack();
-	data.WriteCell(iClient);
-	data.WriteFloatArray(vecOrigin, 3);
-	CreateTimer(1.0, TimerTestRay, data, TIMER_DATA_HNDL_CLOSE);
+	DataPack hData = new DataPack();
+	hData.WriteCell(iClient);
+	hData.WriteFloatArray(vecOrigin, 3);
+	CreateTimer(1.0, TimerTestRay, hData, TIMER_DATA_HNDL_CLOSE);
 
 	float vecDir1[3], vecDir2[3];
 	GetDirectionVec(view_as<Direction>(26), vecDir1);
@@ -168,13 +168,13 @@ public Action TestRay(int iClient, any args) {
 	PrintToChat(iClient, "random 26~100 is %f %f %f", vecDir1[0], vecDir1[1], vecDir1[2]);
 	return Plugin_Stop;
 }
-public Action TimerTestRay(Handle hTimer, DataPack data) {
+public Action TimerTestRay(Handle hTimer, DataPack hData) {
 	int iClient;
 	float vecOrigin[3], vecEnd[3], vecHit[3];
 
-	data.Reset();
-	iClient = data.ReadCell();
-	data.ReadFloatArray(vecOrigin, 3);
+	hData.Reset();
+	iClient = hData.ReadCell();
+	hData.ReadFloatArray(vecOrigin, 3);
 
 	GetClientEyePosition(iClient, vecEnd);
 
@@ -378,7 +378,7 @@ stock void CheckIfPlayerCanMove(int iClient, int iTestID, int iTestCount = 0, fl
 	
 	SetEntPropVector(iClient, Prop_Data, "m_vecBaseVelocity", vecVelo);
 	
-	DataPack hTimerDataPack;
+	DataPack hTimerDataPack = new DataPack();
 	CreateDataTimer(0.02, TimerCheckMovePost, hTimerDataPack, TIMER_FLAG_NO_MAPCHANGE|TIMER_DATA_HNDL_CLOSE);
 	hTimerDataPack.WriteCell(iClient);
 	hTimerDataPack.WriteCell(iTestID);
@@ -391,21 +391,21 @@ stock void CheckIfPlayerCanMove(int iClient, int iTestID, int iTestCount = 0, fl
 	hTimerDataPack.WriteFloat(fStep);
 }
 
-public Action TimerCheckMovePost(Handle hTimer, DataPack data) {
+public Action TimerCheckMovePost(Handle hTimer, DataPack hTimerDataPack) {
 	float vecOrigin[3], vecOriginAfter[3], fStep;
 	bool bInfix;
 	Direction currentDir;
 	
-	data.Reset();
-	int iClient		= data.ReadCell();
-	int iTestID		= data.ReadCell();
-	int iTestCount	= data.ReadCell();
-	vecOrigin[0]	= data.ReadFloat();
-	vecOrigin[1]	= data.ReadFloat();
-	vecOrigin[2]	= data.ReadFloat();
-	bInfix			= data.ReadCell();
-	currentDir		= data.ReadCell();
-	fStep			= data.ReadFloat();
+	hTimerDataPack.Reset();
+	int iClient		= hTimerDataPack.ReadCell();
+	int iTestID		= hTimerDataPack.ReadCell();
+	int iTestCount	= hTimerDataPack.ReadCell();
+	vecOrigin[0]	= hTimerDataPack.ReadFloat();
+	vecOrigin[1]	= hTimerDataPack.ReadFloat();
+	vecOrigin[2]	= hTimerDataPack.ReadFloat();
+	bInfix			= hTimerDataPack.ReadCell();
+	currentDir		= hTimerDataPack.ReadCell();
+	fStep			= hTimerDataPack.ReadFloat();
 
 	GetClientAbsOrigin(iClient, vecOriginAfter);
 	
@@ -514,16 +514,6 @@ stock void TryFixPosition(int iClient, float fRadius, float fStep, bool bFirst=t
 	//LogMessage("fStep: %f", fStep + sm_stuck_step.FloatValue);
 	CheckIfPlayerCanMove(iClient, 0, 0, fStep+sm_stuck_step.FloatValue);
 }
-
-public int SortDesc(int[] x, int[] y, int[][] array, Handle data) {
-	float a = float(x[1]);
-	float b = float(y[1]);
-	if (a > b)
-		return -1;
-	else if (a < b)
-		return 1;
-	return 0;
-}  
 
 stock bool TryFixPositionFromDirection(int iClient, Direction dir, float fRadius, float fStep) {
 	float vecTryUp[3], vecTryDown[3], vecOrigin[3], vecMins[3], vecMaxs[3], vecDir[3];

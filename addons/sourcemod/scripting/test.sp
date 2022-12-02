@@ -16,10 +16,24 @@ public void OnPluginStart() {
     // HookUserMessage(GetUserMessageId("Cure"), OnUserMessage, true);
     LoadTranslations("delay_quit.phrases");
     RegAdminCmd("sm_tmi", TestMotdIndex, ADMFLAG_GENERIC);
-
+    RegAdminCmd("sm_tarr", TestArrayAssign, ADMFLAG_GENERIC);
     RegAdminCmd("sm_count", CountZombies, ADMFLAG_GENERIC);
     RegAdminCmd("sm_make", MakeZombies, ADMFLAG_GENERIC);
     RegServerCmd("sm_delay_quit", DelayQuit, "quit at a proper time");
+}
+
+public Action TestArrayAssign(int iClient, int nArgs)
+{
+    char szMsg[2][3];
+    szMsg[0] = "12";
+    szMsg[1] = "23";
+
+    char szTest[3];
+    szTest = szMsg[0];
+    szTest[0] = '0';
+
+    PrintToChat(iClient, "szMsg[0]: %s, szTest: %s", szMsg[0], szTest);
+    return Plugin_Continue;
 }
 
 public Action OnUserMessage(UserMsg msg_id, BfRead bf, const int[] players, int playersNum, bool reliable, bool init)

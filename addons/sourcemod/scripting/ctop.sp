@@ -153,11 +153,13 @@ public void OnConVarChange(Handle CVar, const char[] oldValue, const char[] newV
              (g_bIgnoreInfStamina    ||  CheckInfStamina()) && 
              (g_bIgnoreMachete       ||  CheckMachete()) && 
              (g_bIgnoreDifficulty    ||  CheckDifficulty()) ) {
-            
-            g_cvEnable.BoolValue = true;
+
             if (!g_cvEnableRT.BoolValue) {
-                CPrintToChatAll(0, "{green}[系统] {default}下回合开始时将会启用通关记录！");
+                if (!g_cvEnable.BoolValue) {
+                    CPrintToChatAll(0, "{green}[系统] {default}下回合开始时将会启用通关记录！");
+                }
             }
+            g_cvEnable.BoolValue = true;
         }
         else {
             if (g_cvEnableRT.BoolValue || g_cvEnable.BoolValue) {

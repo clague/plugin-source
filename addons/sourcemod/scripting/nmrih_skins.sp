@@ -9,7 +9,6 @@
 #define PLUGIN_NAME	"[NMRiH] Skins"
 #define PLUGIN_VERSION	"1.0.0"
 // Paths to configuration files
-#define PLAYERS_SKINS	"data/nmrih_skins_playermodels.ini"
 #define SKINS_DOWNLOADS	"configs/nmrih_skins/downloads_list.ini"
 #define FORCED_SKINS	"configs/nmrih_skins/forced_skins.ini"
 #define SKINS_MENU		"configs/nmrih_skins/skins_menu.ini"
@@ -88,13 +87,6 @@ public void OnPluginStart()
 		for(int i = 1; i <= MaxClients; i++) if(IsClientAuthorized(i)) OnClientConnected(i);
 		g_bLate = false;
 	}
-}
-
-public void OnPluginEnd()
-{
-	// Write the the player's szModel settings
-	char szFile[256];
-	BuildPath(Path_SM, szFile, 255, PLAYERS_SKINS);
 }
 
 public void CVarChanged_Enable(ConVar hCVar, const char[] szOldValue, const char[] szNewValue)

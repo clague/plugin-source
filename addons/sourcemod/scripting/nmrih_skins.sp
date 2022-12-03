@@ -360,7 +360,7 @@ stock void ReadItem(char[] szBuffer) {
 	}
 	else if(szBuffer[0] && FileExists(szBuffer, true)) {
 		AddFileToDownloadsTable(szBuffer);
-		LogMessage("Add %s to download list", szBuffer);
+		//LogMessage("Add %s to download list", szBuffer);
 	}
 }
 

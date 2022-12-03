@@ -21,7 +21,8 @@ bool g_bEnable,
 	g_bAdminGroup,
 	g_bAdminOnly,
 	g_bSpawnTimer,
-	g_bForceSkin;
+	g_bForceSkin,
+	g_bUseTranslation;
 
 Menu g_hMainMenu[MAXPLAYERS + 1], g_hModelMenu[MAX_GROUPS];
 KeyValues g_hMenuKv;
@@ -50,6 +51,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart()
 {
+	LoadTranslations("nmrih.skins.phrases");
 	CreateConVar("nmrih_skins_version", PLUGIN_VERSION, PLUGIN_NAME, FCVAR_NOTIFY|FCVAR_SPONLY|FCVAR_DONTRECORD);
 
 	ConVar hCVar;
@@ -68,6 +70,9 @@ public void OnPluginStart()
 	(hCVar = CreateConVar("sm_skins_forceskin",		"0", "Players will apply a skin no matter if they didn´t choosed a model from the menu", _, true, _, true, 1.0)).AddChangeHook(CVarChanged_ForceSkin);
 	g_bForceSkin = hCVar.BoolValue;
 
+	(hCVar = CreateConVar("sm_skins_use_translations",	"0", "Use translation file", _, true, _, true, 1.0)).AddChangeHook(CVarChanged_UseTranslation);
+	g_bUseTranslation = hCVar.BoolValue;
+
 	mp_forcecamera = FindConVar("mp_forcecamera");
 
 	AutoExecConfig(true, "nmrih_skins");
@@ -82,8 +87,7 @@ public void OnPluginStart()
 
 	HookEvent("player_spawn", Event_PlayerSpawn);
 
-	if(g_bLate)
-	{
+	if(g_bLate) {
 		for(int i = 1; i <= MaxClients; i++) if(IsClientAuthorized(i)) OnClientConnected(i);
 		g_bLate = false;
 	}
@@ -114,6 +118,17 @@ public void CVarChanged_ForceSkin(ConVar hCVar, const char[] szOldValue, const c
 	g_bForceSkin = hCVar.BoolValue;
 }
 
+public void CVarChanged_UseTranslation(ConVar hCVar, const char[] szOldValue, const char[] szNewValue)
+{
+	g_bUseTranslation = hCVar.BoolValue;
+}
+
+public void OnConfigsExecuted() {
+	if (g_bUseTranslation) {
+		LoadTranslations("nmrih.skins.phrases");
+	}
+}
+
 public void OnMapStart()
 {
 	if (!g_bEnable) {
@@ -130,12 +145,10 @@ public void OnMapStart()
 	BuildPath(Path_SM, szFile, 255, SKINS_MENU);
 	FileToKeyValues(g_hMenuKv, szFile);
 	if(!KvGotoFirstSubKey(g_hMenuKv)) return;
-	do
-	{
+	do {
 		KvJumpToKey(g_hMenuKv, "List");
 		KvGotoFirstSubKey(g_hMenuKv);
-		do
-		{
+		do {
 			KvGetString(g_hMenuKv, "path", szPath, sizeof(szPath), "");
 			if(FileExists(szPath, true) && PrecacheModel(szPath, true)) {
 				g_nTotalSkins++;
@@ -149,7 +162,7 @@ public void OnMapStart()
 	KvRewind(g_hMenuKv);
 
 	ReadDownloads();
-	LogMessage("Total: %i\n	Forced: %i", PLUGIN_NAME, g_nTotalSkins, g_nForcedSkins);
+	LogMessage("Total: %i	Forced: %i", g_nTotalSkins, g_nForcedSkins);
 }
 
 public void OnMapEnd()
@@ -231,19 +244,16 @@ stock void LoadForcedSkins()
 
 	//open precache szFile and add everything to download table
 	Handle hFile = OpenFile(szFile, "r");
-	while(ReadFileLine(hFile, szBuffer, sizeof(szBuffer)))
-	{
+	while(ReadFileLine(hFile, szBuffer, sizeof(szBuffer))) {
 		// Strip leading and trailing whitespace
 		TrimString(szBuffer);
 
 		// Skip non existing files(and Comments)
-		if(FileExists(szBuffer, true))
-		{
+		if(FileExists(szBuffer, true)) {
 			// Tell Clients to download files
 			AddFileToDownloadsTable(szBuffer);
 			// Tell Clients to cache szModel
-			if(StrEqual(szBuffer[strlen(szBuffer)-4], ".mdl", false) && g_nForcedSkins < MAX_FORCEDSKINS)
-			{
+			if(StrEqual(szBuffer[strlen(szBuffer)-4], ".mdl", false) && g_nForcedSkins < MAX_FORCEDSKINS) {
 				strcopy(g_szForcedSkins[g_nForcedSkins++], strlen(szBuffer)+1, szBuffer);
 				PrecacheModel(szBuffer, true);
 			}
@@ -262,8 +272,7 @@ stock void ReadDownloads() {
 
 	char szBuffer[256];
 	int len;
-	while(ReadFileLine(hFile, szBuffer, sizeof(szBuffer)))
-	{
+	while(ReadFileLine(hFile, szBuffer, sizeof(szBuffer))) {
 		if (StrContains(szBuffer, "//") == 0) {
 			szBuffer[0] = 0;
 		}
@@ -292,15 +301,13 @@ stock void ReadFileFolder(char[] szPath) {
 
 	if(DirExists(szPath, true)) {
 		dirh = OpenDirectory(szPath, true);
-		while(ReadDirEntry(dirh, szBuffer, sizeof(szBuffer), type))
-		{
+		while(ReadDirEntry(dirh, szBuffer, sizeof(szBuffer), type)) {
 			len = strlen(szBuffer);
 			if(szBuffer[len-1] == '\n') szBuffer[--len] = '\0';
 
 			TrimString(szBuffer);
 
-			if(!StrEqual(szBuffer, "", false) && !StrEqual(szBuffer, ".", false) && !StrEqual(szBuffer, "..", false))
-			{
+			if(!StrEqual(szBuffer, "", false) && !StrEqual(szBuffer, ".", false) && !StrEqual(szBuffer, "..", false)) {
 				strcopy(tmp_path, 255, szPath);
 				StrCat(tmp_path, 255, "/");
 				StrCat(tmp_path, 255, szBuffer);
@@ -325,7 +332,12 @@ public Action Cmd_Model(int iClient, int nArgs) {
 		if (AreClientCookiesCached(iClient)) {
 			g_hMainMenu[iClient].Display(iClient, MENU_TIME_FOREVER);
 		} else {
-			CPrintToChat(iClient, 0, "{green}[系统] {white}尚未验证你的身份，请稍后再试");
+			if (g_bUseTranslation) {
+				CPrintToChat(iClient, 0, "{green}%t {white}%t", "ChatPrefix", "NotAuthorized");
+			}
+			else {
+				CPrintToChat(iClient, 0, "{green}[系统] {white}尚未验证你的身份，请稍后再试");
+			}
 		}
 	}
 
@@ -346,8 +358,7 @@ stock void ReadItem(char[] szBuffer) {
 
 	TrimString(szBuffer);
 
-	if(len >= 2 && szBuffer[0] == '/' && szBuffer[1] == '/')
-	{
+	if(len >= 2 && szBuffer[0] == '/' && szBuffer[1] == '/') {
 		if(StrContains(szBuffer, "//") > -1) ReplaceString(szBuffer, 255, "//", "");
 	}
 	else if(szBuffer[0] && FileExists(szBuffer, true)) {
@@ -360,25 +371,21 @@ stock Menu BuildMainMenu(int iClient) {
 	KvRewind(g_hMenuKv);
 	if(!KvGotoFirstSubKey(g_hMenuKv)) return null;
 
-	Menu hMenu = CreateMenu(Menu_Group, MENU_ACTIONS_ALL);
+	Menu hMenu = CreateMenu(Menu_Main, MENU_ACTIONS_ALL);
 
 	static int items;
 	items = 0;
 	static char szBuffer[30], accessFlag[2];
 	AdminId admin = GetUserAdmin(iClient);
-	do
-	{
-		if(g_bAdminGroup)
-		{
+	do {
+		if(g_bAdminGroup) {
 			// check if they have access
 			static char group[30], temp[2];
 			KvGetString(g_hMenuKv, "Admin", group, sizeof(group));
 			static int count;
 			count = GetAdminGroupCount(admin);
-			for(int i; i < count; i++)
-			{
-				if(FindAdmGroup(group) == GetAdminGroup(admin, i, temp, sizeof(temp)))
-				{
+			for(int i; i < count; i++) {
+				if(FindAdmGroup(group) == GetAdminGroup(admin, i, temp, sizeof(temp))) {
 					// Get the model group name and add it to the menu
 					KvGetSectionName(g_hMenuKv, szBuffer, sizeof(szBuffer));
 					hMenu.AddItem(szBuffer, szBuffer);
@@ -389,8 +396,7 @@ stock Menu BuildMainMenu(int iClient) {
 
 		KvGetString(g_hMenuKv, "admin", accessFlag, sizeof(accessFlag));
 
-		if(!accessFlag[0] || CheckFlagAccess(iClient, accessFlag[0]))
-		{
+		if(!accessFlag[0] || CheckFlagAccess(iClient, accessFlag[0])) {
 			KvGetSectionName(g_hMenuKv, szBuffer, sizeof(szBuffer));
 			hMenu.AddItem(szBuffer, szBuffer);
 			items++;
@@ -399,16 +405,24 @@ stock Menu BuildMainMenu(int iClient) {
 	while(KvGotoNextKey(g_hMenuKv));
 	KvRewind(g_hMenuKv);
 
-	hMenu.AddItem("none", "还原");
+	hMenu.AddItem("none", "None");
 	hMenu.SetTitle("%s (%i categories):\n ", PLUGIN_NAME, items);
 
 	return hMenu;
 }
 
-public int Menu_Group(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
+public int Menu_Main(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 	switch(iAction) {
 		case MenuAction_Display: {
 			ToggleView(iClient, true);
+
+			if (g_bUseTranslation) {
+				char szBuffer[64];
+				FormatEx(szBuffer, sizeof(szBuffer), "%s %T:", PLUGIN_NAME, "MainMenuTitleEx", iClient, hMenu.ItemCount);
+			
+				Panel panel = view_as<Panel>(iParam);
+				panel.SetTitle(szBuffer);
+			}
 		}
 		// User has selected a model group
 		case MenuAction_Select: {
@@ -434,6 +448,14 @@ public int Menu_Group(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 			}
 			g_hModelMenu[iParam].Display(iClient, MENU_TIME_FOREVER);
 		}
+		case MenuAction_DisplayItem: {
+			if (g_bUseTranslation) {
+				char szBuffer[64], szDisplay[64];
+				hMenu.GetItem(iParam, "", 0, _, szBuffer, sizeof(szBuffer), iClient);
+				Format(szDisplay, sizeof(szDisplay), "%T", szBuffer, iClient);
+				return RedrawMenuItem(szDisplay);
+			}
+		}
 		case MenuAction_Cancel: {
 			if (iParam != MenuCancel_Disconnected) {
 				ToggleView(iClient, false);
@@ -455,8 +477,7 @@ stock Menu BuildModelMenu(const char[] szInfo) {
 	KvJumpToKey(g_hMenuKv, szInfo);
 	KvJumpToKey(g_hMenuKv, "List");
 	KvGotoFirstSubKey(g_hMenuKv);
-	do
-	{
+	do {
 		// Add the szModel to the hMenu
 		KvGetSectionName(g_hMenuKv, szBuffer, sizeof(szBuffer));
 		KvGetString(g_hMenuKv, "path", szPath, sizeof(szPath), "");
@@ -467,7 +488,7 @@ stock Menu BuildModelMenu(const char[] szInfo) {
 	// Rewind the KVs
 	KvRewind(g_hMenuKv);
 	// Set the hMenu title to the szModel group szName
-	hModelMenu.SetTitle("%s\n  %s (%i pcs):\n ", PLUGIN_NAME, szInfo, nItems);
+	hModelMenu.SetTitle(szInfo);
 	hModelMenu.ExitBackButton = true;
 	hModelMenu.ExitButton = true;
 
@@ -476,15 +497,29 @@ stock Menu BuildModelMenu(const char[] szInfo) {
 
 public int Menu_Model(Menu hMenu, MenuAction iAction, int iClient, int iParam)
 {
-	switch(iAction)
-	{
-		case MenuAction_Display:
-		{
+	switch(iAction) {
+		case MenuAction_Display: {
 			ToggleView(iClient, true);
+
+			if (g_bUseTranslation) {
+				char szBuffer[64];
+				hMenu.GetTitle(szBuffer, sizeof(szBuffer));
+				Format(szBuffer, sizeof(szBuffer), "%s\n %T %T:", PLUGIN_NAME, szBuffer, iClient, "ModelMenuTitleEx", iClient, hMenu.ItemCount);
+			
+				Panel panel = view_as<Panel>(iParam);
+				panel.SetTitle(szBuffer);
+			}
+			else {
+				char szBuffer[64];
+				hMenu.GetTitle(szBuffer, sizeof(szBuffer));
+				Format(szBuffer, sizeof(szBuffer), "%s\n  %s (%i pcs):\n ", PLUGIN_NAME, szBuffer, hMenu.ItemCount);
+			
+				Panel panel = view_as<Panel>(iParam);
+				panel.SetTitle(szBuffer);
+			}
 		}
 		// User choose a szModel
-		case MenuAction_Select:
-		{
+		case MenuAction_Select: {
 			char szModel[256];
 			if(!hMenu.GetItem(iParam, szModel, sizeof(szModel))) return 0;
 
@@ -492,6 +527,14 @@ public int Menu_Model(Menu hMenu, MenuAction iAction, int iClient, int iParam)
 			g_hCustomModel.Set(iClient, szModel);
 
 			hMenu.DisplayAt(iClient, GetMenuSelectionPosition(), MENU_TIME_FOREVER);
+		}
+		case MenuAction_DisplayItem: {
+			if (g_bUseTranslation) {
+				char szBuffer[64], szDisplay[64];
+				hMenu.GetItem(iParam, "", 0, _, szBuffer, sizeof(szBuffer), iClient);
+				Format(szDisplay, sizeof(szDisplay), "%T", szBuffer, iClient);
+				return RedrawMenuItem(szDisplay);
+			}
 		}
 		case MenuAction_Cancel: {
 			if(iParam == MenuCancel_ExitBack) {
@@ -510,10 +553,8 @@ public int Menu_Model(Menu hMenu, MenuAction iAction, int iClient, int iParam)
 
 stock void ToggleView(int iClient, bool bTPView)
 {
-	if(IsValidClient(iClient) && IsPlayerAlive(iClient))
-	{
-		if(bTPView)
-		{
+	if(IsValidClient(iClient) && IsPlayerAlive(iClient)) {
+		if(bTPView) {
 			// Player will see their ragdoll even if they are alive, so we need to delete the ragdoll
 			int iRagdoll = GetEntPropEnt(iClient, Prop_Send, "m_hRagdoll");
 			if (IsValidEntity(iRagdoll)) {
@@ -525,9 +566,7 @@ stock void ToggleView(int iClient, bool bTPView)
 			SetEntProp(iClient, Prop_Send, "m_bDrawViewmodel", 0);
 			SetEntProp(iClient, Prop_Send, "m_iFOV", 70);
 			SendConVarValue(iClient, mp_forcecamera, "1");
-		}
-		else
-		{
+		} else {
 			SetEntPropEnt(iClient, Prop_Send, "m_hObserverTarget", iClient);
 			SetEntProp(iClient, Prop_Send, "m_iObserverMode", 0);
 			SetEntProp(iClient, Prop_Send, "m_bDrawViewmodel", 1);

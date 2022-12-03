@@ -556,7 +556,7 @@ int DifMenuHandler(Menu hMenu, MenuAction iAction, int iParam1, int iParam2) {
     else if (iAction == MenuAction_DisplayItem) {
         char szBuffer[64], szDisplay[64];
         hMenu.GetItem(iParam2, szBuffer, sizeof(szBuffer), _, _, _, iParam1);
-        Format(szDisplay, 64, "%T", sizeof(szDisplay), iParam1);
+        Format(szDisplay, 64, "%T", szBuffer, iParam1);
         return RedrawMenuItem(szDisplay);
     }
     else if (iAction == MenuAction_Cancel) {

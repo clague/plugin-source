@@ -1,0 +1,111 @@
+"Phrases"
+{
+	"ChatPrefix"
+	{
+		"en"	"[SM]"
+		"chi"	"[系统]"
+	}
+	"NotAuthorized"
+	{
+		"en"	"You have not yet authorized, please wait for seconds."
+		"chi"	"尚未验证你的身份，请稍后再试"
+	}
+	"MainMenuTitleEx"
+	{
+		"#format"	"{1:d}"
+		"en"		"({1} categories)"
+		"chi"		"（{1}个分类）"
+	}
+	"ModelMenuTitleEx"
+	{
+		"#format"	"{1:d}"
+		"en"		"({1} pcs)"
+		"chi"		"（含{1}个皮肤）"
+	}
+	"公共模型"
+	{
+		"en"	"Public Models"
+		"chi"	"公开模型"
+	}
+	"默认模型"
+	{
+		"en"	"Default Models"
+		"chi"	"默认模型"
+	}
+	"None"
+	{
+		"en"	"Original"
+		"chi"	"还原"
+	}
+	"老鼠"
+	{
+		"en"	"FRat"
+		"chi"	"老鼠"
+	}
+	"TF间谍"
+	{
+		"en"	"TF-Spy"
+		"chi"	"TF间谍"
+	}
+	"白上フブキ"
+	{
+		"en"	"Shirakami Fubuki"
+		"chi"	"白上フブキ"
+	}
+	"有栖マナ"
+	{
+		"en"	"Alice Mana"
+		"chi"	"有栖マナ"
+	}
+	"米浴"
+	{
+		"en"	"Rice Shower"
+		"chi"	"米浴"
+	}
+	"可露凯"
+	{
+		"en"	"Clukay"
+		"chi"	"可露凯"
+	}
+	"Rusk"
+	{
+		"en"	"Rusk"
+		"chi"	"Rusk"
+	}
+	"Badass"
+	{
+		"en"	"Badass"
+	}
+	"Badass_s"
+	{
+		"en"	"Badass_s"
+	}
+	"Bateman"
+	{
+		"en"	"Bateman"
+	}
+	"Butcher"
+	{
+		"en"	"Butcher"
+	}
+	"Hunter"
+	{
+		"en"	"Hunter"
+	}
+	"Jive"
+	{
+		"en"	"Jive"
+	}
+	"Molotov"
+	{
+		"en"	"Molotov"
+	}
+	"Roje"
+	{
+		"en"	"Roje"
+	}
+	"Wally"
+	{
+		"en"	"Wally"
+	}
+}

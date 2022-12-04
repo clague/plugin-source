@@ -30,8 +30,8 @@ public Plugin:myinfo =
 public OnPluginStart()
 {
     CreateConVar("nmrih_infinity_version", PLUGIN_VERSION, "[NMRIH] Infinity version", FCVAR_NOTIFY|FCVAR_REPLICATED|FCVAR_SPONLY|FCVAR_DONTRECORD);
-    hInfAmmo = CreateConVar("sm_inf_ammo", "1", "0 - Normal ammo/clip\n1 - Infinite ammo\n2 -  Infinite clip.", FCVAR_NOTIFY, true, 0.0, true, 2.0);
-    hInfStamina = CreateConVar("sm_inf_stamina", "1", "On/Off Infinite stamina.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+    hInfAmmo = CreateConVar("sm_inf_ammo", "0", "0 - Normal ammo/clip\n1 - Infinite ammo\n2 -  Infinite clip.", FCVAR_NOTIFY, true, 0.0, true, 2.0);
+    hInfStamina = CreateConVar("sm_inf_stamina", "0", "On/Off Infinite stamina.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     hMaxStamina = FindConVar("sv_max_stamina");
 
     iInfAmmo = GetConVarInt(hInfAmmo);

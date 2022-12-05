@@ -423,7 +423,7 @@ public void SQL_WR_Callback2(Database db, DBResultSet results, const char[] erro
             int kills = results.FetchInt(4);
 
             char sDisplay[128];
-            FormatEx(sDisplay, 128, "%t", "Top", sName, sTime, deaths, kills, counts, client);
+            FormatEx(sDisplay, 128, "%T", "Top", client, sName, sTime, deaths, kills, counts);
             hMenu.AddItem("", sDisplay, ITEMDRAW_DISABLED);
         }
     }
@@ -434,14 +434,14 @@ public void SQL_WR_Callback2(Database db, DBResultSet results, const char[] erro
     {
         hMenu.SetTitle("%T", "Map", client, sMap);
         char sNoRecords[64];
-        FormatEx(sNoRecords, 64, "%t", "NoRecords", client);
+        FormatEx(sNoRecords, 64, "%T", "NoRecords", client);
 
         hMenu.AddItem("-1", sNoRecords, ITEMDRAW_DISABLED);
     }
 
     else
     {
-        FormatEx(sFormattedTitle, 192, "%t", "Map", sMap, client);
+        FormatEx(sFormattedTitle, 192, "%T", "Map", client, sMap);
         hMenu.SetTitle(sFormattedTitle);
     }
 

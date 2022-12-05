@@ -191,7 +191,7 @@ public Action DelayQuit(int args) {
 
 public Action OnStateChange(Event event, const char[] name, bool dontBroadcast) {
     int state = event.GetInt("state");
-    if (state == 6) { //Extraction expired
+    if (state == 6 || state == 1) { //Extraction expired
         UnhookEvent("state_change", OnStateChange, EventHookMode_Post);
         PrintToChatAll("\x04%t\x01：%t","Prefix", "ServerQuit");
         CreateTimer(3.0, TimerQuit, _);

@@ -200,7 +200,10 @@ void SetDifficulty() {
     }
 
     float fDensity = sv_spawn_density.FloatValue;
-    if (fDensity == 1.5) {
+    if (fDensity == 1.0) {
+        g_GameDensity = GameDensity10;
+    }
+    else if (fDensity == 1.5) {
         g_GameDensity = GameDensity15;
     }
     else if (fDensity == 3.0) {
@@ -441,19 +444,19 @@ int TopMenuHandler(Menu hMenu, MenuAction iAction, int iParam1, int iParam2) {
         char szBuffer[64], szDisplay[64];
         hMenu.GetItem(iParam2, szBuffer, 64, _, _, _, iParam1);
         if (StrEqual(szBuffer, "TopMenuItemInfStamina")) {
-            if (!sm_inf_stamina.BoolValue) {
-                FormatEx(szBuffer, sizeof(szBuffer), "TopMenuItemInfStaminaEnable");
+            if (IsValidHandle(sm_inf_stamina) && sm_inf_stamina.BoolValue) {
+                FormatEx(szBuffer, sizeof(szBuffer), "TopMenuItemInfStaminaDisable");
             }
             else {
-                FormatEx(szBuffer, sizeof(szBuffer), "TopMenuItemInfStaminaDisable");
+                FormatEx(szBuffer, sizeof(szBuffer), "TopMenuItemInfStaminaEnable");
             }
         }
         else if (StrEqual(szBuffer, "TopMenuItemMachete")) {
-            if (!sm_machete_enable.BoolValue) {
-                FormatEx(szBuffer, sizeof(szBuffer), "TopMenuItemMacheteEnable");
+            if (IsValidHandle(sm_machete_enable) && sm_machete_enable.BoolValue) {
+                FormatEx(szBuffer, sizeof(szBuffer), "TopMenuItemMacheteDisable");
             }
             else {
-                FormatEx(szBuffer, sizeof(szBuffer), "TopMenuItemMacheteDisable");
+                FormatEx(szBuffer, sizeof(szBuffer), "TopMenuItemMacheteEnable");
             }
         }
         FormatEx(szDisplay, sizeof(szDisplay), "%T", szBuffer, iParam1);

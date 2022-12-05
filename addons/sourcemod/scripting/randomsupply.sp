@@ -48,6 +48,8 @@ public void OnPluginStart()
 {
     g_bEnable = CreateConVar("sm_random_enable", "1", "on = 1 , off = 0");
     g_bMacheteEnable = CreateConVar("sm_machete_enable", "0", "on = 1 , off = 0");
+
+    AutoExecConfig(true, "randomsupply");
     HookEvent("player_spawn", EventPlayerRespawn);
     HookEvent("player_death", EventPlayerDeath);
     HookEvent("player_extracted", EventPlayerExtracted);

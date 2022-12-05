@@ -150,7 +150,7 @@ public void OnMapStart()
 		KvGotoFirstSubKey(g_hMenuKv);
 		do {
 			KvGetString(g_hMenuKv, "path", szPath, sizeof(szPath), "");
-			if(FileExists(szPath, true) && PrecacheModel(szPath, true)) {
+			if(PrecacheModel(szPath, true)) {
 				g_nTotalSkins++;
 			}
 		}
@@ -163,78 +163,6 @@ public void OnMapStart()
 
 	ReadDownloads();
 	LogMessage("Total: %i	Forced: %i", g_nTotalSkins, g_nForcedSkins);
-}
-
-public void OnMapEnd()
-{
-	if (IsValidHandle(g_hMenuKv)) {
-		delete g_hMenuKv;
-	}
-	for (int i = 1; i <= MaxClients; i++) {
-		if (IsValidHandle(g_hMainMenu[i])) {
-			delete g_hMainMenu[i];
-		}
-	}
-	for (int i = 0; i < MAX_GROUPS; i++) {
-		if (IsValidHandle(g_hModelMenu[i])) {
-			delete g_hModelMenu[i];
-		}
-	}
-}
-
-public void OnClientConnected(int iClient) {
-	g_bSelectedSkin[iClient] = false;
-	g_bCookieLate[iClient] = false;
-}
-
-public void OnClientCookiesCached(int iClient) {
-	if (g_bCookieLate[iClient]) {
-		if (!g_bSelectedSkin[iClient]) {
-			char szModel[PLATFORM_MAX_PATH];
-			GetEntPropString(iClient, Prop_Data, "m_ModelName", szModel, sizeof(szModel));
-			g_hOriginalModel.Set(iClient, szModel);
-		}
-		
-		if(g_bSpawnTimer) CreateTimer(1.0, Timer_Spawn, GetClientUserId(iClient));
-		else ApplyModelFromCookie(iClient);
-	}
-}
-
-public void OnClientDisconnect_Post(int iClient) {
-	if (IsValidHandle(g_hMainMenu[iClient])) {
-		delete g_hMainMenu[iClient];
-	}
-}
-
-public void Event_PlayerSpawn(Event hEvent, const char[] szName, bool bDontBroadcast)
-{
-	if(!g_bEnable) return;
-
-	int iClient = GetClientOfUserId(hEvent.GetInt("userid"));
-
-	if (GetEntProp(iClient, Prop_Send, "m_iObserverMode") == 1) {
-		ToggleView(iClient, false);
-	}
-
-	if (!AreClientCookiesCached(iClient)) {
-		g_bCookieLate[iClient] = true;
-		return;
-	}
-
-	if (!g_bSelectedSkin[iClient]) {
-		char szModel[PLATFORM_MAX_PATH];
-		GetEntPropString(iClient, Prop_Data, "m_ModelName", szModel, sizeof(szModel));
-		g_hOriginalModel.Set(iClient, szModel);
-	}
-	
-	if(g_bSpawnTimer) CreateTimer(1.0, Timer_Spawn, GetClientUserId(iClient));
-	else ApplyModelFromCookie(iClient);
-}
-
-public Action Timer_Spawn(Handle timer, any iUserId)
-{
-	ApplyModelFromCookie(GetClientOfUserId(iUserId));
-	return Plugin_Stop;
 }
 
 stock void LoadForcedSkins()
@@ -295,7 +223,9 @@ stock void ReadFileFolder(char[] szPath) {
 	static int len;
 
 	len = strlen(szPath);
-	if(szPath[len-1] == '\n') szPath[--len] = '\0';
+	if(szPath[len-1] == '\n') {
+		szPath[--len] = '\0';
+	}
 
 	TrimString(szPath);
 
@@ -320,16 +250,110 @@ stock void ReadFileFolder(char[] szPath) {
 	if(IsValidHandle(dirh)) CloseHandle(dirh);
 }
 
+stock void ReadItem(char[] szBuffer) {
+	int len = strlen(szBuffer);
+	if(szBuffer[len-1] == '\n') szBuffer[--len] = '\0';
+
+	TrimString(szBuffer);
+
+	if(len >= 2 && szBuffer[0] == '/' && szBuffer[1] == '/') {
+		ReplaceString(szBuffer, 255, "//", "");
+	}
+	else if(szBuffer[0] && FileExists(szBuffer, true)) {
+		AddFileToDownloadsTable(szBuffer);
+		//LogMessage("Add %s to download list", szBuffer);
+	}
+}
+
+public void OnMapEnd()
+{
+	if (IsValidHandle(g_hMenuKv)) {
+		delete g_hMenuKv;
+	}
+	for (int i = 1; i <= MaxClients; i++) {
+		if (IsValidHandle(g_hMainMenu[i])) {
+			delete g_hMainMenu[i];
+		}
+	}
+	for (int i = 0; i < MAX_GROUPS; i++) {
+		if (IsValidHandle(g_hModelMenu[i])) {
+			delete g_hModelMenu[i];
+		}
+	}
+}
+
+public void OnClientConnected(int iClient) {
+	g_bSelectedSkin[iClient] = false;
+	g_bCookieLate[iClient] = false;
+}
+
+public void OnClientCookiesCached(int iClient) {
+	if (g_bCookieLate[iClient]) {
+		if (!g_bSelectedSkin[iClient]) {
+			char szModel[PLATFORM_MAX_PATH];
+			GetEntPropString(iClient, Prop_Data, "m_ModelName", szModel, sizeof(szModel));
+			g_hOriginalModel.Set(iClient, szModel);
+		}
+		if (IsPlayerAlive(iClient)) {
+			if(g_bSpawnTimer) {
+				CreateTimer(1.0, Timer_Spawn, GetClientUserId(iClient));
+			} else {
+				ApplyModelFromCookie(iClient);
+			}
+		}
+	}
+}
+
+public void OnClientDisconnect_Post(int iClient) {
+	if (IsValidHandle(g_hMainMenu[iClient])) {
+		delete g_hMainMenu[iClient];
+	}
+}
+
+public void Event_PlayerSpawn(Event hEvent, const char[] szName, bool bDontBroadcast)
+{
+	if(!g_bEnable) return;
+
+	int iClient = GetClientOfUserId(hEvent.GetInt("userid"));
+
+	if (GetEntProp(iClient, Prop_Send, "m_iObserverMode") == 1) {
+		ToggleView(iClient, false);
+	}
+
+	if (!AreClientCookiesCached(iClient)) {
+		g_bCookieLate[iClient] = true;
+		return;
+	}
+
+	if (!g_bSelectedSkin[iClient]) {
+		char szModel[PLATFORM_MAX_PATH];
+		GetEntPropString(iClient, Prop_Data, "m_ModelName", szModel, sizeof(szModel));
+		g_hOriginalModel.Set(iClient, szModel);
+	}
+	
+	if(g_bSpawnTimer) {
+		CreateTimer(1.0, Timer_Spawn, GetClientUserId(iClient));
+	} else {
+		ApplyModelFromCookie(iClient);
+	}
+}
+
+public Action Timer_Spawn(Handle timer, any iUserId)
+{
+	ApplyModelFromCookie(GetClientOfUserId(iUserId));
+	return Plugin_Stop;
+}
+
 public Action Cmd_Model(int iClient, int nArgs) {
 	if(	g_bEnable &&
 		IsValidClient(iClient) &&
 		IsClientAuthorized(iClient) &&
-		(g_bAdminOnly && GetUserAdmin(iClient) != INVALID_ADMIN_ID) || !g_bAdminOnly) {
-
-		if (!IsValidHandle(g_hMainMenu[iClient])) {
-			g_hMainMenu[iClient] = BuildMainMenu(iClient);
-		}
+		(g_bAdminOnly && GetUserAdmin(iClient) != INVALID_ADMIN_ID) || !g_bAdminOnly
+	) {
 		if (AreClientCookiesCached(iClient)) {
+			if (!IsValidHandle(g_hMainMenu[iClient])) {
+				g_hMainMenu[iClient] = BuildMainMenu(iClient);
+			}
 			g_hMainMenu[iClient].Display(iClient, MENU_TIME_FOREVER);
 		} else {
 			if (g_bUseTranslation) {
@@ -344,69 +368,35 @@ public Action Cmd_Model(int iClient, int nArgs) {
 	return Plugin_Handled;
 }
 
-stock bool CheckFlagAccess(int iClient, int iAccessFlag) {
-	static AdminId id;
-	if((id = GetUserAdmin(iClient)) == INVALID_ADMIN_ID) return false;
-
-	static AdminFlag flag;
-	return FindFlagByChar(iAccessFlag, flag) && GetAdminFlag(id, flag, Access_Effective);
-}
-
-stock void ReadItem(char[] szBuffer) {
-	int len = strlen(szBuffer);
-	if(szBuffer[len-1] == '\n') szBuffer[--len] = '\0';
-
-	TrimString(szBuffer);
-
-	if(len >= 2 && szBuffer[0] == '/' && szBuffer[1] == '/') {
-		if(StrContains(szBuffer, "//") > -1) ReplaceString(szBuffer, 255, "//", "");
-	}
-	else if(szBuffer[0] && FileExists(szBuffer, true)) {
-		AddFileToDownloadsTable(szBuffer);
-		//LogMessage("Add %s to download list", szBuffer);
-	}
-}
-
 stock Menu BuildMainMenu(int iClient) {
 	KvRewind(g_hMenuKv);
 	if(!KvGotoFirstSubKey(g_hMenuKv)) return null;
 
 	Menu hMenu = CreateMenu(Menu_Main, MENU_ACTIONS_ALL);
 
-	static int items;
-	items = 0;
-	static char szBuffer[30], accessFlag[2];
+	static char szBuffer[30], szGroup[30];
+	static int count;
 	AdminId admin = GetUserAdmin(iClient);
 	do {
 		if(g_bAdminGroup) {
 			// check if they have access
-			static char group[30], temp[2];
-			KvGetString(g_hMenuKv, "Admin", group, sizeof(group));
-			static int count;
+			KvGetString(g_hMenuKv, "Admin", szGroup, sizeof(szGroup));
 			count = GetAdminGroupCount(admin);
-			for(int i; i < count; i++) {
-				if(FindAdmGroup(group) == GetAdminGroup(admin, i, temp, sizeof(temp))) {
+			for(int i = 0; i < count; i++) {
+				if(FindAdmGroup(szGroup) == GetAdminGroup(admin, i, "", 0)) {
 					// Get the model group name and add it to the menu
 					KvGetSectionName(g_hMenuKv, szBuffer, sizeof(szBuffer));
 					hMenu.AddItem(szBuffer, szBuffer);
-					items++;
+					break;
 				}
 			}
-		}
-
-		KvGetString(g_hMenuKv, "admin", accessFlag, sizeof(accessFlag));
-
-		if(!accessFlag[0] || CheckFlagAccess(iClient, accessFlag[0])) {
-			KvGetSectionName(g_hMenuKv, szBuffer, sizeof(szBuffer));
-			hMenu.AddItem(szBuffer, szBuffer);
-			items++;
 		}
 	}
 	while(KvGotoNextKey(g_hMenuKv));
 	KvRewind(g_hMenuKv);
 
 	hMenu.AddItem("none", "None");
-	hMenu.SetTitle("%s (%i categories):\n ", PLUGIN_NAME, items);
+	hMenu.SetTitle("%s (%i categories):", PLUGIN_NAME, hMenu.ItemCount);
 
 	return hMenu;
 }
@@ -604,5 +594,5 @@ stock void ApplyModel(int iClient, const char[] szModel)
 
 stock bool IsValidClient(int iClient)
 {
-	return 0 < iClient <= MaxClients && IsClientConnected(iClient) && IsClientInGame(iClient);
+	return 0 < iClient <= MaxClients && IsClientInGame(iClient);
 }

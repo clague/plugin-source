@@ -1,0 +1,28 @@
+"Phrases"
+{
+	"DisableBHop"
+	{
+		"en"			"{green}[SM] {white}Bunny Hopping disabled."
+		"chi"			"{green}[系统] {white}连跳已关闭"
+	}
+	"EnableBHop"
+	{
+		"en"			"{green}[SM] {white}Bunny Hopping enabled. Hold jump to Bunny Hop!"
+		"chi"			"{green}[系统] {white}连跳已开启，按住跳跃键连跳！"
+	}
+	"InformBHopEnable"
+	{
+		"en"			"{lawngreen}BHop is enabled for you!"
+		"chi"			"{lawngreen}自动连跳处于开启状态"
+	}
+	"InformBHopDisable"
+	{
+		"en"			"{grey}BHop is disabled for you!"
+		"chi"			"{grey}自动连跳处于关闭状态"
+	}
+	"NotAuthorized"
+	{
+		"en"			"{green}[SM] {white}You have not yet authorized, please wait for seconds."
+		"chi"			"{green}[系统] {white}尚未验证你的身份，请稍后再试"
+	}
+}

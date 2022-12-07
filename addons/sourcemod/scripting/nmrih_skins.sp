@@ -102,10 +102,11 @@ public void OnPluginStart() {
 
 	g_hFovMenu = new Menu(Menu_Fov, MenuAction_Display | MenuAction_DisplayItem | MenuAction_DrawItem | MenuAction_Select);
 	g_hFovMenu.SetTitle(""); // Set in handle
-	g_hFovMenu.AddItem("50", "50");
-	g_hFovMenu.AddItem("70", "70");
+	g_hFovMenu.AddItem("80", "80");
 	g_hFovMenu.AddItem("90", "90");
+	g_hFovMenu.AddItem("100", "100");
 	g_hFovMenu.AddItem("110", "110");
+	g_hFovMenu.AddItem("120", "120");
 	g_hFovMenu.AddItem("Custom", "Custom");
 	g_hFovMenu.ExitButton = true;
 }
@@ -327,9 +328,11 @@ public void OnClientDisconnect_Post(int iClient) {
 }
 
 public void Event_PlayerSpawn(Event hEvent, const char[] szName, bool bDontBroadcast) {
-	if(!g_bEnable) return;
-
 	int iClient = GetClientOfUserId(hEvent.GetInt("userid"));
+
+	if (!g_bEnable || !IsPlayerAlive(iClient)) {
+		return;
+	}
 
 	if (GetEntProp(iClient, Prop_Send, "m_iObserverMode") == 1) {
 		ToggleView(iClient, false);
@@ -427,7 +430,8 @@ public int Menu_Fov(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 					}
 				}
 				else {
-					FormatEx(szBuffer, sizeof(szBuffer), "%T", szBuffer, iClient);
+					Format(szBuffer, sizeof(szBuffer), "%T", szBuffer, iClient);
+					return RedrawMenuItem(szBuffer);
 				}
 			}
 		}
@@ -573,7 +577,7 @@ public int Menu_Main(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 			if (g_bUseTranslation) {
 				char szBuffer[64], szDisplay[64];
 				hMenu.GetItem(iParam, "", 0, _, szBuffer, sizeof(szBuffer), iClient);
-				Format(szDisplay, sizeof(szDisplay), "%T", szBuffer, iClient);
+				FormatEx(szDisplay, sizeof(szDisplay), "%T", szBuffer, iClient);
 				return RedrawMenuItem(szDisplay);
 			}
 		}
@@ -652,7 +656,7 @@ public int Menu_Model(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 			if (g_bUseTranslation) {
 				char szBuffer[64], szDisplay[64];
 				hMenu.GetItem(iParam, "", 0, _, szBuffer, sizeof(szBuffer), iClient);
-				Format(szDisplay, sizeof(szDisplay), "%T", szBuffer, iClient);
+				FormatEx(szDisplay, sizeof(szDisplay), "%T", szBuffer, iClient);
 				return RedrawMenuItem(szDisplay);
 			}
 		}

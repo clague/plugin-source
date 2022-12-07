@@ -16,7 +16,8 @@
 #define MAX_GROUPS 32
 #define MAX_FORCEDSKINS 64
 
-ConVar mp_forcecamera;
+#define DEFAULT_FOV 90
+
 bool g_bEnable,
 	g_bAdminGroup,
 	g_bAdminOnly,
@@ -24,18 +25,18 @@ bool g_bEnable,
 	g_bForceSkin,
 	g_bUseTranslation;
 
-Menu g_hMainMenu[MAXPLAYERS + 1], g_hModelMenu[MAX_GROUPS];
+Menu g_hMainMenu[MAXPLAYERS + 1], g_hModelMenu[MAX_GROUPS], g_hFovMenu;
 KeyValues g_hMenuKv;
-Cookie g_hCustomModel, g_hOriginalModel;
+Cookie g_hCustomModel, g_hOriginalModel, g_hFov;
 bool g_bLate,
+	g_bListenClient[MAXPLAYERS + 1],
 	g_bCookieLate[MAXPLAYERS + 1],
 	g_bSelectedSkin[MAXPLAYERS + 1];
 int g_nForcedSkins,
 	g_nTotalSkins;
 char g_szForcedSkins[MAX_FORCEDSKINS][PLATFORM_MAX_PATH];
 
-public Plugin myinfo =
-{
+public Plugin myinfo = {
 	name		= PLUGIN_NAME,
 	author		= "Grey83 & clagura",
 	description	= "Skins menu for NMRiH",
@@ -43,14 +44,12 @@ public Plugin myinfo =
 	url			= ""
 }
 
-public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
-{
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	g_bLate = late;
 	return APLRes_Success;
 }
 
-public void OnPluginStart()
-{
+public void OnPluginStart() {
 	CreateConVar("nmrih_skins_version", PLUGIN_VERSION, PLUGIN_NAME, FCVAR_NOTIFY|FCVAR_SPONLY|FCVAR_DONTRECORD);
 
 	ConVar hCVar;
@@ -72,8 +71,6 @@ public void OnPluginStart()
 	(hCVar = CreateConVar("sm_skins_use_translations",	"0", "Use translation file", _, true, _, true, 1.0)).AddChangeHook(CVarChanged_UseTranslation);
 	g_bUseTranslation = hCVar.BoolValue;
 
-	mp_forcecamera = FindConVar("mp_forcecamera");
-
 	AutoExecConfig(true, "nmrih_skins");
 
 	RegConsoleCmd("sm_model", Cmd_Model);
@@ -81,8 +78,12 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_skin", Cmd_Model);
 	RegConsoleCmd("sm_skins", Cmd_Model);
 
+	RegConsoleCmd("sm_fov", Cmd_Fov);
+	AddCommandListener(FovListener, "say");
+
 	g_hCustomModel = RegClientCookie("custommodel", "Player's custom model", CookieAccess_Protected);
 	g_hOriginalModel = RegClientCookie("originalmodel", "Player's original model", CookieAccess_Protected);
+	g_hFov = RegClientCookie("FOV", "Player's FOV", CookieAccess_Public);
 
 	HookEvent("player_spawn", Event_PlayerSpawn);
 
@@ -98,35 +99,45 @@ public void OnPluginStart()
 		}
 		g_bLate = false;
 	}
+
+	g_hFovMenu = new Menu(Menu_Fov, MenuAction_Display | MenuAction_DisplayItem | MenuAction_DrawItem | MenuAction_Select);
+	g_hFovMenu.SetTitle(""); // Set in handle
+	g_hFovMenu.AddItem("50", "50");
+	g_hFovMenu.AddItem("70", "70");
+	g_hFovMenu.AddItem("90", "90");
+	g_hFovMenu.AddItem("110", "110");
+	g_hFovMenu.AddItem("Custom", "Custom");
+	g_hFovMenu.ExitButton = true;
 }
 
-public void CVarChanged_Enable(ConVar hCVar, const char[] szOldValue, const char[] szNewValue)
-{
+public void OnPluginEnd() {
+	OnMapEnd();
+	if (IsValidHandle(g_hFovMenu)) {
+		delete g_hFovMenu;
+	}
+}
+
+public void CVarChanged_Enable(ConVar hCVar, const char[] szOldValue, const char[] szNewValue) {
 	g_bEnable = hCVar.BoolValue;
 }
 
-public void CVarChanged_AdminGroup(ConVar hCVar, const char[] szOldValue, const char[] szNewValue)
-{
+public void CVarChanged_AdminGroup(ConVar hCVar, const char[] szOldValue, const char[] szNewValue) {
 	g_bAdminGroup = hCVar.BoolValue;
 }
 
-public void CVarChanged_AdminOnly(ConVar hCVar, const char[] szOldValue, const char[] szNewValue)
-{
+public void CVarChanged_AdminOnly(ConVar hCVar, const char[] szOldValue, const char[] szNewValue) {
 	g_bAdminOnly = hCVar.BoolValue;
 }
 
-public void CVarChanged_SpawnTimer(ConVar hCVar, const char[] szOldValue, const char[] szNewValue)
-{
+public void CVarChanged_SpawnTimer(ConVar hCVar, const char[] szOldValue, const char[] szNewValue) {
 	g_bSpawnTimer = hCVar.BoolValue;
 }
 
-public void CVarChanged_ForceSkin(ConVar hCVar, const char[] szOldValue, const char[] szNewValue)
-{
+public void CVarChanged_ForceSkin(ConVar hCVar, const char[] szOldValue, const char[] szNewValue) {
 	g_bForceSkin = hCVar.BoolValue;
 }
 
-public void CVarChanged_UseTranslation(ConVar hCVar, const char[] szOldValue, const char[] szNewValue)
-{
+public void CVarChanged_UseTranslation(ConVar hCVar, const char[] szOldValue, const char[] szNewValue) {
 	g_bUseTranslation = hCVar.BoolValue;
 }
 
@@ -136,8 +147,7 @@ public void OnConfigsExecuted() {
 	}
 }
 
-public void OnMapStart()
-{
+public void OnMapStart() {
 	if (!g_bEnable) {
 		return;
 	}
@@ -172,8 +182,7 @@ public void OnMapStart()
 	LogMessage("Total: %i	Forced: %i", g_nTotalSkins, g_nForcedSkins);
 }
 
-stock void LoadForcedSkins()
-{
+stock void LoadForcedSkins() {
 	static char szBuffer[PLATFORM_MAX_PATH], szFile[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, szFile, PLATFORM_MAX_PATH, FORCED_SKINS);
 
@@ -272,8 +281,7 @@ stock void ReadItem(char[] szBuffer) {
 	}
 }
 
-public void OnMapEnd()
-{
+public void OnMapEnd() {
 	if (IsValidHandle(g_hMenuKv)) {
 		delete g_hMenuKv;
 	}
@@ -305,7 +313,7 @@ public void OnClientCookiesCached(int iClient) {
 			if(g_bSpawnTimer) {
 				CreateTimer(1.0, Timer_Spawn, GetClientUserId(iClient));
 			} else {
-				ApplyModelFromCookie(iClient);
+				ApplyFromCookie(iClient);
 			}
 		}
 		g_bCookieLate[iClient] = false;
@@ -318,8 +326,7 @@ public void OnClientDisconnect_Post(int iClient) {
 	}
 }
 
-public void Event_PlayerSpawn(Event hEvent, const char[] szName, bool bDontBroadcast)
-{
+public void Event_PlayerSpawn(Event hEvent, const char[] szName, bool bDontBroadcast) {
 	if(!g_bEnable) return;
 
 	int iClient = GetClientOfUserId(hEvent.GetInt("userid"));
@@ -342,13 +349,12 @@ public void Event_PlayerSpawn(Event hEvent, const char[] szName, bool bDontBroad
 	if(g_bSpawnTimer) {
 		CreateTimer(1.0, Timer_Spawn, GetClientUserId(iClient));
 	} else {
-		ApplyModelFromCookie(iClient);
+		ApplyFromCookie(iClient);
 	}
 }
 
-public Action Timer_Spawn(Handle timer, any iUserId)
-{
-	ApplyModelFromCookie(GetClientOfUserId(iUserId));
+public Action Timer_Spawn(Handle timer, any iUserId) {
+	ApplyFromCookie(GetClientOfUserId(iUserId));
 	return Plugin_Stop;
 }
 
@@ -374,6 +380,109 @@ public Action Cmd_Model(int iClient, int nArgs) {
 	}
 
 	return Plugin_Handled;
+}
+
+public Action Cmd_Fov(int iClient, int nArgs) {
+	if(g_bEnable && IsValidClient(iClient)) {
+		if (AreClientCookiesCached(iClient)) {
+			float fFov;
+			if (GetCmdArgFloatEx(1, fFov)) {
+				ApplyFov(iClient, RoundToNearest(fFov));
+			} else {
+				CPrintToChat(iClient, 0, "{green}%t {white}%t", "ChatPrefix", "CurrentFov", GetEntProp(iClient, Prop_Send, "m_iFOV"), g_hFov.GetInt(iClient));
+				g_hFovMenu.Display(iClient, MENU_TIME_FOREVER);
+			}
+		} else {
+			if (g_bUseTranslation) {
+				CPrintToChat(iClient, 0, "{green}%t {white}%t", "ChatPrefix", "NotAuthorized");
+			} else {
+				CPrintToChat(iClient, 0, "{green}[系统] {white}尚未验证你的身份，请稍后再试");
+			}
+		}
+	}
+
+	return Plugin_Handled;
+}
+
+public int Menu_Fov(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
+	switch(iAction) {
+		case MenuAction_Display: {
+			if (g_bUseTranslation) {
+				static char szBuffer[64];
+				FormatEx(szBuffer, sizeof(szBuffer), "%T:", "FovMenuTitle", iClient);
+			
+				Panel panel = view_as<Panel>(iParam);
+				panel.SetTitle(szBuffer);
+			}
+		}
+		case MenuAction_DisplayItem: {
+			if (g_bUseTranslation) {
+				static char szBuffer[64];
+				static int iFov = 0;
+				hMenu.GetItem(iParam, szBuffer, sizeof(szBuffer), _, _, _, iClient);
+				if ((iFov = StringToInt(szBuffer)) != 0) {
+					if (iFov == DEFAULT_FOV) {
+						FormatEx(szBuffer, sizeof(szBuffer), "%T", "DefaultFov", iClient, iFov);
+						return RedrawMenuItem(szBuffer);
+					}
+				}
+				else {
+					FormatEx(szBuffer, sizeof(szBuffer), "%T", szBuffer, iClient);
+				}
+			}
+		}
+		case MenuAction_DrawItem: {
+			static char szBuffer[64];
+			static int m_iFov, iFov;
+
+			m_iFov = GetEntProp(iClient, Prop_Send, "m_iFOV");
+			hMenu.GetItem(iParam, szBuffer, sizeof(szBuffer), _, _, _, iClient);
+			if ((iFov = StringToInt(szBuffer)) != 0) {
+				if (iFov == m_iFov) {
+					return ITEMDRAW_DISABLED;
+				}
+			}
+		}
+		case MenuAction_Select: {
+			static int iFov = 0;
+			static char szBuffer[64];
+			hMenu.GetItem(iParam, szBuffer, sizeof(szBuffer), _, _, _, iClient);
+			if ((iFov = StringToInt(szBuffer)) != 0) {
+				ApplyFov(iClient, iFov);
+				hMenu.DisplayAt(iClient, GetMenuSelectionPosition(), MENU_TIME_FOREVER);
+			}
+			else if (strcmp(szBuffer, "Custom") == 0) {
+				g_bListenClient[iClient] = true;
+				CPrintToChat(iClient, 0, "{red}%t {white}%t", "ChatPrefix", "FovCustomHint");
+			}
+		}
+	}
+	return 0;
+}
+
+public Action FovListener(int iClient, const char[] szCommand, int nArgs) {
+	if (g_bListenClient[iClient]) {
+		g_bListenClient[iClient] = false;
+
+		static char szBuffer[64];
+		GetCmdArgString(szBuffer, sizeof(szBuffer));
+		ReplaceString(szBuffer, sizeof(szBuffer), "\"", "");
+
+		float fFov = StringToFloat(szBuffer);
+		if (fFov <= 0.0) {
+			CPrintToChat(iClient, 0, "{green}%t {white}%t", "ChatPrefix", "Fail");
+			g_hFovMenu.Display(iClient, MENU_TIME_FOREVER);
+		}
+		else {
+			ApplyFov(iClient, RoundToNearest(fFov));
+			CPrintToChat(iClient, 0, "{green}%t {white}%t", "ChatPrefix", "Success");
+			g_hFovMenu.Display(iClient, MENU_TIME_FOREVER);
+		}
+		return Plugin_Handled;
+	}
+	else {
+		return Plugin_Continue;
+	}
 }
 
 stock Menu BuildMainMenu(int iClient) {
@@ -507,8 +616,7 @@ stock Menu BuildModelMenu(const char[] szInfo) {
 	return hModelMenu;
 }
 
-public int Menu_Model(Menu hMenu, MenuAction iAction, int iClient, int iParam)
-{
+public int Menu_Model(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 	switch(iAction) {
 		case MenuAction_Display: {
 			ToggleView(iClient, true);
@@ -563,8 +671,7 @@ public int Menu_Model(Menu hMenu, MenuAction iAction, int iClient, int iParam)
 	return 0;
 }
 
-stock void ToggleView(int iClient, bool bTPView)
-{
+stock void ToggleView(int iClient, bool bTPView) {
 	if(IsValidClient(iClient) && IsPlayerAlive(iClient)) {
 		if(bTPView) {
 			// Player will see their ragdoll even if they are alive, so we need to delete the ragdoll
@@ -577,22 +684,22 @@ stock void ToggleView(int iClient, bool bTPView)
 			SetEntProp(iClient, Prop_Send, "m_iObserverMode", 1);
 			SetEntProp(iClient, Prop_Send, "m_bDrawViewmodel", 0);
 			SetEntProp(iClient, Prop_Send, "m_iFOV", 70);
-			SendConVarValue(iClient, mp_forcecamera, "1");
 		} else {
 			SetEntPropEnt(iClient, Prop_Send, "m_hObserverTarget", iClient);
 			SetEntProp(iClient, Prop_Send, "m_iObserverMode", 0);
 			SetEntProp(iClient, Prop_Send, "m_bDrawViewmodel", 1);
-			SetEntProp(iClient, Prop_Send, "m_iFOV", 90);
 
-			char valor[6];
-			GetConVarString(mp_forcecamera, valor, 6);
-			SendConVarValue(iClient, mp_forcecamera, valor);
+			static int iFov;
+			iFov = g_hFov.GetInt(iClient);
+			if (iFov == 0) {
+				iFov = DEFAULT_FOV;
+			}
+			SetEntProp(iClient, Prop_Send, "m_iFOV", iFov);
 		}
 	}
 }
 
-stock void ApplyModelFromCookie(int iClient)
-{
+stock void ApplyFromCookie(int iClient) {
 	static char szModel[256];
 	g_hCustomModel.Get(iClient, szModel, sizeof(szModel));
 	
@@ -603,10 +710,13 @@ stock void ApplyModelFromCookie(int iClient)
 	} else {
 		ApplyModel(iClient, szModel);
 	}
+
+	static int iFov;
+	iFov = g_hFov.GetInt(iClient);
+	ApplyFov(iClient, iFov);
 }
 
-stock void ApplyModel(int iClient, const char[] szModel)
-{
+stock void ApplyModel(int iClient, const char[] szModel) {
 	if(!szModel[0] || !IsModelPrecached(szModel)) return;
 
 	SetEntityModel(iClient, szModel);
@@ -614,7 +724,21 @@ stock void ApplyModel(int iClient, const char[] szModel)
 	g_bSelectedSkin[iClient] = true;
 }
 
-stock bool IsValidClient(int iClient)
-{
+stock void ApplyFov(int iClient, int iFov) {
+	if (iFov == 0) return;
+
+	int m_iFov = GetEntProp(iClient, Prop_Send, "m_iFOV");
+	if (m_iFov <= 0) {
+		m_iFov = DEFAULT_FOV;
+	}
+	SetEntProp(iClient, Prop_Send, "m_iFOVStart", m_iFov);
+	SetEntPropFloat(iClient, Prop_Send, "m_flFOVTime", GetGameTime());
+	SetEntProp(iClient, Prop_Send, "m_iFOV", iFov);
+	SetEntPropFloat(iClient, Prop_Send, "m_flFOVRate", 0.7);
+
+	g_hFov.SetInt(iClient, iFov);
+}
+
+stock bool IsValidClient(int iClient) {
 	return 0 < iClient <= MaxClients && IsClientInGame(iClient);
 }

@@ -5,6 +5,43 @@
 		"en"	"[SM]"
 		"chi"	"[系统]"
 	}
+	"Success"
+	{
+		"en"	"Successfully changed!"
+		"chi"	"修改成功！"
+	}
+	"Fail"
+	{
+		"en"	"Failed to change!"
+		"chi"	"修改失败！"
+	}
+	"CurrentFov"
+	{
+		"#format"	"{1:d},{2:d}"
+		"en"	"Your current FOV: {1}, your FOV setting: {2}."
+		"chi"	"当前的{green}FOV{white}值：{orange}{1}{white}，当前设置的{green}FOV{white}值：{red}{2}{white}\n（死亡视角下两者不同是正常的）"
+	}
+	"FovMenuTitle"
+	{
+		"en"	"Choose your preferred FOV value"
+		"chi"	"选择你的FOV值"
+	}
+	"FovCustomHint"
+	{
+		"en"	"Please send your custom fov through the chat box."
+		"chi"	"请在聊天框发送你的自定FOV（0~180）"
+	}
+	"Custom"
+	{
+		"en"	"Custom"
+		"chi"	"自定义"
+	}
+	"DefaultFov"
+	{
+		"#format"	"{1:d}"
+		"en"		"{1} (default)"
+		"chi"		"{1}（默认）"
+	}
 	"NotAuthorized"
 	{
 		"en"	"You have not yet authorized, please wait for seconds."

@@ -81,9 +81,20 @@ public void OnPluginStart() {
 	RegConsoleCmd("sm_fov", Cmd_Fov);
 	AddCommandListener(FovListener, "say");
 
-	g_hCustomModel = RegClientCookie("custommodel", "Player's custom model", CookieAccess_Protected);
-	g_hOriginalModel = RegClientCookie("originalmodel", "Player's original model", CookieAccess_Protected);
-	g_hFov = RegClientCookie("FOV", "Player's FOV", CookieAccess_Public);
+	g_hCustomModel = FindClientCookie("custommodel");
+	if (!IsValidHandle(g_hCustomModel)) {
+		g_hCustomModel = RegClientCookie("custommodel", "Player's custom model", CookieAccess_Protected);
+	}
+
+	g_hOriginalModel = FindClientCookie("originalmodel");
+	if (!IsValidHandle(g_hOriginalModel)) {
+		g_hOriginalModel = RegClientCookie("originalmodel", "Player's original model", CookieAccess_Protected);
+	}
+
+	g_hFov = FindClientCookie("FOV");
+	if (!IsValidHandle(g_hFov)) {
+		g_hFov = RegClientCookie("FOV", "Player's FOV", CookieAccess_Public);
+	}
 
 	HookEvent("player_spawn", Event_PlayerSpawn);
 
@@ -102,7 +113,7 @@ public void OnPluginStart() {
 
 	g_hFovMenu = new Menu(Menu_Fov, MenuAction_Display | MenuAction_DisplayItem | MenuAction_DrawItem | MenuAction_Select);
 	g_hFovMenu.SetTitle(""); // Set in handle
-	g_hFovMenu.AddItem("80", "80");
+	g_hFovMenu.AddItem("0", "Default");
 	g_hFovMenu.AddItem("90", "90");
 	g_hFovMenu.AddItem("100", "100");
 	g_hFovMenu.AddItem("110", "110");
@@ -357,7 +368,9 @@ public void Event_PlayerSpawn(Event hEvent, const char[] szName, bool bDontBroad
 }
 
 public Action Timer_Spawn(Handle timer, any iUserId) {
-	ApplyFromCookie(GetClientOfUserId(iUserId));
+	if (GetClientOfUserId(iUserId) != 0) {
+		ApplyFromCookie(GetClientOfUserId(iUserId));
+	}
 	return Plugin_Stop;
 }
 
@@ -381,7 +394,6 @@ public Action Cmd_Model(int iClient, int nArgs) {
 			}
 		}
 	}
-
 	return Plugin_Handled;
 }
 
@@ -403,7 +415,6 @@ public Action Cmd_Fov(int iClient, int nArgs) {
 			}
 		}
 	}
-
 	return Plugin_Handled;
 }
 
@@ -423,8 +434,8 @@ public int Menu_Fov(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 				static char szBuffer[64];
 				static int iFov = 0;
 				hMenu.GetItem(iParam, szBuffer, sizeof(szBuffer), _, _, _, iClient);
-				if ((iFov = StringToInt(szBuffer)) != 0) {
-					if (iFov == DEFAULT_FOV) {
+				if (StringToIntEx(szBuffer, iFov) > 0) {
+					if (iFov == 0) {
 						FormatEx(szBuffer, sizeof(szBuffer), "%T", "DefaultFov", iClient, iFov);
 						return RedrawMenuItem(szBuffer);
 					}
@@ -441,7 +452,7 @@ public int Menu_Fov(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 
 			m_iFov = GetEntProp(iClient, Prop_Send, "m_iFOV");
 			hMenu.GetItem(iParam, szBuffer, sizeof(szBuffer), _, _, _, iClient);
-			if ((iFov = StringToInt(szBuffer)) != 0) {
+			if ((StringToIntEx(szBuffer, iFov)) > 0) {
 				if (iFov == m_iFov) {
 					return ITEMDRAW_DISABLED;
 				}
@@ -451,7 +462,7 @@ public int Menu_Fov(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 			static int iFov = 0;
 			static char szBuffer[64];
 			hMenu.GetItem(iParam, szBuffer, sizeof(szBuffer), _, _, _, iClient);
-			if ((iFov = StringToInt(szBuffer)) != 0) {
+			if ((StringToIntEx(szBuffer, iFov)) > 0) {
 				ApplyFov(iClient, iFov);
 				hMenu.DisplayAt(iClient, GetMenuSelectionPosition(), MENU_TIME_FOREVER);
 			}
@@ -473,7 +484,7 @@ public Action FovListener(int iClient, const char[] szCommand, int nArgs) {
 		ReplaceString(szBuffer, sizeof(szBuffer), "\"", "");
 
 		float fFov = StringToFloat(szBuffer);
-		if (fFov <= 0.0) {
+		if (fFov == 0.0) {
 			CPrintToChat(iClient, 0, "{green}%t {white}%t", "ChatPrefix", "Fail");
 			g_hFovMenu.Display(iClient, MENU_TIME_FOREVER);
 		}
@@ -695,9 +706,6 @@ stock void ToggleView(int iClient, bool bTPView) {
 
 			static int iFov;
 			iFov = g_hFov.GetInt(iClient);
-			if (iFov == 0) {
-				iFov = DEFAULT_FOV;
-			}
 			SetEntProp(iClient, Prop_Send, "m_iFOV", iFov);
 		}
 	}
@@ -729,10 +737,15 @@ stock void ApplyModel(int iClient, const char[] szModel) {
 }
 
 stock void ApplyFov(int iClient, int iFov) {
-	if (iFov == 0) return;
+	if (iFov == 0) {
+		// No animation
+		SetEntProp(iClient, Prop_Send, "m_iFOV", iFov);
+		g_hFov.SetInt(iClient, iFov);
+		return;
+	}
 
 	int m_iFov = GetEntProp(iClient, Prop_Send, "m_iFOV");
-	if (m_iFov <= 0) {
+	if (m_iFov == 0) {
 		m_iFov = DEFAULT_FOV;
 	}
 	SetEntProp(iClient, Prop_Send, "m_iFOVStart", m_iFov);

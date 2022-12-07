@@ -44,7 +44,10 @@ public OnPluginStart() {
 	RegAdminCmd("sm_bhop", BHopCmd, 0, "Enable/Disable Bunny Hopping");
 	RegAdminCmd("sm_auto", BHopCmd, 0, "Enable/Disable Bunny Hopping");
 
-	g_hBHop = RegClientCookie("bhop", "BHop Enable/Disable", CookieAccess_Public);
+	g_hBHop = FindClientCookie("bhop");
+	if (!IsValidHandle(g_hBHop)) {
+		g_hBHop = RegClientCookie("bhop", "BHop Enable/Disable", CookieAccess_Public);
+	}
 
 	LoadTranslations("simple-bhop.phrases");
 

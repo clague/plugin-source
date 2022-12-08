@@ -41,8 +41,8 @@ public OnPluginStart() {
 
 	HookEvent("player_spawn", OnPlayerSpawn);
 
-	RegAdminCmd("sm_bhop", BHopCmd, 0, "Enable/Disable Bunny Hopping");
-	RegAdminCmd("sm_auto", BHopCmd, 0, "Enable/Disable Bunny Hopping");
+	RegConsoleCmd("sm_bhop", BHopCmd, "Enable/Disable Bunny Hopping");
+	RegConsoleCmd("sm_auto", BHopCmd, "Enable/Disable Bunny Hopping");
 
 	g_hBHop = FindClientCookie("bhop");
 	if (!IsValidHandle(g_hBHop)) {

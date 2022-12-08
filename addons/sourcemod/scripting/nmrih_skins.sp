@@ -473,7 +473,11 @@ public int Menu_Fov(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 			}
 			else if (strcmp(szBuffer, "Custom") == 0) {
 				g_bListenClient[iClient] = true;
-				CPrintToChat(iClient, 0, "{red}%t {white}%t", "ChatPrefix", "FovCustomHint");
+				if (g_bUseTranslation) {
+					CPrintToChat(iClient, 0, "{red}%t {white}%t", "ChatPrefix", "FovCustomHint");
+				} else {
+					CPrintToChat(iClient, 0, "{red}[系统] {white}请在聊天框发送你的自定FOV（0~180）");
+				}
 			}
 		}
 	}

@@ -28,7 +28,7 @@
 	}
 	"FovCustomHint"
 	{
-		"en"	"Please send your custom fov through the chat box."
+		"en"	"Please send your custom fov (0~180) through the chat box."
 		"chi"	"请在聊天框发送你的自定FOV（0~180）"
 	}
 	"Custom"

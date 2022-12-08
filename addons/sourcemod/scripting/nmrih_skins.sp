@@ -112,13 +112,13 @@ public void OnPluginStart() {
 	}
 
 	g_hFovMenu = new Menu(Menu_Fov, MenuAction_Display | MenuAction_DisplayItem | MenuAction_DrawItem | MenuAction_Select);
-	g_hFovMenu.SetTitle(""); // Set in handle
-	g_hFovMenu.AddItem("0", "Default");
+	g_hFovMenu.SetTitle("选择你的FOV值："); // Set in handle
+	g_hFovMenu.AddItem("0", "0（默认）");
 	g_hFovMenu.AddItem("90", "90");
 	g_hFovMenu.AddItem("100", "100");
 	g_hFovMenu.AddItem("110", "110");
 	g_hFovMenu.AddItem("120", "120");
-	g_hFovMenu.AddItem("Custom", "Custom");
+	g_hFovMenu.AddItem("Custom", "自定义");
 	g_hFovMenu.ExitButton = true;
 }
 
@@ -404,7 +404,12 @@ public Action Cmd_Fov(int iClient, int nArgs) {
 			if (GetCmdArgFloatEx(1, fFov)) {
 				ApplyFov(iClient, RoundToNearest(fFov));
 			} else {
-				CPrintToChat(iClient, 0, "{green}%t {white}%t", "ChatPrefix", "CurrentFov", GetEntProp(iClient, Prop_Send, "m_iFOV"), g_hFov.GetInt(iClient));
+				if (g_bUseTranslation) {
+					CPrintToChat(iClient, 0, "{green}%t {white}%t", "ChatPrefix", "CurrentFov", GetEntProp(iClient, Prop_Send, "m_iFOV"), g_hFov.GetInt(iClient));
+				} else {
+					CPrintToChat(iClient, 0, "{green}[系统] {white}当前的{green}FOV{white}值：{orange}%d{white}，当前设置的{green}FOV{white}值：{red}%d{white}\n（死亡视角下两者不同是正常的）",
+						GetEntProp(iClient, Prop_Send, "m_iFOV"), g_hFov.GetInt(iClient));
+				}
 				g_hFovMenu.Display(iClient, MENU_TIME_FOREVER);
 			}
 		} else {
@@ -423,7 +428,7 @@ public int Menu_Fov(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 		case MenuAction_Display: {
 			if (g_bUseTranslation) {
 				static char szBuffer[64];
-				FormatEx(szBuffer, sizeof(szBuffer), "%T:", "FovMenuTitle", iClient);
+				FormatEx(szBuffer, sizeof(szBuffer), "%T", "FovMenuTitle", iClient);
 			
 				Panel panel = view_as<Panel>(iParam);
 				panel.SetTitle(szBuffer);
@@ -483,14 +488,23 @@ public Action FovListener(int iClient, const char[] szCommand, int nArgs) {
 		GetCmdArgString(szBuffer, sizeof(szBuffer));
 		ReplaceString(szBuffer, sizeof(szBuffer), "\"", "");
 
-		float fFov = StringToFloat(szBuffer);
-		if (fFov == 0.0) {
-			CPrintToChat(iClient, 0, "{green}%t {white}%t", "ChatPrefix", "Fail");
+		static float fFov;
+		if (StringToFloatEx(szBuffer, fFov) > 0) {
+			ApplyFov(iClient, RoundToNearest(fFov));
+
+			if (g_bUseTranslation) {
+				CPrintToChat(iClient, 0, "{green}%t {white}%t", "ChatPrefix", "Success");
+			} else {
+				CPrintToChat(iClient, 0, "{green}[系统] {white}修改成功！");
+			}
 			g_hFovMenu.Display(iClient, MENU_TIME_FOREVER);
 		}
 		else {
-			ApplyFov(iClient, RoundToNearest(fFov));
-			CPrintToChat(iClient, 0, "{green}%t {white}%t", "ChatPrefix", "Success");
+			if (g_bUseTranslation) {
+				CPrintToChat(iClient, 0, "{green}%t {white}%t", "ChatPrefix", "Fail");
+			} else {
+				CPrintToChat(iClient, 0, "{green}[系统] {white}修改失败！");
+			}
 			g_hFovMenu.Display(iClient, MENU_TIME_FOREVER);
 		}
 		return Plugin_Handled;
@@ -604,7 +618,7 @@ public int Menu_Main(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 stock Menu BuildModelMenu(const char[] szInfo) {
 	Menu hModelMenu = CreateMenu(Menu_Model, MENU_ACTIONS_ALL);
 
-	// Add the models to the hMenu
+	// Add the models to the menu
 	int nItems;
 	char szBuffer[30], szPath[256];
 	nItems = 0;
@@ -614,7 +628,7 @@ stock Menu BuildModelMenu(const char[] szInfo) {
 	KvJumpToKey(g_hMenuKv, "List");
 	KvGotoFirstSubKey(g_hMenuKv);
 	do {
-		// Add the szModel to the hMenu
+		// Add the model to the menu
 		KvGetSectionName(g_hMenuKv, szBuffer, sizeof(szBuffer));
 		KvGetString(g_hMenuKv, "path", szPath, sizeof(szPath), "");
 		hModelMenu.AddItem(szPath, szBuffer);
@@ -623,7 +637,7 @@ stock Menu BuildModelMenu(const char[] szInfo) {
 	while(KvGotoNextKey(g_hMenuKv));
 	// Rewind the KVs
 	KvRewind(g_hMenuKv);
-	// Set the hMenu title to the szModel group szName
+	// Set the menu title to the model group name
 	hModelMenu.SetTitle(szInfo);
 	hModelMenu.ExitBackButton = true;
 	hModelMenu.ExitButton = true;
@@ -647,7 +661,7 @@ public int Menu_Model(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 			else {
 				char szBuffer[64];
 				hMenu.GetTitle(szBuffer, sizeof(szBuffer));
-				Format(szBuffer, sizeof(szBuffer), "%s\n  %s (%i pcs):\n ", PLUGIN_NAME, szBuffer, hMenu.ItemCount);
+				Format(szBuffer, sizeof(szBuffer), "%s\n %s (%i pcs):\n ", PLUGIN_NAME, szBuffer, hMenu.ItemCount);
 			
 				Panel panel = view_as<Panel>(iParam);
 				panel.SetTitle(szBuffer);
@@ -704,9 +718,7 @@ stock void ToggleView(int iClient, bool bTPView) {
 			SetEntProp(iClient, Prop_Send, "m_iObserverMode", 0);
 			SetEntProp(iClient, Prop_Send, "m_bDrawViewmodel", 1);
 
-			static int iFov;
-			iFov = g_hFov.GetInt(iClient);
-			SetEntProp(iClient, Prop_Send, "m_iFOV", iFov);
+			SetEntProp(iClient, Prop_Send, "m_iFOV", g_hFov.GetInt(iClient));
 		}
 	}
 }
@@ -723,9 +735,7 @@ stock void ApplyFromCookie(int iClient) {
 		ApplyModel(iClient, szModel);
 	}
 
-	static int iFov;
-	iFov = g_hFov.GetInt(iClient);
-	ApplyFov(iClient, iFov);
+	ApplyFov(iClient, g_hFov.GetInt(iClient));
 }
 
 stock void ApplyModel(int iClient, const char[] szModel) {

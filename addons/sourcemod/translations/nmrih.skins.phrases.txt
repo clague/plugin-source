@@ -23,8 +23,8 @@
 	}
 	"FovMenuTitle"
 	{
-		"en"	"Choose your preferred FOV value"
-		"chi"	"选择你的FOV值"
+		"en"	"Choose your preferred FOV value:"
+		"chi"	"选择你的FOV值："
 	}
 	"FovCustomHint"
 	{

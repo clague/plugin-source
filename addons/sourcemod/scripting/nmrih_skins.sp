@@ -151,6 +151,10 @@ public void CVarChanged_ForceSkin(ConVar hCVar, const char[] szOldValue, const c
 
 public void CVarChanged_UseTranslation(ConVar hCVar, const char[] szOldValue, const char[] szNewValue) {
 	g_bUseTranslation = hCVar.BoolValue;
+	if (g_bUseTranslation) {
+		LoadTranslations("nmrih.skins.phrases");
+		ServerCommand("sm_reload_translations");
+	}
 }
 
 public void OnConfigsExecuted() {
@@ -532,22 +536,38 @@ stock Menu BuildMainMenu(int iClient) {
 	do {
 		KvGetSectionName(g_hMenuKv, szBuffer, sizeof(szBuffer));
 		if(g_bAdminGroup) {
-			static int iCount;
-			static GroupId iGroup;
 			static char szGroup[30];
-			// check if they have access
 			KvGetString(g_hMenuKv, "Admin", szGroup, sizeof(szGroup));
-			iGroup = FindAdmGroup(szGroup);
-			if (!szGroup[0] || iGroup == INVALID_GROUP_ID) {
+			if (!szGroup[0]) {
 				hMenu.AddItem(szBuffer, szBuffer);
 			}
 			else {
-				iCount= GetAdminGroupCount(iAdmin);
-				for(int i = 0; i < iCount; i++) {
-					if(iGroup == GetAdminGroup(iAdmin, i, "", 0)) {
-						// Get the model group name and add it to the menu
+				static GroupId iGroup;
+				iGroup = FindAdmGroup(szGroup);
+				if (iGroup == INVALID_GROUP_ID) {
+					static AdminFlag iFlag;
+					static int nLen;
+					static bool bTemp;
+					bTemp = true;
+					nLen = strlen(szGroup);
+					for (int i = 0; i < nLen; i++) {
+						if (FindFlagByChar(szGroup[i], iFlag) && !iAdmin.HasFlag(iFlag)) {
+							bTemp = false;
+							break;
+						}
+					}
+					if (bTemp) {
 						hMenu.AddItem(szBuffer, szBuffer);
-						break;
+					}
+				}
+				else {
+					static int iCount;
+					iCount= GetAdminGroupCount(iAdmin);
+					for(int i = 0; i < iCount; i++) {
+						if(iGroup == GetAdminGroup(iAdmin, i, "", 0)) {
+							hMenu.AddItem(szBuffer, szBuffer);
+							break;
+						}
 					}
 				}
 			}

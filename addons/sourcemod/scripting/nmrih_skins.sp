@@ -329,7 +329,7 @@ public void OnClientConnected(int iClient) {
 public void OnClientCookiesCached(int iClient) {
 	if (g_bCookieLate[iClient]) {
 		if (!g_bSelectedSkin[iClient]) {
-			char szModel[PLATFORM_MAX_PATH];
+			static char szModel[PLATFORM_MAX_PATH];
 			GetEntPropString(iClient, Prop_Data, "m_ModelName", szModel, sizeof(szModel));
 			g_hOriginalModel.Set(iClient, szModel);
 		}
@@ -412,7 +412,7 @@ public Action Cmd_Model(int iClient, int nArgs) {
 public Action Cmd_Fov(int iClient, int nArgs) {
 	if(g_bEnable && IsValidClient(iClient)) {
 		if (AreClientCookiesCached(iClient)) {
-			float fFov;
+			static float fFov;
 			if (GetCmdArgFloatEx(1, fFov)) {
 				ApplyFov(iClient, RoundToNearest(fFov));
 			} else {
@@ -532,8 +532,10 @@ public Action FovListener(int iClient, const char[] szCommand, int nArgs) {
 }
 
 stock Menu BuildMainMenu(int iClient) {
-	KvRewind(g_hMenuKv);
-	if(!KvGotoFirstSubKey(g_hMenuKv)) return null;
+	g_hMenuKv.Rewind();
+	if(!g_hMenuKv.GotoFirstSubKey()) {
+		return null;
+	}
 
 	Menu hMenu = CreateMenu(Menu_Main, MENU_ACTIONS_ALL);
 
@@ -555,14 +557,14 @@ stock Menu BuildMainMenu(int iClient) {
 
 	iIndex = 0;
 	do {
-		KvGetSectionName(g_hMenuKv, szBuffer, sizeof(szBuffer));
+		g_hMenuKv.GetSectionName(szBuffer, sizeof(szBuffer));
 		if (bWriteCategoryiIndex) {
 			g_hCategoryiIndex.SetValue(szBuffer, iIndex);
 			iIndex++;
 		}
 		if(g_bAdminGroup) {
 			static char szGroup[30];
-			KvGetString(g_hMenuKv, "Admin", szGroup, sizeof(szGroup));
+			g_hMenuKv.GetString("Admin", szGroup, sizeof(szGroup));
 			if (!szGroup[0]) {
 				hMenu.AddItem(szBuffer, szBuffer);
 			}
@@ -601,8 +603,8 @@ stock Menu BuildMainMenu(int iClient) {
 			hMenu.AddItem(szBuffer, szBuffer);
 		}
 	}
-	while(KvGotoNextKey(g_hMenuKv));
-	KvRewind(g_hMenuKv);
+	while(g_hMenuKv.GotoNextKey());
+	g_hMenuKv.Rewind();
 
 	hMenu.AddItem("none", "None");
 	hMenu.SetTitle("%s (%i categories):", PLUGIN_NAME, hMenu.ItemCount);
@@ -616,7 +618,7 @@ public int Menu_Main(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 			ToggleView(iClient, true);
 
 			if (g_bUseTranslation) {
-				char szBuffer[64];
+				static char szBuffer[64];
 				FormatEx(szBuffer, sizeof(szBuffer), "%s %T:", PLUGIN_NAME, "MainMenuTitleEx", iClient, hMenu.ItemCount);
 			
 				Panel panel = view_as<Panel>(iParam);
@@ -625,7 +627,7 @@ public int Menu_Main(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 		}
 		// User has selected a model group
 		case MenuAction_Select: {
-			char szInfo[32];
+			static char szInfo[32];
 
 			if(!hMenu.GetItem(iParam, szInfo, sizeof(szInfo))) return 0;
 
@@ -633,7 +635,7 @@ public int Menu_Main(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 			if(StrEqual(szInfo, "none")) {
 				g_hCustomModel.Set(iClient, "");
 
-				char szModel[PLATFORM_MAX_PATH];
+				static char szModel[PLATFORM_MAX_PATH];
 				g_hOriginalModel.Get(iClient, szModel, sizeof(szModel));
 				ApplyModel(iClient, szModel);
 
@@ -655,7 +657,7 @@ public int Menu_Main(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 		}
 		case MenuAction_DisplayItem: {
 			if (g_bUseTranslation) {
-				char szBuffer[64], szDisplay[64];
+				static char szBuffer[64], szDisplay[64];
 				hMenu.GetItem(iParam, "", 0, _, szBuffer, sizeof(szBuffer), iClient);
 				FormatEx(szDisplay, sizeof(szDisplay), "%T", szBuffer, iClient);
 				return RedrawMenuItem(szDisplay);
@@ -678,20 +680,20 @@ stock Menu BuildModelMenu(const char[] szInfo) {
 	static char szBuffer[30], szPath[256];
 	nItems = 0;
 
-	KvRewind(g_hMenuKv);
-	KvJumpToKey(g_hMenuKv, szInfo);
-	KvJumpToKey(g_hMenuKv, "List");
-	KvGotoFirstSubKey(g_hMenuKv);
+	g_hMenuKv.Rewind();
+	g_hMenuKv.JumpToKey(szInfo);
+	g_hMenuKv.JumpToKey("List");
+	g_hMenuKv.GotoFirstSubKey();
 	do {
 		// Add the model to the menu
-		KvGetSectionName(g_hMenuKv, szBuffer, sizeof(szBuffer));
-		KvGetString(g_hMenuKv, "path", szPath, sizeof(szPath), "");
+		g_hMenuKv.GetSectionName(szBuffer, sizeof(szBuffer));
+		g_hMenuKv.GetString("path", szPath, sizeof(szPath), "");
 		hModelMenu.AddItem(szPath, szBuffer);
 		nItems++;
 	}
-	while(KvGotoNextKey(g_hMenuKv));
+	while(g_hMenuKv.GotoNextKey());
 	// Rewind the KVs
-	KvRewind(g_hMenuKv);
+	g_hMenuKv.Rewind();
 	// Set the menu title to the model group name
 	hModelMenu.SetTitle(szInfo);
 	hModelMenu.ExitBackButton = true;

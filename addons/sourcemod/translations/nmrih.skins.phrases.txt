@@ -8,12 +8,12 @@
 	"Success"
 	{
 		"en"	"Successfully changed!"
-		"chi"	"修改成功！"
+		"chi"	"操作成功！"
 	}
 	"Fail"
 	{
 		"en"	"Failed to change!"
-		"chi"	"修改失败！"
+		"chi"	"操作失败！"
 	}
 	"CurrentFov"
 	{

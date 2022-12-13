@@ -32,9 +32,11 @@ bool g_bLate,
 	g_bListenClient[MAXPLAYERS + 1],
 	g_bCookieLate[MAXPLAYERS + 1],
 	g_bSelectedSkin[MAXPLAYERS + 1];
+bool g_bInScoped[MAXPLAYERS + 1];
 int g_nForcedSkins,
 	g_nTotalSkins;
 char g_szForcedSkins[MAX_FORCEDSKINS][PLATFORM_MAX_PATH];
+StringMap g_hCategoryiIndex;
 
 public Plugin myinfo = {
 	name		= PLUGIN_NAME,
@@ -311,11 +313,15 @@ public void OnMapEnd() {
 			delete g_hModelMenu[i];
 		}
 	}
+	if (IsValidHandle(g_hCategoryiIndex)) {
+		delete g_hCategoryiIndex;
+	}
 }
 
 public void OnClientConnected(int iClient) {
 	g_bSelectedSkin[iClient] = false;
 	g_bCookieLate[iClient] = false;
+	g_bInScoped[iClient] = false;
 }
 
 public void OnClientCookiesCached(int iClient) {
@@ -410,6 +416,7 @@ public Action Cmd_Fov(int iClient, int nArgs) {
 			} else {
 				if (g_bUseTranslation) {
 					CPrintToChat(iClient, 0, "{green}%t {white}%t", "ChatPrefix", "CurrentFov", GetEntProp(iClient, Prop_Send, "m_iFOV"), g_hFov.GetInt(iClient));
+					PrintToConsole(iClient, "default fov: %d", GetEntProp(iClient, Prop_Send, "m_iDefaultFOV"));
 				} else {
 					CPrintToChat(iClient, 0, "{green}[系统] {white}当前的{green}FOV{white}值：{orange}%d{white}，当前设置的{green}FOV{white}值：{red}%d{white}\n（死亡视角下两者不同是正常的）",
 						GetEntProp(iClient, Prop_Send, "m_iFOV"), g_hFov.GetInt(iClient));
@@ -533,8 +540,24 @@ stock Menu BuildMainMenu(int iClient) {
 	if(g_bAdminGroup) {
 		iAdmin = GetUserAdmin(iClient);
 	}
+
+	static bool bWriteCategoryiIndex;
+	static int iIndex;
+	if (!IsValidHandle(g_hCategoryiIndex)) {
+		g_hCategoryiIndex = new StringMap();
+		bWriteCategoryiIndex = true;
+	}
+	else {
+		bWriteCategoryiIndex = false;
+	}
+
+	iIndex = 0;
 	do {
 		KvGetSectionName(g_hMenuKv, szBuffer, sizeof(szBuffer));
+		if (bWriteCategoryiIndex) {
+			g_hCategoryiIndex.SetValue(szBuffer, iIndex);
+			iIndex++;
+		}
 		if(g_bAdminGroup) {
 			static char szGroup[30];
 			KvGetString(g_hMenuKv, "Admin", szGroup, sizeof(szGroup));
@@ -617,10 +640,16 @@ public int Menu_Main(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 			}
 
 			// Create the model menu
-			if (!IsValidHandle(g_hModelMenu[iParam])) {
-				g_hModelMenu[iParam] = BuildModelMenu(szInfo);
+			static int iIndex;
+			if (g_hCategoryiIndex.GetValue(szInfo, iIndex)) {
+				if (!IsValidHandle(g_hModelMenu[iIndex])) {
+					g_hModelMenu[iIndex] = BuildModelMenu(szInfo);
+				}
+				g_hModelMenu[iIndex].Display(iClient, MENU_TIME_FOREVER);
 			}
-			g_hModelMenu[iParam].Display(iClient, MENU_TIME_FOREVER);
+			else {
+				CPrintToChat(iClient, 0, "{green}%t {white}%t", "ChatPrefix", "Fail");
+			}
 		}
 		case MenuAction_DisplayItem: {
 			if (g_bUseTranslation) {
@@ -643,8 +672,8 @@ stock Menu BuildModelMenu(const char[] szInfo) {
 	Menu hModelMenu = CreateMenu(Menu_Model, MENU_ACTIONS_ALL);
 
 	// Add the models to the menu
-	int nItems;
-	char szBuffer[30], szPath[256];
+	static int nItems;
+	static char szBuffer[30], szPath[256];
 	nItems = 0;
 
 	KvRewind(g_hMenuKv);
@@ -673,9 +702,8 @@ public int Menu_Model(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 	switch(iAction) {
 		case MenuAction_Display: {
 			ToggleView(iClient, true);
-
+			static char szBuffer[64];
 			if (g_bUseTranslation) {
-				char szBuffer[64];
 				hMenu.GetTitle(szBuffer, sizeof(szBuffer));
 				Format(szBuffer, sizeof(szBuffer), "%s\n %T %T:", PLUGIN_NAME, szBuffer, iClient, "ModelMenuTitleEx", iClient, hMenu.ItemCount);
 			
@@ -683,7 +711,6 @@ public int Menu_Model(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 				panel.SetTitle(szBuffer);
 			}
 			else {
-				char szBuffer[64];
 				hMenu.GetTitle(szBuffer, sizeof(szBuffer));
 				Format(szBuffer, sizeof(szBuffer), "%s\n %s (%i pcs):\n ", PLUGIN_NAME, szBuffer, hMenu.ItemCount);
 			
@@ -693,7 +720,7 @@ public int Menu_Model(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 		}
 		// User choose a szModel
 		case MenuAction_Select: {
-			char szModel[256];
+			static char szModel[256];
 			if(!hMenu.GetItem(iParam, szModel, sizeof(szModel))) return 0;
 
 			ApplyModel(iClient, szModel);
@@ -703,7 +730,7 @@ public int Menu_Model(Menu hMenu, MenuAction iAction, int iClient, int iParam) {
 		}
 		case MenuAction_DisplayItem: {
 			if (g_bUseTranslation) {
-				char szBuffer[64], szDisplay[64];
+				static char szBuffer[64], szDisplay[64];
 				hMenu.GetItem(iParam, "", 0, _, szBuffer, sizeof(szBuffer), iClient);
 				FormatEx(szDisplay, sizeof(szDisplay), "%T", szBuffer, iClient);
 				return RedrawMenuItem(szDisplay);
@@ -771,23 +798,52 @@ stock void ApplyModel(int iClient, const char[] szModel) {
 }
 
 stock void ApplyFov(int iClient, int iFov) {
-	if (iFov == 0) {
-		// No animation
-		SetEntProp(iClient, Prop_Send, "m_iFOV", iFov);
-		g_hFov.SetInt(iClient, iFov);
-		return;
-	}
-
 	int m_iFov = GetEntProp(iClient, Prop_Send, "m_iFOV");
 	if (m_iFov == 0) {
-		m_iFov = DEFAULT_FOV;
+		m_iFov = GetEntProp(iClient, Prop_Send, "m_iDefaultFOV");
 	}
+	// float fLastFov = GetEntPropFloat(iClient, Prop_Send, "m_flFOVTime");
+	// float fTemp;
+	// if ((fTemp = (GetGameTime() - fLastFov) / 0.7) < 0.7) {
+	// 	int iFovStart = GetEntProp(iClient, Prop_Send, "m_iFOVStart");
+	// 	m_iFov = RoundToNearest((fTemp + 1.0) * float(iFovStart) - fTemp * float(m_iFov));
+	// }
 	SetEntProp(iClient, Prop_Send, "m_iFOVStart", m_iFov);
 	SetEntPropFloat(iClient, Prop_Send, "m_flFOVTime", GetGameTime());
 	SetEntProp(iClient, Prop_Send, "m_iFOV", iFov);
 	SetEntPropFloat(iClient, Prop_Send, "m_flFOVRate", 0.7);
 
 	g_hFov.SetInt(iClient, iFov);
+}
+
+Handle g_hScopeTimer[MAXPLAYERS + 1];
+
+public void OnGameFrame() {
+	for (int i = 1; i <= MaxClients; i++) {
+		if (IsValidClient(i) && IsPlayerAlive(i)) {
+			static int iWeapon;
+			static bool bInIronSight;
+			iWeapon = GetEntPropEnt(i, Prop_Send, "m_hActiveWeapon");
+			bInIronSight = GetEntProp(iWeapon, Prop_Send, "m_bIsInIronsights") != 0;
+			if (bInIronSight && !g_bInScoped[i]) {
+				g_bInScoped[i] = true;
+			}
+			else if (!bInIronSight && g_bInScoped[i]) {
+				if (!IsValidHandle(g_hScopeTimer[i])) {
+					g_hScopeTimer[i] = CreateTimer(GetEntPropFloat(i, Prop_Send, "m_flFOVRate"), TimerUnScoped, i, TIMER_FLAG_NO_MAPCHANGE);
+				}
+			}
+		}
+	}
+}
+
+public Action TimerUnScoped(Handle hTimer, any iClient) {
+	if (IsValidClient(iClient) && IsPlayerAlive(iClient)) {
+		g_bInScoped[iClient] = false;
+		ApplyFov(iClient, g_hFov.GetInt(iClient));
+	}
+
+	return Plugin_Stop;
 }
 
 stock bool IsValidClient(int iClient) {

@@ -9,7 +9,7 @@
 #define PLUGIN_NAME	"[NMRiH] Skins"
 #define PLUGIN_VERSION	"1.0.0c"
 // Paths to configuration files
-#define SKINS_DOWNLOADS	"configs/nmrih_skins/downloads_list.ini"
+#define DOWNLOADS_LIST	"configs/nmrih_skins/downloads_list.ini"
 #define FORCED_SKINS	"configs/nmrih_skins/forced_skins.ini"
 #define SKINS_MENU		"configs/nmrih_skins/skins_menu.ini"
 
@@ -178,35 +178,35 @@ public void OnMapStart() {
 	g_hMenuKv = new KeyValues("Models");
 
 	BuildPath(Path_SM, szFile, 255, SKINS_MENU);
-	FileToKeyValues(g_hMenuKv, szFile);
-	if(!KvGotoFirstSubKey(g_hMenuKv)) return;
+	g_hMenuKv.ImportFromFile(szFile);
+	if(!g_hMenuKv.GotoFirstSubKey()) return;
 	do {
-		KvJumpToKey(g_hMenuKv, "List");
-		KvGotoFirstSubKey(g_hMenuKv);
+		g_hMenuKv.JumpToKey("List");
+		g_hMenuKv.GotoFirstSubKey();
 		do {
-			KvGetString(g_hMenuKv, "path", szPath, sizeof(szPath), "");
+			g_hMenuKv.GetString("path", szPath, sizeof(szPath));
 			if(PrecacheModel(szPath, true)) {
 				g_nTotalSkins++;
 			}
 		}
-		while(KvGotoNextKey(g_hMenuKv));
-		KvGoBack(g_hMenuKv);
-		KvGoBack(g_hMenuKv);
+		while (g_hMenuKv.GotoNextKey());
+		g_hMenuKv.GoBack();
+		g_hMenuKv.GoBack();
 	}
-	while(KvGotoNextKey(g_hMenuKv));
-	KvRewind(g_hMenuKv);
+	while (g_hMenuKv.GotoNextKey());
+	g_hMenuKv.Rewind();
 
 	ReadDownloads();
 	LogMessage("Total: %i	Forced: %i", g_nTotalSkins, g_nForcedSkins);
 }
 
 stock void LoadForcedSkins() {
-	static char szBuffer[PLATFORM_MAX_PATH], szFile[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, szFile, PLATFORM_MAX_PATH, FORCED_SKINS);
+	static char szBuffer[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, szBuffer, PLATFORM_MAX_PATH, FORCED_SKINS);
 
-	//open precache szFile and add everything to download table
-	Handle hFile = OpenFile(szFile, "r");
-	while(ReadFileLine(hFile, szBuffer, sizeof(szBuffer))) {
+	//open precache file and add everything to download table
+	File hFile = OpenFile(szBuffer, "r");
+	while(hFile.ReadLine(szBuffer, sizeof(szBuffer))) {
 		// Strip leading and trailing whitespace
 		TrimString(szBuffer);
 
@@ -214,7 +214,7 @@ stock void LoadForcedSkins() {
 		if(FileExists(szBuffer, true)) {
 			// Tell Clients to download files
 			AddFileToDownloadsTable(szBuffer);
-			// Tell Clients to cache szModel
+			// Tell Clients to cache model
 			if(StrEqual(szBuffer[strlen(szBuffer)-4], ".mdl", false) && g_nForcedSkins < MAX_FORCEDSKINS) {
 				strcopy(g_szForcedSkins[g_nForcedSkins++], strlen(szBuffer)+1, szBuffer);
 				PrecacheModel(szBuffer, true);
@@ -227,73 +227,75 @@ stock void LoadForcedSkins() {
 }
 
 stock void ReadDownloads() {
-	char szFile[256];
-	BuildPath(Path_SM, szFile, 255, SKINS_DOWNLOADS);
-	Handle hFile = OpenFile(szFile, "r");
-	if(hFile == null) return;
+	static char szBuffer[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, szBuffer, 255, DOWNLOADS_LIST);
+	File hFile = OpenFile(szBuffer, "r");
 
-	char szBuffer[256];
-	int len;
-	while(ReadFileLine(hFile, szBuffer, sizeof(szBuffer))) {
-		if (StrContains(szBuffer, "//") == 0) {
-			szBuffer[0] = 0;
+	static int iPos;
+	static bool bUseVfs;
+	bUseVfs = false;
+	while (hFile.ReadLine(szBuffer, sizeof(szBuffer))) {
+		if ((iPos = StrContains(szBuffer, "//")) != -1) {
+			szBuffer[iPos] = 0;
 		}
-		len = strlen(szBuffer);
-		if(len > 0 && szBuffer[len-1] == '\n') szBuffer[--len] = '\0';
-
 		TrimString(szBuffer);
-
-		if(szBuffer[0]) ReadFileFolder(szBuffer);
-
-		if(IsEndOfFile(hFile)) break;
+		if (szBuffer[0] == '[') {
+			static char szOption[PLATFORM_MAX_PATH];
+			if ((iPos = FindCharInString(szBuffer, ']')) != -1) {
+				strcopy(szOption, iPos, szBuffer[1]);
+				if (StrContains(szOption, "default", false) != -1) {
+					bUseVfs = false;
+				}
+				else if (StrContains(szOption, "valvefs", false) != -1) {
+					bUseVfs = true;
+				}
+			}
+		}
+		else if(szBuffer[0]) {
+			ReadFileFolder(szBuffer, bUseVfs);
+		}
 	}
-	if(IsValidHandle(hFile)) CloseHandle(hFile);
+	if (IsValidHandle(hFile)) {
+		delete hFile;
+	}
 }
 
-stock void ReadFileFolder(char[] szPath) {
-	static Handle dirh;
-	static char szBuffer[256], tmp_path[256];
-	static FileType type = FileType_Unknown;
-	static int len;
-
-	len = strlen(szPath);
-	if(szPath[len-1] == '\n') {
-		szPath[--len] = '\0';
-	}
+stock void ReadFileFolder(char[] szPath, bool bUseVfs) {
+	DirectoryListing hDir;
+	char szBuffer[PLATFORM_MAX_PATH];
+	FileType iType = FileType_Unknown;
 
 	TrimString(szPath);
+	if (szPath[strlen(szPath) - 1] == '/') {
+		szPath[strlen(szPath) - 1] = 0;
+	}
 
-	if(DirExists(szPath, true)) {
-		dirh = OpenDirectory(szPath, true);
-		while(ReadDirEntry(dirh, szBuffer, sizeof(szBuffer), type)) {
-			len = strlen(szBuffer);
-			if(szBuffer[len-1] == '\n') szBuffer[--len] = '\0';
-
+	if(DirExists(szPath, bUseVfs)) {
+		hDir = OpenDirectory(szPath, bUseVfs);
+		while (hDir.GetNext(szBuffer, sizeof(szBuffer), iType)) {
 			TrimString(szBuffer);
 
 			if(!StrEqual(szBuffer, "", false) && !StrEqual(szBuffer, ".", false) && !StrEqual(szBuffer, "..", false)) {
-				strcopy(tmp_path, 255, szPath);
-				StrCat(tmp_path, 255, "/");
-				StrCat(tmp_path, 255, szBuffer);
-				if(type == FileType_File) ReadItem(tmp_path);
+				Format(szBuffer, sizeof(szBuffer), "%s/%s", szPath, szBuffer);
+				if (iType == FileType_File) { 
+					ReadItem(szBuffer, bUseVfs);
+				}
+				else if (iType == FileType_Directory) {
+					ReadFileFolder(szBuffer, bUseVfs);
+				}
 			}
 		}
 	} else {
-		ReadItem(szPath);
+		ReadItem(szPath, bUseVfs);
 	}
-	if(IsValidHandle(dirh)) CloseHandle(dirh);
+	if(IsValidHandle(hDir)) {
+		delete hDir;
+	}
 }
 
-stock void ReadItem(char[] szBuffer) {
-	int len = strlen(szBuffer);
-	if(szBuffer[len-1] == '\n') szBuffer[--len] = '\0';
-
+stock void ReadItem(char[] szBuffer, bool bUseVfs) {
 	TrimString(szBuffer);
-
-	if(len >= 2 && szBuffer[0] == '/' && szBuffer[1] == '/') {
-		ReplaceString(szBuffer, 255, "//", "");
-	}
-	else if(szBuffer[0] && FileExists(szBuffer, true)) {
+	if(szBuffer[0] && FileExists(szBuffer, bUseVfs)) {
 		AddFileToDownloadsTable(szBuffer);
 		//LogMessage("Add %s to download list", szBuffer);
 	}

@@ -164,13 +164,13 @@ public void OnConfigsExecuted()
         Call_Finish();
     }
 
-    char szFlags[32];
+    static char szFlags[32];
     convar_ColorsFlags.GetString(szFlags, sizeof(szFlags));
     g_iFlags = ReadFlagString(szFlags);
 }
 
 public void OnFlagsChanged(ConVar hConVar, const char[] szOld, const char[] szNew) {
-    char szFlags[32];
+    static char szFlags[32];
     convar_ColorsFlags.GetString(szFlags, sizeof(szFlags));
     g_iFlags = ReadFlagString(szFlags);
 }
@@ -184,7 +184,7 @@ public Action OnSayText2(UserMsg msg_id, BfRead hMsg, const int[] players, int p
         return Plugin_Continue;
 
     int iAuthor;
-    char szFlags[MAXLENGTH_FLAG], szFormat[MAXLENGTH_BUFFER], szName[MAXLENGTH_NAME], szText[MAXLENGTH_MESSAGE];
+    static char szFlags[MAXLENGTH_FLAG], szFormat[MAXLENGTH_BUFFER], szName[MAXLENGTH_NAME], szText[MAXLENGTH_MESSAGE];
     //Retrieve the client sending the message to other clients.
     if (g_Proto) {
         iAuthor = PbReadInt(hMsg, "ent_idx");
@@ -332,10 +332,10 @@ public void Frame_OnChatMessage(DataPack pack)
     int iAuthor = pack.ReadCell();
     ArrayList aRecipients = pack.ReadCell();
 
-    char szFlags[MAXLENGTH_FLAG];
+    static char szFlags[MAXLENGTH_FLAG];
     pack.ReadString(szFlags, sizeof(szFlags));
 
-    char szFormat[MAXLENGTH_BUFFER];
+    static char szFormat[MAXLENGTH_BUFFER];
     pack.ReadString(szFormat, sizeof(szFormat));
     
     Action iResults = pack.ReadCell();
@@ -387,13 +387,13 @@ public void Frame_OnChatMessage(DataPack pack)
 //Parse message formats for flags.
 void GenerateMessageFormats()
 {
-    char sGame[64];
+    static char sGame[64];
     GetGameFolderName(sGame, sizeof(sGame));
 
-    char sConfig[PLATFORM_MAX_PATH];
+    static char sConfig[PLATFORM_MAX_PATH];
     convar_Config.GetString(sConfig, sizeof(sConfig));
     
-    char sPath[PLATFORM_MAX_PATH];
+    static char sPath[PLATFORM_MAX_PATH];
     BuildPath(Path_SM, sPath, sizeof(sPath), sConfig);
     
     KeyValues kv = new KeyValues("chat-processor");
@@ -402,7 +402,7 @@ void GenerateMessageFormats()
     {
         g_MessageFormats.Clear();
         
-        char sName[256]; char sValue[256];
+        static char sName[256], sValue[256];
         do
         {
             kv.GetSectionName(sName, sizeof(sName));
@@ -431,7 +431,7 @@ public any Native_GetFlagFormatString(Handle plugin, int numParams)
     char[] sFlag = new char[iSize + 1];
     GetNativeString(1, sFlag, iSize + 1);
 
-    char sFormat[MAXLENGTH_BUFFER];
+    static char sFormat[MAXLENGTH_BUFFER];
     g_MessageFormats.GetString(sFlag, sFormat, sizeof(sFormat));
 
     SetNativeString(2, sFormat, GetNativeCell(3));
@@ -504,7 +504,8 @@ bool RemoveClientTag(int client, const char[] tag)
     if (client == 0 || client > MaxClients || IsFakeClient(client))
         return false;
     
-    bool found; char sTag[MAXLENGTH_NAME];
+    bool found;
+    static char sTag[MAXLENGTH_NAME];
     for (int i = 0; i < g_Tags[client].Length; i++)
     {
         g_Tags[client].GetString(i, sTag, sizeof(sTag));
@@ -611,7 +612,8 @@ bool SetTagColor(int client, const char[] tag, const char[] color)
     if (client <= 0 || client > MaxClients || IsFakeClient(client))
         return false;
     
-    bool found; char sTag[MAXLENGTH_NAME];
+    bool found;
+    static char sTag[MAXLENGTH_NAME];
     for (int i = 0; i < g_Tags[client].Length; i++)
     {
         g_Tags[client].GetString(i, sTag, sizeof(sTag));
@@ -702,7 +704,7 @@ public Action CP_OnChatMessage(int& author, ArrayList recipients, char[] flagstr
     {
         Format(name, MAXLENGTH_NAME, "%s%s", strlen(g_NameColor[author]) > 0 ? g_NameColor[author] : "{teamcolor}", name);
         
-        char sTag[MAXLENGTH_NAME];
+        static char sTag[MAXLENGTH_NAME];
         for (int i = 0; i < size; i++)
         {
             g_Tags[author].GetString(i, sTag, sizeof(sTag));

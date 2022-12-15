@@ -251,17 +251,17 @@ static void AddChatColors() {
     g_hChatColors.SetString("engine 16", "\x10");
 }
 
-public any Native_CAddChatColor(Handle plugin, int num_params) {
-    char name[32], color[32];
-    GetNativeString(1, name, sizeof(name));
-    GetNativeString(2, color, sizeof(color));
-    return g_hChatColors.SetString(name, color);
+public any Native_CAddChatColor(Handle hPlugin, int nParams) {
+    static char szName[32], szColor[32];
+    GetNativeString(1, szName, sizeof(szName));
+    GetNativeString(2, szColor, sizeof(szColor));
+    return g_hChatColors.SetString(szName, szColor);
 }
 
 static void ProcessVariables(char[] szMessage, int nMaxLength, bool isColor = true, bool isVariable = false) {
     int iBufIndex = 0, i = 0, nNameLen = 0, iOldBufIndex = 0;
     char[] szBuffer = new char[nMaxLength];
-    char szName[32], szValue[128];
+    static char szName[32], szValue[128];
     ConVar hConVar;
 
     while (szMessage[i] && iBufIndex < nMaxLength - 1) {
@@ -353,7 +353,7 @@ public void RemoveVariables(char[] szMessage, int nMaxLength) {
     strcopy(szMessage, nMaxLength, szBuffer);
 }
 
-public any Native_CRemoveVariables(Handle plugin, int num_params) {
+public any Native_CRemoveVariables(Handle hPlugin, int nParams) {
     int nMaxLength = GetNativeCell(2);
     char[] szMessage = new char[nMaxLength];
     GetNativeString(1, szMessage, nMaxLength);
@@ -362,7 +362,7 @@ public any Native_CRemoveVariables(Handle plugin, int num_params) {
     return SetNativeString(1, szMessage, nMaxLength);
 }
 
-public any Native_CProcessVariables(Handle plugin, int num_params) {
+public any Native_CProcessVariables(Handle hPlugin, int nParams) {
     int nMaxLength = GetNativeCell(2);
     char[] szMessage = new char[nMaxLength];
     GetNativeString(1, szMessage, nMaxLength);
@@ -371,9 +371,9 @@ public any Native_CProcessVariables(Handle plugin, int num_params) {
     return SetNativeString(1, szMessage, nMaxLength);
 }
 
-public any Native_CPrintToChat(Handle plugin, int num_params) {
-    char szMessage[MAX_MESSAGE_LEN];
-    szMessage[0] = '\x01'; // Must have a color in beginning, or will have unexpected results
+public any Native_CPrintToChat(Handle hPlugin, int nParams) {
+    static char szMessage[MAX_MESSAGE_LEN];
+    szMessage[0] = '\x01'; // Must have a szColor in beginning, or will have unexpected results
 
     int iClient = GetNativeCell(1), iAuthor = GetNativeCell(2);
 
@@ -401,9 +401,9 @@ public any Native_CPrintToChat(Handle plugin, int num_params) {
     return SP_ERROR_NONE;
 }
 
-public any Native_CPrintToChatAll(Handle plugin, int num_params) {
-    char szMessage[MAX_MESSAGE_LEN];
-    szMessage[0] = '\x01'; // Must have a color in beginning, or will have unexpected results
+public any Native_CPrintToChatAll(Handle hPlugin, int nParams) {
+    static char szMessage[MAX_MESSAGE_LEN];
+    szMessage[0] = '\x01'; // Must have a szColor in beginning, or will have unexpected results
 
     int iAuthor = GetNativeCell(1);
 
@@ -454,8 +454,8 @@ static void SayText2(int iClient, int iAuthor, const char[] szFlags, const char[
     EndMessage();
 }
 
-public any Native_CSayText2(Handle plugin, int num_params) {
-    char szFlags[MAX_SAYTEXT2_LEN], szName[MAX_SAYTEXT2_LEN], szText[MAX_SAYTEXT2_LEN];
+public any Native_CSayText2(Handle hPlugin, int nParams) {
+    static char szFlags[MAX_SAYTEXT2_LEN], szName[MAX_SAYTEXT2_LEN], szText[MAX_SAYTEXT2_LEN];
 
     GetNativeString(3, szFlags, sizeof(szFlags));
     GetNativeString(4, szName, sizeof(szName));
@@ -466,8 +466,8 @@ public any Native_CSayText2(Handle plugin, int num_params) {
     return SP_ERROR_NONE;
 }
 
-public any Native_CSayText2All(Handle plugin, int num_params) {
-    char szFlags[MAX_SAYTEXT2_LEN], szName[MAX_SAYTEXT2_LEN], szText[MAX_SAYTEXT2_LEN];
+public any Native_CSayText2All(Handle hPlugin, int nParams) {
+    static char szFlags[MAX_SAYTEXT2_LEN], szName[MAX_SAYTEXT2_LEN], szText[MAX_SAYTEXT2_LEN];
     int iAuthor = GetNativeCell(1);
     if (iAuthor < 1 || iAuthor > MaxClients) {
         iAuthor = -1;
@@ -549,7 +549,7 @@ public Action TestColor(int iClient, int nArgs) {
 }
 
 public Action TestSayText2(int iClient, int nArgs) {
-    char szFlags[MAX_SAYTEXT2_LEN], szName[MAX_SAYTEXT2_LEN], szText[MAX_SAYTEXT2_LEN];
+    static char szFlags[MAX_SAYTEXT2_LEN], szName[MAX_SAYTEXT2_LEN], szText[MAX_SAYTEXT2_LEN];
     GetCmdArg(1, szFlags, sizeof(szFlags));
     GetCmdArg(2, szName, sizeof(szName));
     GetCmdArg(3, szText, sizeof(szText));
@@ -564,16 +564,16 @@ public Action TestSayText2(int iClient, int nArgs) {
     return Plugin_Handled;
 }
 
-public void OnLibraryAdded(const char[] name)
+public void OnLibraryAdded(const char[] szName)
 {
-    if (StrEqual(name, "mapchooser")) {
+    if (StrEqual(szName, "mapchooser")) {
         g_bMapChooser = true;
     }
 }
 
-public void OnLibraryRemoved(const char[] name)
+public void OnLibraryRemoved(const char[] szName)
 {
-    if (StrEqual(name, "mapchooser")) {
+    if (StrEqual(szName, "mapchooser")) {
         g_bMapChooser = false;
     }
 }

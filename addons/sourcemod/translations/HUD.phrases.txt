@@ -5,7 +5,8 @@
 		"#format"	"{1:i}"
 		"en"		"Health: {1}"
 		"jp"		"体力; {1}"
-        "chi"       "血量: {1}"
+		"chi"		"血量: {1}"
+		"zho"		"生命: {1}"
 	}
 	
 	"Stamina"
@@ -13,21 +14,24 @@
 		"#format"	"{1:i}"
 		"en"		"Stamina: {1}"
 		"jp"		"スタミナ; {1}"
-        "chi"       "耐力: {1}"
+		"chi"		"耐力: {1}"
+		"zho"		"體力: {1}"
 	}
 
 	"bleeding"
 	{
 		"en"		"< bleeding >"
 		"jp"		"< 出血 >"
-		"chi"       "「 流血 」"
+		"chi"		"「 流血 」"
+		"zho"		"「 血流不止 」"
 	}
 
 	"vaccinated"
 	{
 		"en"		"< vaccinated >"
 		"jp"		"< ワクチン接種済 >"
-		"chi"       "「 疫苗接种 」"
+		"chi"		"「 疫苗接种 」"
+		"zho"		"「 免疫 」"
 	}
 
 	"infected"
@@ -35,7 +39,8 @@
 		"#format"	"{1:i}"
 		"en"		"< infected; {1} >"
 		"jp"		"< 感染; {1} >"
-		"chi"       "「 感染 {1} 」"
+		"chi"		"「 感染: {1} 」"
+		"zho"		"「 感染: {1} 」"
 	}
 }
 

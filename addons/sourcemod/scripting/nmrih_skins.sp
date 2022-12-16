@@ -3,6 +3,7 @@
 #pragma newdecls required
 
 #include <sdktools>
+#include <sdkhooks>
 #include <clientprefs>
 #include <globalvariables>
 
@@ -340,7 +341,16 @@ public void OnClientCookiesCached(int iClient) {
 				ApplyFromCookie(iClient);
 			}
 		}
+		SDKHook(iClient, SDKHook_PostThinkPost, DetectScope);
 		g_bCookieLate[iClient] = false;
+	}
+}
+
+public void OnClientPutInServer(int iClient) {
+	if (AreClientCookiesCached(iClient)) {
+		SDKHook(iClient, SDKHook_PostThinkPost, DetectScope);
+	} else {
+		g_bCookieLate[iClient] = true;
 	}
 }
 
@@ -348,6 +358,7 @@ public void OnClientDisconnect_Post(int iClient) {
 	if (IsValidHandle(g_hMainMenu[iClient])) {
 		delete g_hMainMenu[iClient];
 	}
+	SDKUnhook(iClient, SDKHook_PostThinkPost, DetectScope);
 }
 
 public void Event_PlayerSpawn(Event hEvent, const char[] szName, bool bDontBroadcast) {
@@ -766,13 +777,10 @@ stock void ToggleView(int iClient, bool bTPView) {
 
 			SetEntPropEnt(iClient, Prop_Send, "m_hObserverTarget", 0); 
 			SetEntProp(iClient, Prop_Send, "m_iObserverMode", 1);
-			SetEntProp(iClient, Prop_Send, "m_bDrawViewmodel", 0);
 			SetEntProp(iClient, Prop_Send, "m_iFOV", 70);
 		} else {
 			SetEntPropEnt(iClient, Prop_Send, "m_hObserverTarget", iClient);
 			SetEntProp(iClient, Prop_Send, "m_iObserverMode", 0);
-			SetEntProp(iClient, Prop_Send, "m_bDrawViewmodel", 1);
-
 			SetEntProp(iClient, Prop_Send, "m_iFOV", g_hFov.GetInt(iClient));
 		}
 	}
@@ -790,7 +798,7 @@ stock void ApplyFromCookie(int iClient) {
 		ApplyModel(iClient, szModel);
 	}
 
-	ApplyFov(iClient, g_hFov.GetInt(iClient));
+	ApplyFov(iClient, g_hFov.GetInt(iClient), false);
 }
 
 stock void ApplyModel(int iClient, const char[] szModel) {
@@ -801,7 +809,7 @@ stock void ApplyModel(int iClient, const char[] szModel) {
 	g_bSelectedSkin[iClient] = true;
 }
 
-stock void ApplyFov(int iClient, int iFov) {
+stock void ApplyFov(int iClient, int iFov, bool bSet=true) {
 	int m_iFov = GetEntProp(iClient, Prop_Send, "m_iFOV");
 	if (m_iFov == 0) {
 		m_iFov = GetEntProp(iClient, Prop_Send, "m_iDefaultFOV");
@@ -817,25 +825,26 @@ stock void ApplyFov(int iClient, int iFov) {
 	SetEntProp(iClient, Prop_Send, "m_iFOV", iFov);
 	SetEntPropFloat(iClient, Prop_Send, "m_flFOVRate", 0.7);
 
-	g_hFov.SetInt(iClient, iFov);
+	if (bSet) {
+		g_hFov.SetInt(iClient, iFov);
+	}
 }
 
 Handle g_hScopeTimer[MAXPLAYERS + 1];
 
-public void OnGameFrame() {
-	for (int i = 1; i <= MaxClients; i++) {
-		if (IsValidClient(i) && IsPlayerAlive(i)) {
-			static int iWeapon;
-			static bool bInIronSight;
-			iWeapon = GetEntPropEnt(i, Prop_Send, "m_hActiveWeapon");
-			bInIronSight = GetEntProp(iWeapon, Prop_Send, "m_bIsInIronsights") != 0;
-			if (bInIronSight && !g_bInScoped[i]) {
-				g_bInScoped[i] = true;
-			}
-			else if (!bInIronSight && g_bInScoped[i]) {
-				if (!IsValidHandle(g_hScopeTimer[i])) {
-					g_hScopeTimer[i] = CreateTimer(GetEntPropFloat(i, Prop_Send, "m_flFOVRate"), TimerUnScoped, i, TIMER_FLAG_NO_MAPCHANGE);
-				}
+public void DetectScope(int iClient) {
+	if (IsPlayerAlive(iClient)) {
+		static int iWeapon;
+		static bool bInIronSight;
+		iWeapon = GetEntPropEnt(iClient, Prop_Send, "m_hActiveWeapon");
+		bInIronSight = GetEntProp(iWeapon, Prop_Send, "m_bIsInIronsights") != 0;
+		if (bInIronSight && !g_bInScoped[iClient]) {
+			g_bInScoped[iClient] = true;
+		}
+		else if (!bInIronSight && g_bInScoped[iClient]) {
+			SetEntProp(iClient, Prop_Send, "m_iFOV", g_hFov.GetInt(iClient), false);
+			if (!IsValidHandle(g_hScopeTimer[iClient])) {
+				g_hScopeTimer[iClient] = CreateTimer(0.7, TimerUnScoped, iClient, TIMER_FLAG_NO_MAPCHANGE);
 			}
 		}
 	}
@@ -844,7 +853,6 @@ public void OnGameFrame() {
 public Action TimerUnScoped(Handle hTimer, any iClient) {
 	if (IsValidClient(iClient) && IsPlayerAlive(iClient)) {
 		g_bInScoped[iClient] = false;
-		ApplyFov(iClient, g_hFov.GetInt(iClient));
 	}
 
 	return Plugin_Stop;

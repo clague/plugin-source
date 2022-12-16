@@ -118,11 +118,19 @@ public void OnClientPutInServer(int iClient) {
         g_aSpeedMetterEnabled[iClient] = false;
     }
 
+    g_aObserveTarget[iClient] = 0;
     if (IsValidHandle(g_aObserveAudience[iClient])) {
         g_aObserveAudience[iClient].Clear();
     }
     else {
         g_aObserveAudience[iClient] = new ArrayList();
+    }
+}
+
+public void OnClientDisconnect(int iClient) {
+    int iTemp;
+    if (g_aObserveTarget[iClient] > 0 && (iTemp = g_aObserveAudience[g_aObserveTarget[iClient]].FindValue(iClient)) != -1) {
+        g_aObserveAudience[g_aObserveTarget[iClient]].Erase(iTemp);
     }
 }
 
@@ -169,19 +177,19 @@ void SendHealthMessage(int iClient, int[] aClients, int nClients) {
         szStatusText[0] = 0;
         if(GetEntProp(iClient, Prop_Send, "_bleedingOut") == 1)
         {
-            Format(szStatusText, sizeof(szStatusText), "%s %T", szStatusText, "bleeding", iClient);
+            Format(szStatusText, sizeof(szStatusText), "%s%T ", szStatusText, "bleeding", iClient);
         }
 
         if(GetEntProp(iClient, Prop_Send, "_vaccinated") == 1)
         {
-            Format(szStatusText, sizeof(szStatusText), "%s %T", szStatusText, "vaccinated", iClient);
+            Format(szStatusText, sizeof(szStatusText), "%s%T ", szStatusText, "vaccinated", iClient);
         }
         else 
         {
             float fInfection_Death_Time = GetEntPropFloat(iClient, Prop_Send, "m_flInfectionDeathTime");
             if(fInfection_Death_Time != -1.0)
             {
-                Format(szStatusText, sizeof(szStatusText), "%s %T", szStatusText, "infected", iClient, RoundToCeil(fInfection_Death_Time - GetGameTime()));
+                Format(szStatusText, sizeof(szStatusText), "%s%T ", szStatusText, "infected", iClient, RoundToCeil(fInfection_Death_Time - GetGameTime()));
             }
         }
     }

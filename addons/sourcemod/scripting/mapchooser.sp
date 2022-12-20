@@ -1314,18 +1314,17 @@ Handle LoadMapList(bool bForceLoad=false) {
 			}
 		}
 		else {
-			char map[PLATFORM_MAX_PATH], displayName[PLATFORM_MAX_PATH];
+			static char map[PLATFORM_MAX_PATH], displayName[PLATFORM_MAX_PATH];
 			FindMapResult res;
+			g_MapDisplayNameList.Clear();
 			for (int i = 0; i < g_MapList.Length; i++)
 			{
 				g_MapList.GetString(i, map, sizeof(map));
 				res = FindMap(map, map, sizeof(map));
-				if (res == FindMap_NotFound)
-				{
+				if (res == FindMap_NotFound) {
 					g_MapList.Erase(i);
 					i--;
-				}
-				else {
+				} else {
 					if (res != FindMap_Found) {
 						g_MapList.SetString(i, map);
 					}

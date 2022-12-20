@@ -208,7 +208,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	return APLRes_Success;
 }
 
-public void OnConfigsExecuted()
+public void OnMapStart()
 {
 	float time = GetEngineTime();
 	if (INVALID_HANDLE == LoadMapList(true)) {

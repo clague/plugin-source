@@ -82,7 +82,6 @@ public void OnPluginStart()
 
 public void OnConfigsExecuted()
 {
-    LogMessage("Start read map list");
     Handle mapList = INVALID_HANDLE;
     if ((mapList = GetMapList()) == INVALID_HANDLE) {
         SetFailState("Unable to create a valid map list.");
@@ -92,10 +91,7 @@ public void OnConfigsExecuted()
     }
     g_MapList = view_as<ArrayList>(mapList);
 
-    LogMessage("Finish read map list and Build map menu");
     BuildMapMenu();
-
-    LogMessage("Finish build map menu");
 }
 
 public void OnNominationRemoved(const char[] map, int owner)

@@ -210,13 +210,14 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnMapStart()
 {
+	LogMessage("Force to reload the map list");
 	float time = GetEngineTime();
 	if (INVALID_HANDLE == LoadMapList(true)) {
 		LogError("Unable to create a valid map list.");
 	}
 
 	time  = GetEngineTime() - time;
-	LogMessage("A force map list reload cost %f seconds", time);
+	LogMessage("This forced reload cost %f seconds", time);
 	
 	/* First-load previous maps from a text file when persistency is enabled. */
 	static bool g_FirstConfigExec = true;
@@ -1303,14 +1304,21 @@ any Native_GetMapDisplayNameList(Handle hPlugin, int nParams) {
 
 Handle LoadMapList(bool bForceLoad=false) {
 	if ((!IsValidHandle(g_MapList) || g_MapList.Length <= 0) || bForceLoad) {
-		if (INVALID_HANDLE == ReadMapList(g_MapList,
-			g_mapFileSerial, 
+		if (!IsValidHandle(g_MapList)) {
+			g_MapList = new ArrayList(ByteCountToCells(PLATFORM_MAX_PATH));
+			g_mapFileSerial = -1;
+		}
+		if (INVALID_HANDLE == ReadMapList(
+			g_MapList,
+			g_mapFileSerial,
 			"mapchooser",
-			MAPLIST_FLAG_CLEARARRAY|MAPLIST_FLAG_MAPSFOLDER)) {
-			
-			LogMessage("ReadMapList return INVALID_HANDLE, g_MapList's Length: %d, serial: %d", g_MapList.Length, g_mapFileSerial);
+			MAPLIST_FLAG_CLEARARRAY|MAPLIST_FLAG_MAPSFOLDER
+		)) {
 			if (g_mapFileSerial == -1) {
 				return INVALID_HANDLE;
+			}
+			else {
+				LogMessage("ReadMapList stay unchanged, g_MapList's Length: %d, serial: %d", g_MapList.Length, g_mapFileSerial);
 			}
 		}
 		else {
@@ -1332,8 +1340,8 @@ Handle LoadMapList(bool bForceLoad=false) {
 					g_MapDisplayNameList.PushString(displayName);
 				}
 			}
+			LogMessage("After reading, g_MapList's Length: %d, Serial: %d", g_MapList.Length, g_mapFileSerial);
 		}
-		LogMessage("After reading, g_MapList's Length: %d, Serial: %d", g_MapList.Length, g_mapFileSerial);
 	}
 	return g_MapList;
 }

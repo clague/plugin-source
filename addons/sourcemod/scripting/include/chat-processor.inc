@@ -7,7 +7,7 @@
 #define MAXLENGTH_FLAG		32
 #define MAXLENGTH_NAME		128
 #define MAXLENGTH_MESSAGE	128
-#define MAXLENGTH_BUFFER	255
+#define MAXLENGTH_BUFFER	254
 
 ////////////////////////////
 //Natives

@@ -61,14 +61,11 @@ public void OnPluginStart()
     SQL_DBConnect();
 }
 
-public void OnMapStart()
-{
+public void OnMapStart() {
     if(!gB_Connected)
     {
         return;
     }
-    g_cvEnable.IntValue = 1;
-    g_cvEnableRT.BoolValue = true;
     // Get mapname
     GetCurrentMap(gS_Map, 160);
 
@@ -76,7 +73,37 @@ public void OnMapStart()
     GetMapDisplayName(gS_Map, gS_Map, 160);
 }
 
+public void OnMapEnd() {
+    if (IsValidHandle(g_cvInfStamina)) {
+        g_cvInfStamina.RemoveChangeHook(OnConVarChange);
+        delete g_cvInfStamina;
+    }
+
+    if (IsValidHandle(g_cvInfStamina)) {
+        g_cvMachete.RemoveChangeHook(OnConVarChange);
+        delete g_cvMachete;
+    }
+
+    if (IsValidHandle(g_cvInfStamina)) {
+        g_cvGameMode.RemoveChangeHook(OnConVarChange);
+        delete g_cvGameMode;
+    }
+
+    if (IsValidHandle(g_cvInfStamina)) {
+        g_cvDensity.RemoveChangeHook(OnConVarChange);
+        delete g_cvDensity;
+    }
+
+    if (IsValidHandle(g_cvInfStamina)) {
+        g_cvDifficulty.RemoveChangeHook(OnConVarChange);
+        delete g_cvDifficulty;
+    }
+}
+
 public void OnConfigsExecuted() {
+    g_cvEnable.IntValue = 1;
+    g_cvEnableRT.BoolValue = true;
+
     g_cvInfStamina = FindConVar("sm_inf_stamina");
     g_cvMachete = FindConVar("sm_machete_enable");
     g_cvGameMode = FindConVar("sm_gamemode");

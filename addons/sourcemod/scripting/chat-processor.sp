@@ -177,7 +177,7 @@ public void OnFlagsChanged(ConVar hConVar, const char[] szOld, const char[] szNe
 
 ////////////////////
 //SayText2
-public Action OnSayText2(UserMsg msg_id, BfRead hMsg, const int[] players, int playersNum, bool reliable, bool init)
+public Action OnSayText2(UserMsg msgId, BfRead hMsg, const int[] players, int playersNum, bool reliable, bool init)
 {
     //Check if the plugin is disabled.
     if (!convar_Status.BoolValue)
@@ -287,10 +287,10 @@ public Action OnSayText2(UserMsg msg_id, BfRead hMsg, const int[] players, int p
 
     //Process colors based on the final results we have.
     if (bProcessColors) {
-        Format(szText, sizeof(szText), "\x01%s\x01", szText);
-        Format(szName, sizeof(szName), "\x03%s\x01", szName);
         CProcessVariables(szName, sizeof(szName), true, true);
         CProcessVariables(szText, sizeof(szText), true, true);
+        Format(szName, sizeof(szName), "\x03%s\x01", szName);
+        Format(szText, sizeof(szText), "\x01%s\x01", szText);
 
         //CSGO quirk where the 1st color in the line won't work..
         if (game == Engine_CSGO)
@@ -460,13 +460,13 @@ public void OnClientDisconnect_Post(int client)
 public int Native_AddClientTag(Handle plugin, int numParams)
 {
     int client = GetNativeCell(1);
-    
-    int size;
-    GetNativeStringLength(2, size); size++;
-    
-    char[] sTag = new char[size];
-    GetNativeString(2, sTag, size);
-    
+
+    int iSize;
+    GetNativeStringLength(2, iSize); iSize++;
+
+    char[] sTag = new char[iSize];
+    GetNativeString(2, sTag, iSize);
+
     return AddClientTag(client, sTag);
 }
 
@@ -474,28 +474,28 @@ bool AddClientTag(int client, const char[] tag)
 {
     if (client == 0 || client > MaxClients || IsFakeClient(client))
         return false;
-    
+
     int index = g_Tags[client].PushString(tag);
-    
+
     Call_StartForward(g_Forward_OnAddClientTagPost);
     Call_PushCell(client);
     Call_PushCell(index);
     Call_PushString(tag);
     Call_Finish();
-    
+
     return true;
 }
 
 public int Native_RemoveClientTag(Handle plugin, int numParams)
 {
     int client = GetNativeCell(1);
-    
-    int size;
-    GetNativeStringLength(2, size); size++;
-    
-    char[] sTag = new char[size];
-    GetNativeString(2, sTag, size);
-    
+
+    int iSize;
+    GetNativeStringLength(2, iSize); iSize++;
+
+    char[] sTag = new char[iSize];
+    GetNativeString(2, sTag, iSize);
+
     return RemoveClientTag(client, sTag);
 }
 
@@ -503,44 +503,44 @@ bool RemoveClientTag(int client, const char[] tag)
 {
     if (client == 0 || client > MaxClients || IsFakeClient(client))
         return false;
-    
+
     bool found;
     static char sTag[MAXLENGTH_NAME];
     for (int i = 0; i < g_Tags[client].Length; i++)
     {
         g_Tags[client].GetString(i, sTag, sizeof(sTag));
-        
+
         if (StrContains(sTag, tag, false) == -1)
             continue;
-            
+
         g_Tags[client].Erase(i);
-        
+
         Call_StartForward(g_Forward_OnRemoveClientTagPost);
         Call_PushCell(client);
         Call_PushCell(i);
         Call_PushString(tag);
         Call_Finish();
-        
+
         found = true;
     }
-    
+
     return found;
 }
 
 public int Native_SwapClientTags(Handle plugin, int numParams)
 {
     int client = GetNativeCell(1);
-    
-    int size;
-    
-    GetNativeStringLength(2, size); size++;
-    char[] sTag1 = new char[size];
-    GetNativeString(2, sTag1, size);
-    
-    GetNativeStringLength(3, size); size++;
-    char[] sTag2 = new char[size];
-    GetNativeString(3, sTag2, size);
-    
+
+    int iSize;
+
+    GetNativeStringLength(2, iSize); iSize++;
+    char[] sTag1 = new char[iSize];
+    GetNativeString(2, sTag1, iSize);
+
+    GetNativeStringLength(3, iSize); iSize++;
+    char[] sTag2 = new char[iSize];
+    GetNativeString(3, sTag2, iSize);
+
     return SwapClientTags(client, sTag1, sTag2);
 }
 
@@ -548,17 +548,17 @@ bool SwapClientTags(int client, const char[] tag1, const char[] tag2)
 {
     if (client == 0 || client > MaxClients || IsFakeClient(client))
         return false;
-    
+
     int index1 = -1;
     if ((index1 = g_Tags[client].FindString(tag1)) == -1)
         return false;
-    
+
     int index2 = -1;
     if ((index2 = g_Tags[client].FindString(tag2)) == -1)
         return false;
     
     g_Tags[client].SwapAt(index1, index2);
-    
+
     Call_StartForward(g_Forward_OnSwapClientTagsPost);
     Call_PushCell(client);
     Call_PushCell(index1);
@@ -566,7 +566,7 @@ bool SwapClientTags(int client, const char[] tag1, const char[] tag2)
     Call_PushCell(index2);
     Call_PushString(tag2);
     Call_Finish();
-    
+
     return true;
 }
 
@@ -580,30 +580,30 @@ bool StripClientTags(int client)
 {
     if (g_Tags[client].Length == 0)
         return false;
-    
+
     g_Tags[client].Clear();
-    
+
     Call_StartForward(g_Forward_OnStripClientTagsPost);
     Call_PushCell(client);
     Call_Finish();
-    
+
     return true;
 }
 
 public int Native_SetTagColor(Handle plugin, int numParams)
 {
     int client = GetNativeCell(1);
-    
-    int size;
-    
-    GetNativeStringLength(2, size); size++;
-    char[] sTag = new char[size];
-    GetNativeString(2, sTag, size);
-    
-    GetNativeStringLength(3, size); size++;
-    char[] sColor = new char[size];
-    GetNativeString(3, sColor, size);
-    
+
+    int iSize;
+
+    GetNativeStringLength(2, iSize); iSize++;
+    char[] sTag = new char[iSize];
+    GetNativeString(2, sTag, iSize);
+
+    GetNativeStringLength(3, iSize); iSize++;
+    char[] sColor = new char[iSize];
+    GetNativeString(3, sColor, iSize);
+
     return SetTagColor(client, sTag, sColor);
 }
 
@@ -611,21 +611,21 @@ bool SetTagColor(int client, const char[] tag, const char[] color)
 {
     if (client <= 0 || client > MaxClients || IsFakeClient(client))
         return false;
-    
+
     bool found;
     static char sTag[MAXLENGTH_NAME];
     for (int i = 0; i < g_Tags[client].Length; i++)
     {
         g_Tags[client].GetString(i, sTag, sizeof(sTag));
-        
+
         if (StrContains(sTag, tag, false) == -1)
             continue;
-            
+
         CRemoveVariables(sTag, sizeof(sTag));
         Format(sTag, sizeof(sTag), "%s%s", color, sTag);
-        
+
         g_Tags[client].SetString(i, sTag);
-        
+
         Call_StartForward(g_Forward_OnSetTagColorPost);
         Call_PushCell(client);
         Call_PushCell(i);
@@ -635,20 +635,20 @@ bool SetTagColor(int client, const char[] tag, const char[] color)
         
         found = true;
     }
-    
+
     return found;
 }
 
 public int Native_SetNameColor(Handle plugin, int numParams)
 {
     int client = GetNativeCell(1);
-    
-    int size;
-    GetNativeStringLength(2, size); size++;
-    
-    char[] sColor = new char[size];
-    GetNativeString(2, sColor, size);
-    
+
+    int iSize;
+    GetNativeStringLength(2, iSize); iSize++;
+
+    char[] sColor = new char[iSize];
+    GetNativeString(2, sColor, iSize);
+
     return SetNameColor(client, sColor);
 }
 
@@ -656,27 +656,27 @@ bool SetNameColor(int client, const char[] color)
 {
     if (client == 0 || client > MaxClients || IsFakeClient(client))
         return false;
-    
+
     strcopy(g_NameColor[client], MAXLENGTH_NAME, color);
-    
+
     Call_StartForward(g_Forward_OnSetNameColorPost);
     Call_PushCell(client);
     Call_PushString(color);
     Call_Finish();
-    
+
     return true;
 }
 
 public int Native_SetChatColor(Handle plugin, int numParams)
 {
     int client = GetNativeCell(1);
-    
-    int size;
-    GetNativeStringLength(2, size); size++;
-    
-    char[] sColor = new char[size];
-    GetNativeString(2, sColor, size);
-    
+
+    int iSize;
+    GetNativeStringLength(2, iSize); iSize++;
+
+    char[] sColor = new char[iSize];
+    GetNativeString(2, sColor, iSize);
+
     return SetChatColor(client, sColor);
 }
 
@@ -684,46 +684,40 @@ bool SetChatColor(int client, const char[] color)
 {
     if (client == 0 || client > MaxClients || IsFakeClient(client))
         return false;
-    
+
     strcopy(g_ChatColor[client], MAXLENGTH_MESSAGE, color);
-     
+
     Call_StartForward(g_Forward_OnSetChatColorPost);
     Call_PushCell(client);
     Call_PushString(color);
     Call_Finish();
-    
+
     return true;
 }
 
-public Action CP_OnChatMessage(int& author, ArrayList recipients, char[] flagstring, char[] name, char[] message, bool& processcolors)
+public Action CP_OnChatMessage(int& iAuthor, ArrayList aRecipients, char[] szFlag, char[] szName, char[] szMessage, bool& bProcesscolors)
 {
     bool changed;
-    int size = g_Tags[author].Length;
-    
-    if (size > 0)
-    {
-        Format(name, MAXLENGTH_NAME, "%s%s", strlen(g_NameColor[author]) > 0 ? g_NameColor[author] : "{teamcolor}", name);
-        
+    int iSize = g_Tags[iAuthor].Length;
+
+    if (strlen(g_NameColor[iAuthor]) > 0) {
+        Format(szName, MAXLENGTH_NAME, "%s%s", g_NameColor[iAuthor], szName);
+        changed = true;
+    }
+    if (iSize > 0) {
         static char sTag[MAXLENGTH_NAME];
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < iSize; i++)
         {
-            g_Tags[author].GetString(i, sTag, sizeof(sTag));
-            Format(name, MAXLENGTH_NAME, "%s%s", sTag, name);
+            g_Tags[iAuthor].GetString(i, sTag, sizeof(sTag));
+            Format(szName, MAXLENGTH_NAME, "%s%s", sTag, szName);
         }
-        
+
         changed = true;
     }
-    else if (strlen(g_NameColor[author]) > 0)
-    {
-        Format(name, MAXLENGTH_NAME, "%s%s", g_NameColor[author], name);
+    if (strlen(g_ChatColor[iAuthor]) > 0) {
+        Format(szMessage, MAXLENGTH_MESSAGE, "%s%s", g_ChatColor[iAuthor], szMessage);
         changed = true;
     }
-    
-    if (strlen(g_ChatColor[author]) > 0)
-    {
-        Format(message, MAXLENGTH_MESSAGE, "%s%s", g_ChatColor[author], message);
-        changed = true;
-    }
-    
+
     return changed ? Plugin_Changed : Plugin_Continue;
 }

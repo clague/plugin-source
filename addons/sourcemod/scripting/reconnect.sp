@@ -31,6 +31,7 @@ float g_aPlayerState[MAXPLAYERS + 1][PLAYER_STATE_LEN];
 char g_szPlayerAuth[MAXPLAYERS + 1][64];
 
 public void OnPluginStart() {
+    LoadTranslations("common.phrases");
     LoadTranslations("reconnect.phrases");
     sm_reconnect_max_interval = CreateConVar("sm_reconnect_max_interval", "300", "Player need reconnect in this time , in seconds.");
     sm_reconnect_choose_time = CreateConVar("sm_reconnect_choose_time", "30", "Player need choose whether to restore state in this time.");
@@ -241,13 +242,42 @@ Action CmdRSpawn(int iClient, int nArgs) {
 
 Action CmdFSpawn(int iClient, int nArgs) {
     float vOrigin[3], vAngle[3];
+    char szTarget[64];
+    char szTargetName[MAX_TARGET_LENGTH];
+    int aTargets[MAXPLAYERS];
+    int nTargets;
+    bool bIsML;
 
     GetClientEyePosition(iClient,vOrigin);
     GetClientEyeAngles(iClient,vAngle);
 
-    ForceSpawn(iClient);
-    TeleportEntity(iClient, vOrigin, vAngle, NULL_VECTOR);
-
+    if (nArgs < 1) {
+        ReplyToCommand(iClient, "[SM] Usage: sm_fspawn <#userid|name>");
+        return Plugin_Handled;
+    }
+    
+    GetCmdArg(1, szTarget, sizeof(szTarget));
+    
+    if ((nTargets = ProcessTargetString(
+            szTarget,
+            iClient,
+            aTargets,
+            MAXPLAYERS,
+            0,
+            szTargetName,
+            sizeof(szTargetName),
+            bIsML
+        )) <= 0) {
+        ReplyToTargetError(iClient, nTargets);
+        return Plugin_Handled;
+    }
+        
+    for (int i = 0; i < nTargets; i++) {
+        if (IsClientInGame(aTargets[i]) && !IsPlayerAlive(aTargets[i])) {
+            ForceSpawn(aTargets[i]);
+            TeleportEntity(aTargets[i], vOrigin, vAngle, NULL_VECTOR);
+        }
+    }
     return Plugin_Handled;
 }
 

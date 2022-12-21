@@ -26,10 +26,9 @@ $Id: countrynick.sp 29 2009-02-23 23:45:22Z aen0 $
 #include <geoip>
 #include <globalvariables>
 #include <getoverit>
+#include <chat-processor>
  
 #define VERSION "1.1.1"
-
-#define MAX_NAME_LEN 256
 
 char g_aszCode2[MAXPLAYERS + 1][3];
 
@@ -47,13 +46,12 @@ public OnPluginStart() {
 }
 
 public OnClientPostAdminCheck(iClient) {
-    PrintToServer("country");
     CreateTimer(0.3, PrintCountryInfo, iClient, TIMER_FLAG_NO_MAPCHANGE);
 }
 public Action PrintCountryInfo(Handle hTimer, any iClient) {
     char szIp[16];
     char szRegion[46];
-    char szName[MAX_NAME_LEN];
+    char szName[MAX_NAME_LENGTH];
     
     if (!IsFakeClient(iClient) && iClient != 0) {
 
@@ -77,16 +75,15 @@ public Action PrintCountryInfo(Handle hTimer, any iClient) {
 }
 
 public Action CP_OnChatMessage(int& iAuthor, ArrayList recipients, char[] szFlags, char[] szName, char[] szText, bool &bProcessColors) {
-
-    FetchColoredName(iAuthor, szName, MAX_NAME_LEN);
+    FetchColoredName(iAuthor, szName, MAX_NAME_LENGTH);
     if(!IsPlayerAlive(iAuthor)) {
         if (GetEntProp(iAuthor, Prop_Send, "m_bIsExtracted"))
-            Format(szName, MAX_NAME_LEN, "*撤离* [%s]%s", g_aszCode2[iAuthor], szName);
+            Format(szName, MAX_NAME_LENGTH, "*撤离* [%s]%s", g_aszCode2[iAuthor], szName);
         else
-            Format(szName, MAX_NAME_LEN, "*死亡* [%s]%s", g_aszCode2[iAuthor], szName);
+            Format(szName, MAX_NAME_LENGTH, "*死亡* [%s]%s", g_aszCode2[iAuthor], szName);
     }
     else {
-        Format(szName, MAX_NAME_LEN, "[%s]%s", g_aszCode2[iAuthor], szName);
+        Format(szName, MAX_NAME_LENGTH, "[%s]%s", g_aszCode2[iAuthor], szName);
     }
     return Plugin_Changed;
 }

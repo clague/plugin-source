@@ -120,7 +120,7 @@ public void AfterQuery(Handle owner, Handle hndl, const char[] error, any data) 
     if(!IsClientInGame(data))
         return;
 
-    char steam_id[64], name[MAX_NAME_LEN], buffer[MAX_QUERY_LEN];
+    char steam_id[64], name[MAX_NAME_LENGTH], buffer[MAX_QUERY_LEN];
     int times = 0;
     bool need_insert = false;
 
@@ -168,7 +168,7 @@ public Action OnClientPreAdminCheck(int client) {
 
 public void ApplyNameColor(Handle owner, Handle hndl, const char[] error, any data) {
     int times = 0;
-    char name[MAX_NAME_LEN], name_1[MAX_NAME_LEN], buffer[MAX_QUERY_LEN];
+    char name[MAX_NAME_LENGTH], name_1[MAX_NAME_LENGTH], buffer[MAX_QUERY_LEN];
     GetClientName(data, name_1, 128);
     if(hndl == INVALID_HANDLE) {
         PrintToServer("Error when query %s!", name);
@@ -265,14 +265,14 @@ public void ShowTopRankToClient_p2(Handle:owner, Handle:hndl, const String:error
         PrintToServer("Last Connect SQL Error: %s", error);
     }
     int top = 0, times = 0;
-    char buffer[10][MAX_SAYTEXT2_LEN], name[MAX_NAME_LEN] = {0}, color[MAX_COLOR_LEN];
+    char buffer[10][MAX_SAYTEXT2_LEN], name[MAX_NAME_LENGTH] = {0}, color[MAX_COLOR_LEN];
     while(SQL_FetchRow(hndl) && top < 10) {
         strcopy(color, sizeof(color), g_rank_color[0]);
         SQL_FetchString(hndl, 0, name, sizeof(name));
         times = SQL_FetchInt(hndl, 1);
         top++;
         if (times >= 100) {
-            char newname[MAX_NAME_LEN];
+            char newname[MAX_NAME_LENGTH];
             StringRainbow(name, newname, sizeof(newname));
             FormatEx(buffer[top-1], sizeof(buffer[]), "TOP %i：幸存者 %s {white}总共撤离 {red}%i {white}次", 
                     top, newname, times);

@@ -12,7 +12,5 @@ native bool CSayText2(int iClient, int iAuthor, const char[] szFlags, const char
 
 native bool CSayText2All(int iAuthor, const char[] szFlags, const char[] szName, const char[] szText);
 
-#define MAX_NAME_LEN 256
-
-#define MAX_MESSAGE_LEN 1024
-#define MAX_SAYTEXT2_LEN 256
+#define MAX_MESSAGE_LEN 254
+#define MAX_SAYTEXT2_LEN 254

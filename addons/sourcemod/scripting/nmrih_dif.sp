@@ -228,21 +228,21 @@ public void OnPluginEnd() {
 public void OnEntityCreated(int iEntity, const char[] classname) {
     if(!g_bEnabled || g_GameMode == GameModeDefault) return;
 
-    if(IsValidShamblerZombie(iEntity))
+    if(IsValidShamblerZombie(iEntity)) {
         SDKHook(iEntity, SDKHook_SpawnPost, SDKHookCBZombieSpawnPost);
+    }
 }
 
 bool IsValidShamblerZombie(int iEntity) {
     char szClassname[128];
-    if (GetEntityClassname(iEntity, szClassname, sizeof(szClassname))) {
+    if (IsValidEntity(iEntity) && GetEntityClassname(iEntity, szClassname, sizeof(szClassname))) {
         return StrEqual(szClassname, "npc_nmrih_shamblerzombie", false);
     }
     return false;
 }
 
 public void SDKHookCBZombieSpawnPost(int zombie) {
-    switch(g_GameMode)
-    {
+    switch(g_GameMode) {
         case GameModeRunner:	ShamblerToRunnerFromPosion(zombie);
         case GameModeKid:	ShamblerToRunnerFromPosion(zombie, true);
     }
@@ -257,10 +257,12 @@ int ShamblerToRunnerFromPosion(int iZombie, bool isKid = false) {
         AcceptEntityInput(iZombie, "kill");
         iZombie = CreateEntityByName("npc_nmrih_kidzombie");
 
-        if(!IsValidEntity(iZombie))
+        if(!IsValidEntity(iZombie)) {
             return -1;
-        if(DispatchSpawn(iZombie))
+        }
+        if(DispatchSpawn(iZombie)) {
             TeleportEntity(iZombie, fPos, NULL_VECTOR, NULL_VECTOR);
+        }
     }
     else {
         AcceptEntityInput(iZombie, "BecomeRunner");
@@ -270,30 +272,26 @@ int ShamblerToRunnerFromPosion(int iZombie, bool isKid = false) {
 
 void ShamblerConvertToRunner(bool bKid=false) {
     int nMaxEnts = GetMaxEntities();
-    for(int iZombie = MaxClients + 1; iZombie <= nMaxEnts; iZombie++)
-    {
-        if(IsValidShamblerZombie(iZombie))
+    for(int iZombie = MaxClients + 1; iZombie <= nMaxEnts; iZombie++) {
+        if(IsValidShamblerZombie(iZombie)) {
             ShamblerToRunnerFromPosion(iZombie, bKid);
+        }
     }
 }
 
 void ConVarSet(GameMode mode) {
-    switch(mode)
-    {
-        case GameModeRunner:
-        {
+    switch(mode) {
+        case GameModeRunner: {
             sv_max_runner_chance.FloatValue = 3.0;
             ov_runner_chance.FloatValue = 3.0;
             ov_runner_kid_chance.FloatValue = g_fKidChance;
         }
-        case GameModeKid:
-        {
+        case GameModeKid: {
             sv_max_runner_chance.FloatValue = 3.0;
             ov_runner_chance.FloatValue = 3.0;
             ov_runner_kid_chance.FloatValue = 1.0;
         }
-        case GameModeDefault:
-        {
+        case GameModeDefault: {
             sv_max_runner_chance.FloatValue = sv_max_runner_chance_default;
             ov_runner_chance.FloatValue = ov_runner_chance_default;
             ov_runner_kid_chance.FloatValue = ov_runner_kid_chance_default;

@@ -1,0 +1,46 @@
+"Phrases"
+{
+	"ChatPrefix"
+	{
+		"en"	"[Rocket]"
+		"chi"	"[系统]"
+		"zho"	"[系統]"
+	}
+	"EvilRocket"
+	{
+		"en"	"Evil Rocket"
+		"chi"	"坐火箭"
+		"zho"	"坐火箭"
+	}
+	"ChoosePlayer"
+	{
+		"en"	"Choose Player: "
+		"chi"	"选择玩家："
+		"zho"	"選擇玩家："
+	}
+	"PlayerUnavailable"
+	{
+		"en"	"The player you select is not available"
+		"chi"	"你选择的玩家不存在"
+		"zho"	"你選擇的玩家不存在"
+	}
+	"UnableToTarget"
+	{
+		"en"	"You can't target this player!"
+		"chi"	"你不能指定这个玩家！"
+		"zho"	"你不能指定這個玩家！"
+	}
+	"NotEnabled"
+	{
+		"en"	"Evil Rocket is not enabled"
+		"chi"	"暂未开启此功能"
+		"zho"	"暫未開啟此功能"
+	}
+	"RocketTip"
+	{
+		"#format"	"{1:s}"
+		"en"	"{1} send her/himself to the space!"
+		"chi"	"{1}将自己送上了太空！"
+		"zho"	"{1}把自己變成了火箭！"
+	}
+}

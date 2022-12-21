@@ -15,11 +15,18 @@ public void OnPluginStart() {
     // HookUserMessage(GetUserMessageId("InfectionCured"), OnUserMessage, true);
     // HookUserMessage(GetUserMessageId("Cure"), OnUserMessage, true);
     LoadTranslations("delay_quit.phrases");
+    
     RegAdminCmd("sm_tmi", TestMotdIndex, ADMFLAG_GENERIC);
     RegAdminCmd("sm_tarr", TestArrayAssign, ADMFLAG_GENERIC);
     RegAdminCmd("sm_count", CountZombies, ADMFLAG_GENERIC);
     RegAdminCmd("sm_make", MakeZombies, ADMFLAG_GENERIC);
+    RegAdminCmd("sm_fakeclient", MakeFakeClient, ADMFLAG_GENERIC);
     RegServerCmd("sm_delay_quit", DelayQuit, "quit at a proper time");
+}
+
+public Action MakeFakeClient(int iClient, int nArgs) {
+    CreateFakeClient("test");
+    return Plugin_Continue;
 }
 
 public Action TestArrayAssign(int iClient, int nArgs)

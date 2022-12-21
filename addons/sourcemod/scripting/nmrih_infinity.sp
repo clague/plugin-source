@@ -15,8 +15,7 @@ new iClip1Offset = -1;
 new Handle:hMaxStamina, Float:fMaxStamina,
     Handle:hInfAmmo, iInfAmmo,
     Handle:hInfStamina, bool:bInfStamina,
-    bool:bTrue, bool:bMacheteEnable;
-ConVar hPKMode, hMacheteEnable;
+    bool:bTrue;
 
 public Plugin:myinfo =
 {
@@ -48,14 +47,6 @@ public OnPluginStart()
     iClip1Offset = FindSendPropInfo("CNMRiH_WeaponBase", "m_iClip1");
 
     AutoExecConfig(true, "nmrih_infinity");
-    RegConsoleCmd("sm_inf", DoVoteMenu);
-    RegConsoleCmd("sm_machete", DoVoteMenu2);
-}
-
-public void OnConfigsExecuted()
-{
-    hPKMode = FindConVar("sm_pk_mode");
-    hMacheteEnable = FindConVar("sm_machete_enable");
 }
 
 
@@ -64,7 +55,6 @@ public OnConVarChange(Handle:hCvar, const String:oldValue[], const String:newVal
     if (hCvar == hInfAmmo)
     {
         iInfAmmo = StringToInt(newValue);
-        OnConfigsExecuted();
     }
     else if (hCvar == hMaxStamina)
     {
@@ -73,10 +63,6 @@ public OnConVarChange(Handle:hCvar, const String:oldValue[], const String:newVal
     else if (hCvar == hInfStamina)
     {
         bInfStamina = bool:StringToInt(newValue);
-    }
-    else if (hCvar == hMacheteEnable)
-    {
-        bMacheteEnable = bool:StringToInt(newValue);
     }
 }
 
@@ -206,131 +192,4 @@ stock GetClipSize(iClient)
     else if (StrEqual(sPlayerWeapon, "me_chainsaw"))
         return 100;
     else return 0;
-}
-
-public int Handle_VoteMenu(Menu menu, MenuAction action, int param1, int param2)
-{
-    switch (action)
-    {
-        case MenuAction_End: delete menu;
-        case MenuAction_VoteCancel: CPrintToChatAll(0, "{green}[系统]{white}投票已经取消！");
-        case MenuAction_VoteEnd:
-        {
-            int votes, totalVotes;
-            GetMenuVoteInfo(param2, votes, totalVotes);
-            if (param1 == 0 && FloatCompare(GetVotePercent(votes, totalVotes), VOTE_LIMIT) > 0)
-            {
-                if (bInfStamina)
-                {
-                    ServerCommand("sm_inf_stamina 0");
-                }
-                else
-                {
-                    ServerCommand("sm_inf_stamina 1");
-                }
-                CPrintToChatAll(0, "{green}[系统]{white}已成功切换无限体力参数！");
-            }	
-        }
-    }
-    return 0;
-}
-
-public Action DoVoteMenu(int client, int args)
-{
-    if (IsVoteInProgress())
-    {
-        CPrintToChat(client, 0, "{green}[系统]{red}当前有投票正在进行！");
-        return Plugin_Handled;
-    }
-    
-    if (!IsPlayerAlive(client))
-    {
-        CPrintToChat(client, 0, "{green}[系统]{red}只有活着的人才能发起投票！");
-        return Plugin_Handled;
-    }
-
-    if(hPKMode.BoolValue)
-    {
-        CPrintToChat(client, 0, "{green}[系统]{red}当前地图不允许改变参数！");
-        return Plugin_Handled;
-    }
-
-    Menu menu = new Menu(Handle_VoteMenu);
-    if (bInfStamina)
-        menu.SetTitle("是否关闭无限体力，关闭后需重启回合才会记录通关");
-    else
-        menu.SetTitle("是否开启无限体力，开启后不会记录通关");
-    menu.AddItem("yes", "是");
-    menu.AddItem("no", "否");
-    menu.ExitButton = true;
-    menu.DisplayVoteToAll(20);
-
-    char name[MAX_NAME_LEN];
-    FetchColoredName(client, name, sizeof(name));
-    CPrintToChatAll(0, "{green}[系统]{white} %s 投票更改无限体力参数！", name);
-
-    return Plugin_Handled;
-}
-
-float GetVotePercent(int votes, int totalVotes)
-{
-    return float(votes) / float(totalVotes);
-}
-
-public int Handle_VoteMenu2(Menu menu, MenuAction action, int param1, int param2)
-{
-    switch (action)
-    {
-        case MenuAction_End: delete menu;
-        case MenuAction_VoteCancel: CPrintToChatAll(0, "{green}[系统]{white}投票已经取消！");
-        case MenuAction_VoteEnd:
-        {
-            int votes, totalVotes;
-            GetMenuVoteInfo(param2, votes, totalVotes);
-            if (param1 == 0 && FloatCompare(GetVotePercent(votes, totalVotes), VOTE_LIMIT) > 0)
-            {
-                if (bMacheteEnable)
-                {
-                    ServerCommand("sm_machete_enable 0");
-                }
-                else
-                {
-                    ServerCommand("sm_machete_enable 1");
-                }
-                CPrintToChatAll(0, "{green}[系统]{white}已成功切换全砍刀模式！");
-            }	
-        }
-    }
-    return 0;
-}
-
-public Action DoVoteMenu2(int client, int args)
-{
-    if (IsVoteInProgress())
-    {
-        CPrintToChat(client, 0, "{green}[系统]{red}当前有投票正在进行！");
-        return Plugin_Handled;
-    }
-    
-    if (!IsPlayerAlive(client))
-    {
-        CPrintToChat(client, 0, "{green}[系统]{red}只有活着的人才能发起投票！");
-        return Plugin_Handled;
-    }
-
-    Menu menu = new Menu(Handle_VoteMenu);
-    if (bInfStamina)
-        menu.SetTitle("是否关闭全砍刀，关闭后需重启回合才会记录通关");
-    else
-        menu.SetTitle("是否开启全砍刀，开启后全员出生自带砍刀，但不会记录通关");
-    menu.AddItem("yes", "是");
-    menu.AddItem("no", "否");
-    menu.ExitButton = true;
-    menu.DisplayVoteToAll(20);
-
-    char name[MAX_NAME_LEN];
-    FetchColoredName(client, name, sizeof(name));
-    CPrintToChatAll(0, "{green}[系统]{white} %s 投票更改全砍刀模式！", name);
-
-    return Plugin_Handled;
 }

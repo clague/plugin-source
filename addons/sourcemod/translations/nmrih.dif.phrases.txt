@@ -186,7 +186,7 @@
 	}
 	"ModeMenuItemDefault"
 	{
-		"en"			"default"
+		"en"			"Default Mode"
 		"chi"			"默认模式"
 		"ru"			"по умолчанию"
 	}

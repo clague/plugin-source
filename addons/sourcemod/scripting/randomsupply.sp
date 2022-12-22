@@ -112,7 +112,7 @@ public Action EventPlayerExtracted(Event e, const char[] szName, bool bDontBroad
 
 public Action GivePlayerSupply(Handle hTimer, any iClient)
 {
-    if(!IsPlayerAlive(iClient)) {
+    if(!(IsClientInGame(iClient) && IsPlayerAlive(iClient))) {
         PrintToServer("Not alive, skip giving.");
         g_bGived[iClient] = false;
         return Plugin_Stop;

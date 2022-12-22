@@ -353,6 +353,457 @@ public void RemoveVariables(char[] szMessage, int nMaxLength) {
     strcopy(szMessage, nMaxLength, szBuffer);
 }
 
+bool CalcRPN(ArrayStack RPNStack, ArrayList SymbolList, int& iRes, bool bNotFoundAsError=true) {
+    ArrayStack ResStack = RPNStack.Clone();
+    int aReverse[MAX_TOKEN_COUNT], nLen = 0;
+    iRes = 0;
+    while (!ResStack.Empty) {
+        aReverse[nLen++] = ResStack.Pop();
+    }
+    for (int i = nLen - 1; i >= 0; i--) {
+        if (aReverse[i] >= view_as<int>(AND)) {
+            static int num1, num2;
+            switch (view_as<OP>(aReverse[i])) {
+                case AND: {
+                    if (!Pop2(ResStack, num1, num2)) {
+                        return false;
+                    }
+                    ResStack.Push(num2 && num1);
+                }
+                case OR: {
+                    if (!Pop2(ResStack, num1, num2)) {
+                        return false;
+                    }
+                    ResStack.Push(num2 || num1);
+                }
+                case NOT: {
+                    if (!Pop1(ResStack, num1)) {
+                        return false;
+                    }
+                    ResStack.Push(!num1);
+                }
+                case BAND: {
+                    if (!Pop2(ResStack, num1, num2)) {
+                        return false;
+                    }
+                    ResStack.Push(num2 & num1);
+                }
+                case BNOT: {
+                    if (!Pop1(ResStack, num1)) {
+                        return false;
+                    }
+                    ResStack.Push(~num1);
+                }
+                case BOR: {
+                    if (!Pop2(ResStack, num1, num2)) {
+                        return false;
+                    }
+                    ResStack.Push(num2 | num1);
+                }
+                case BXOR: {
+                    if (!Pop2(ResStack, num1, num2)) {
+                        return false;
+                    }
+                    ResStack.Push(num2 ^ num1);
+                }
+                case ADD: {
+                    if (!Pop2(ResStack, num1, num2)) {
+                        return false;
+                    }
+                    ResStack.Push(num2 + num1);
+                }
+                case SUB: {
+                    if (!Pop2(ResStack, num1, num2)) {
+                        return false;
+                    }
+                    ResStack.Push(num2 - num1);
+                }
+                case MULTI: {
+                    if (!Pop2(ResStack, num1, num2)) {
+                        return false;
+                    }
+                    ResStack.Push(num1 * num2);
+                }
+                case DIV: {
+                    if (!Pop2(ResStack, num1, num2)) {
+                        return false;
+                    }
+                    ResStack.Push(num2 / num1);
+                }
+                case MOD: {
+                    if (!Pop2(ResStack, num1, num2)) {
+                        return false;
+                    }
+                    ResStack.Push(num2 % num1);
+                }
+                case LT: {
+                    if (!Pop2(ResStack, num1, num2)) {
+                        return false;
+                    }
+                    ResStack.Push(num2 < num1);
+                }
+                case LE: {
+                    if (!Pop2(ResStack, num1, num2)) {
+                        return false;
+                    }
+                    ResStack.Push(num2 <= num1);
+                }
+                case EQ: {
+                    if (!Pop2(ResStack, num1, num2)) {
+                        return false;
+                    }
+                    ResStack.Push(num2 == num1);
+                }
+                case NE: {
+                    if (!Pop2(ResStack, num1, num2)) {
+                        return false;
+                    }
+                    ResStack.Push(num2 != num1);
+                }
+                case GE: {
+                    if (!Pop2(ResStack, num1, num2)) {
+                        return false;
+                    }
+                    ResStack.Push(num2 >= num1);
+                }
+                case GT: {
+                    if (!Pop2(ResStack, num1, num2)) {
+                        return false;
+                    }
+                    ResStack.Push(num2 > num1);
+                }
+                default: {
+                    return false;
+                }
+            }
+        }
+        else {
+            static char szToken[MAX_TOKEN_LENGTH];
+            SymbolList.GetString(aReverse[i], szToken, sizeof(szToken));
+            static float fToken;
+            static ConVar hConVar;
+            if (StringToFloatEx(szToken, fToken) > 0) {
+                ResStack.Push(RoundFloat(fToken));
+            } else {
+                hConVar = FindConVar(szToken);
+                if (IsValidHandle(hConVar)) {
+                    ResStack.Push(hConVar.IntValue);
+                    delete hConVar;
+                }
+                else if (bNotFoundAsError) {
+                    return false;
+                }
+                else {
+                    ResStack.Push(0);
+                }
+            }
+        }
+    }
+    if (Pop1(ResStack, iRes) && ResStack.Empty) {
+        return true;
+    }
+    return false;
+}
+
+stock bool Pop2(ArrayStack hStack, int& num1, int& num2) {
+    if (hStack.Empty) {
+        return false;
+    }
+    num1 = hStack.Pop();
+    if (hStack.Empty) {
+        return false;
+    }
+    num2 = hStack.Pop();
+    return true;
+}
+
+stock bool Pop1(ArrayStack hStack, int& num1) {
+    if (hStack.Empty) {
+        return false;
+    }
+    num1 = hStack.Pop();
+    return true;
+}
+
+bool ParseConditionsToRPN(const char[] szBuffer, ArrayStack RPNStack, ArrayList SymbolList) {
+    int iNext = 0;
+    bool bIsOP = false;
+    OP op1;
+    static char szToken[MAX_TOKEN_LENGTH];
+    ArrayStack OPStack = new ArrayStack(1);
+
+    RPNStack.Clear();
+    for (int i = 0; szBuffer[i] != '\0'; i += iNext) {
+        if (GetNextToken(szBuffer[i], szToken, sizeof(szToken), iNext, bIsOP, op1)) {
+            if (bIsOP) {
+                if (op1 == LP) {
+                    OPStack.Push(op1);
+                }
+                else if (op1 == RP) {
+                    static OP op2;
+                    while (!OPStack.Empty && (op2 = OPStack.Pop()) != LP) {
+                        RPNStack.Push(op2);
+                    }
+                    if (OPStack.Empty && op2 != LP) {
+                        return false;
+                    }
+                }
+                else {
+                    static OP op2;
+                    int pc1 = GetOPProcedence(op1), pc2;
+                    while (!OPStack.Empty) {
+                        op2 = OPStack.Pop();
+                        pc2 = GetOPProcedence(op2);
+                        if (op2 != LP && (pc1 > pc2 || GetOPAssociation(op1) == LeftAssoc && pc1 == pc2)) {
+                            RPNStack.Push(op2);
+                        }
+                        else {
+                            OPStack.Push(op2);
+                            break;
+                        }
+                    }
+                    OPStack.Push(op1);
+                }
+            }
+            else {
+                int iIdx;
+                if ((iIdx = SymbolList.FindString(szToken)) == -1) {
+                    iIdx = SymbolList.PushString(szToken);
+                    
+                }
+                RPNStack.Push(iIdx);
+            }
+        }
+    }
+    while (!OPStack.Empty) {
+        OP op = OPStack.Pop();
+        RPNStack.Push(op);
+    }
+    return true;
+}
+
+enum OP {
+    AND=256,
+    OR,
+    NOT,
+    BAND,
+    BNOT,
+    BOR,
+    BXOR,
+    ADD,
+    SUB,
+    MULTI,
+    DIV,
+    MOD,
+    LT,
+    LE,
+    EQ,
+    NE,
+    GE,
+    GT,
+    LP,
+    RP,
+    OP_NUM
+}
+
+char OPStart[] =        "^~!&|+-*/%()<>=";
+char OPWideStart[] =    "&|<>=!";
+char OPWideEnd[] =      "&|====";
+
+stock bool GetNextToken(const char[] szBuffer, char[] szToken, int nMaxLength, int& iNext, bool &bIsOP, OP &op) {
+    iNext = 0;
+    bIsOP = false;
+    int iTokenStart = 0, iIdx;
+
+    for (iNext = 0; szBuffer[iNext] != '\0'; iNext++) {
+        if (!IsCharSpace(szBuffer[iNext])){
+            break;
+        }
+    }
+
+    if (szBuffer[iNext] == '\0') {
+        return false;
+    }
+
+    if (IsCharInString(szBuffer[iNext], OPStart) >= 0) {
+        bIsOP = true;
+        iTokenStart = iNext;
+        if ((iIdx = IsCharInString(szBuffer[iNext], OPWideStart)) >= 0) {
+            if (szBuffer[iNext+1] == OPWideEnd[iIdx]) {
+                iNext++;
+            }
+        }
+        iNext++;
+        if (nMaxLength > iNext - iTokenStart + 1) {
+            nMaxLength = iNext - iTokenStart + 1;
+        }
+        strcopy(szToken, nMaxLength, szBuffer[iTokenStart]);
+        op = GetOPFromString(szToken);
+    } else {
+        bIsOP = false;
+        iTokenStart = iNext;
+        for (; szBuffer[iNext] != '\0'; iNext++) {
+            if (IsCharSpace(szBuffer[iNext]) || IsCharInString(szBuffer[iNext], OPStart) >= 0) {
+                break;
+            }
+        }
+        if (nMaxLength > iNext - iTokenStart + 1) {
+            nMaxLength = iNext - iTokenStart + 1;
+        }
+        strcopy(szToken, nMaxLength, szBuffer[iTokenStart]);
+    }
+
+    return true;
+}
+
+stock int GetOPProcedence(OP op) {
+    switch (op) {
+        case LP, RP: {
+            return 1;
+        }
+        case BNOT, NOT: {
+            return 2;
+        }
+        case MULTI,DIV, MOD: {
+            return 3;
+        }
+        case ADD, SUB: {
+            return 4;
+        }
+        case LE, GE, LT, GT: {
+            return 5;
+        }
+        case EQ, NE: {
+            return 6;
+        }
+        case BAND: {
+            return 7;
+        }
+        case BXOR: {
+            return 8;
+        }
+        case BOR: {
+            return 9;
+        }
+        case AND: {
+            return 10;
+        }
+        case OR: {
+            return 11;
+        }
+    }
+    return -1;
+}
+
+enum Assoc {
+    LeftAssoc,
+    RightAssoc
+}
+
+stock Assoc GetOPAssociation(OP op) {
+    if (op == BNOT && op == NOT) {
+        return RightAssoc;
+    }
+    return LeftAssoc;
+}
+
+stock OP GetOPFromString(const char[] szOP) {
+    switch (szOP[0]) {
+        case '(': {
+            return LP;
+        }
+        case ')': {
+            return RP;
+        }
+        case '~': {
+            return BNOT;
+        }
+        case '^': {
+            return BXOR;
+        }
+        case '+': {
+            return ADD;
+        }
+        case '-': {
+            return SUB;
+        }
+        case '*': {
+            return MULTI;
+        }
+        case '/': {
+            return DIV;
+        }
+        case '%': {
+            return MOD;
+        }
+        case '<': {
+            if (szOP[1] == '=') {
+                return LE;
+            } else {
+                return LT;
+            }
+        }
+        case '>': {
+            if (szOP[1] == '=') {
+                return GE;
+            } else {
+                return GT;
+            }
+        }
+        case '=': {
+            return EQ;
+        }
+        case '!': {
+            if (szOP[1] == '=') {
+                return NE;
+            } else {
+                return NOT;
+            }
+        }
+        case '&': {
+            if (szOP[1] == '&') {
+                return AND;
+            } else {
+                return BAND;
+            }
+        }
+        case '|': {
+            if (szOP[1] == '|') {
+                return OR;
+            } else {
+                return BOR;
+            }
+        }
+    }
+    return OP_NUM;
+}
+
+stock int IsCharInString(int ch, const char[] str) {
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (str[i] == ch) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+public any Native_ParseCondition(Handle hPlugin, int nParams) {
+    int nMaxLength = GetNativeCell(2);
+    char[] szMessage = new char[nMaxLength];
+    GetNativeString(1, szMessage, nMaxLength);
+
+    return ParseConditionsToRPN(szMessage,  GetNativeCell(3), GetNativeCell(4));
+}
+
+public any Native_CalcRPN(Handle hPlugin, int nParams) {
+    int iRes = GetNativeCellRef(3);
+
+    bool bTemp = CalcRPN(GetNativeCell(1), GetNativeCell(2), iRes, GetNativeCell(4));
+    SetNativeCellRef(3, iRes);
+    return bTemp;
+}
+
+
 public any Native_CRemoveVariables(Handle hPlugin, int nParams) {
     int nMaxLength = GetNativeCell(2);
     char[] szMessage = new char[nMaxLength];
@@ -499,6 +950,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
     CreateNative("CPrintToChatAll", Native_CPrintToChatAll);
     CreateNative("CSayText2", Native_CSayText2);
     CreateNative("CSayText2All", Native_CSayText2All);
+    CreateNative("ParseCondition", Native_ParseCondition);
+    CreateNative("CalculateRPN", Native_CalcRPN);
 
     return APLRes_Success;
 }
@@ -519,6 +972,7 @@ public void OnPluginStart() {
 
     RegAdminCmd("sm_testcolors", TestColor, ADMFLAG_GENERIC);
     RegAdminCmd("sm_testsaytext2", TestSayText2, ADMFLAG_GENERIC);
+    RegAdminCmd("sm_testrpn", TestRPN, ADMFLAG_GENERIC);
 }
 
 public Action TestColor(int iClient, int nArgs) {
@@ -564,6 +1018,24 @@ public Action TestSayText2(int iClient, int nArgs) {
     return Plugin_Handled;
 }
 
+public Action TestRPN(int iClient, int nArgs) {
+    static char szBuffer[MAX_MESSAGE_LEN];
+    GetCmdArg(1, szBuffer, sizeof(szBuffer));
+
+    ArrayStack RPNStack = new ArrayStack();
+    ArrayList SymbolList = new ArrayList(ByteCountToCells(MAX_TOKEN_LENGTH));
+
+    int iRes;
+    if (ParseConditionsToRPN(szBuffer, RPNStack, SymbolList)) {
+        if (CalcRPN(RPNStack, SymbolList, iRes, false)) {
+            ReplyToCommand(iClient, "%d", iRes);
+            return Plugin_Handled;
+        }
+    }
+    ReplyToCommand(iClient, "Failed");
+    return Plugin_Handled;
+}
+
 public void OnLibraryAdded(const char[] szName)
 {
     if (StrEqual(szName, "mapchooser")) {
@@ -577,6 +1049,3 @@ public void OnLibraryRemoved(const char[] szName)
         g_bMapChooser = false;
     }
 }
-
-
-

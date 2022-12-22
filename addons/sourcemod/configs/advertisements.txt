@@ -3,89 +3,197 @@
 	"1"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示]{white} 当前地图：{red}{currentmap}"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} Current Map: {red}{currentmap}"
+			"zho"		"{green}[提示]{white} 當前地圖名：{red}{currentmap}"
+			"chi"		"{green}[提示]{white} 当前地图：{red}{currentmap}"
+		}
 	}
 	"2"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示]{white} 当前时间：{red}{date} {time24}"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} Current Date/Time: {red}{date} {time24}"
+			"zho"		"{green}[提示]{white} 目前時間：{red}{date} {time24}"
+			"chi"		"{green}[提示]{white} 当前时间：{red}{date} {time24}"
+		}
 	}
 	"3"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示]{white} 服务器5点自动更新地图，6点自动重启"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} Server plan to update maps at 9PM UTC, reboot at 10PM UTC"
+			"zho"		"{green}[提示]{white} 伺服器每日5點自動更新地圖，︁6點自動重啟"
+			"chi"		"{green}[提示]{white} 服务器每日5点自动更新地图，6点自动重启"
+		}
 	}
 	"4"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示]{white} 输入!motd查看更新日志"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} Send {green}!motd{white} to check the server's changelog"
+			"zho"		"{green}[提示]{white} 輸入{green}!motd{white}查看伺服器變更內容"
+			"chi"		"{green}[提示]{white} 输入{green}!motd{white}查看更新日志"
+		}
 	}
 	"5"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示]{white} 输入{green}!top{white}查看总撤离次数排行榜"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} Send {green}!top{white} to check the leaderboard of the total extracion times"
+			"zho"		"{green}[提示]{white} 輸入{green}!top{white}查看疏散次數排行"
+			"chi"		"{green}[提示]{white} 输入{green}!top{white}查看总撤离次数排行榜"
+		}
 	}
 	"6"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示]{white} 输入{green}!wr{white}查看本地图通关排行"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} Send {green}!wr{white} to check the speedrunning leaderboard of current map"
+			"zho"		"{green}[提示]{white} 輸入{green}!wr{white}查看本地圖通關速度排行"
+			"chi"		"{green}[提示]{white} 输入{green}!wr{white}查看本地图通关时间排行榜"
+		}
 	}
 	"7"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示]{white} 撤离次数会改变名字的颜色"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} The extraction times will change your name colorful"
+			"zho"		"{green}[提示]{white} 疏散次數會改變名字的顏色"
+			"chi"		"{green}[提示]{white} 撤离次数会改变名字的颜色"
+		}
 	}
 	"8"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示]{white} 输入{green}!rm{white}自杀"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} Send {green}!rm{white} to rocket yourself"
+			"zho"		"{green}[提示]{white} 輸入{green}!rm{white}自殺"
+			"chi"		"{green}[提示]{white} 输入{green}!rm{white}自杀"
+		}
 	}
 	"9"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示]{white} 输入{green}!auto{white}开启自动连跳"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} Send {green}!auto{white} to enable/disable the Auto BHop"
+			"zho"		"{green}[提示]{white} 輸入{green}!auto{white}切換自動連跳"
+			"chi"		"{green}[提示]{white} 输入{green}!auto{white}切换自动连跳"
+		}
 	}
 	"10"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示]{white} 输入{green}!dif{white}自定义难度，输入{green}!difshow{white}显示当前难度"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} Send {green}!dif{white} to modifiy the difficulty, send {green}!difshow{white} to check the difficulty info"
+			"zho"		"{green}[提示]{white} 輸入{green}!dif{white}自定難度，輸入{green}!difshow{white}展示當前難度資訊"
+			"chi"		"{green}[提示]{white} 输入{green}!dif{white}自定义难度，输入{green}!difshow{white}显示当前难度信息"
+		}
 	}
 	"11"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示]{white} 输入{green}!model{white}选择人物模型，输入{green}!fov{white}自定义FOV"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} Send {green}!model{white} to select you skins, send {green}!fov{white} to DIY your Field of View"
+			"zho"		"{green}[提示]{white} 輸入{green}!model{white}選擇人物模型，輸入{green}!fov{white}自定你的視場值"
+			"chi"		"{green}[提示]{white} 输入{green}!model{white}选择人物模型，输入{green}!fov{white}自定义FOV"
+		}
 	}
 	"12"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示]{white} 输入{green}!speed{white}显示速度"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} Send {green}!speed{white} to meter your speed"
+			"zho"		"{green}[提示]{white} 輸入{green}!speed{white}顯示速度"
+			"chi"		"{green}[提示]{white} 输入{green}!speed{white}显示速度"
+		}
 	}
 	"13"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示]{white} 输入{green}!jk{white}解卡"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} Send {green}!jk{white} to unstuck"
+			"zho"		"{green}[提示]{white} 輸入{green}!jk{white}解卡"
+			"chi"		"{green}[提示]{white} 输入{green}!jk{white}解卡"
+		}
 	}
 	"14"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示]{white} 使用 {springgreen}/{white} 代替 {turquoise}!{white} 作为前缀可以静默发送指令"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} By using {springgreen}/{white} instead of {turquoise}!{white} as the command prefix, you can silently send a command"
+			"zho"		"{green}[提示]{white} 使用 {springgreen}/{white} 代替 {turquoise}!{white} 作為前綴可以靜默發送指令"
+			"chi"		"{green}[提示]{white} 使用 {springgreen}/{white} 代替 {turquoise}!{white} 作为前缀可以静默发送指令"
+		}
 	}
 	"15"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示]{white} {green}!mark{white}指令可以标记你眼前的物品，绑定键位更加方便"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} the {green}!mark{white} command can mark your aimmed item, bind it for convenience!"
+			"zho"		"{green}[提示]{white} {green}!mark{white}指令可以標記你瞄準的物品，︁綁定鍵位更加方便"
+			"chi"		"{green}[提示]{white} {green}!mark{white}指令可以标记你瞄准的物品，绑定键位更加方便"
+		}
 	}
 	"16"
 	{
-		"type"		"chat"
-		"message"	"{green}[提示]{white} 目前是否记录通关：{sm_record_enable_rt}，下回合开始时是否记录通关：{sm_record_enable}"
+		"condition"		"sm_record_enable_rt && sm_record_enable"
+		"type"			"chat"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} Record is now {green}enabled"
+			"zho"		"{green}[提示]{white} 通關記錄目前{green}正在啓用"
+			"chi"		"{green}[提示]{white} 目前正在记录通关"
+		}
 	}
 	"17"
 	{
-		"type"		"chat"
-		"message"	"{green}[提示]{white} 所有地图图文列表：https://b23.tv/YHt2Nlf"
+		"condition"		"!sm_record_enable_rt && sm_record_enable"
+		"type"			"chat"
+		"message"
+		{
+			"default"	"{green}[Tips] Speed run record is disabled, but will be enabled on next round start."
+			"zho"		"{green}[提示]{white} 已{red}停用{white}通關記錄，︁下回合開始時將會啟用記錄"
+			"chi"		"{green}[提示]{white} 已{red}停止{white}记录通关，下回合开始时将会启用记录"
+		}
 	}
 	"18"
+	{
+		"condition"		"!sm_record_enable_rt && !sm_record_enable_rt"
+		"type"			"chat"
+		"message"	
+		{
+			"default"	"{green}[Tips] Speed run record is disabled!"
+			"zho"		"{green}[提示]{white} 已{red}停用{white}通關記錄"
+			"chi"		"{green}[提示]{white} 已{red}停止{white}记录通关"
+		}
+	}
+	"19"
+	{
+		"type"		"chat"
+		"message"
+		{
+			"default"	"{green}[Tips]{white} Map list with screenshots: https://b23.tv/YHt2Nlf"
+			"zho"		"{green}[提示]{white} 所有地圖圖文列表：https://b23.tv/YHt2Nlf"
+			"chi"		"{green}[提示]{white} 所有地图图文列表：https://b23.tv/YHt2Nlf"
+		}
+	}
+	"20"
 	{
 		"type"		"chat"
 		"message"	"{green}[提示]{white} B站关注{green}嘉然今天吃什么"

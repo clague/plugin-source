@@ -9,8 +9,6 @@
 
 #define PLUGIN_VERSION  "2.1.1c"
 
-#define MAX_MESSAGE_LEN 1024
-
 public Plugin myinfo =
 {
     name        = "Advertisements Custom",
@@ -31,8 +29,10 @@ enum MessageType {
 enum struct Advertisement
 {
     MessageType type;
-    char szMessage[1024];
+    StringMap szMessage;
     float intervals;
+    ArrayList SymbolList;
+    ArrayStack RPNStack;
 }
 
 /**
@@ -46,7 +46,9 @@ ConVar g_hDefaultInterval;
 ConVar g_hRandom;
 Handle g_hTimer;
 
-char g_szCenterAdText[1024];
+StringMap hTempStorage;
+
+char g_szCenterAdText[MAXPLAYERS + 1][MAX_MESSAGE_LEN];
 
 /**
  * Plugin Forwards
@@ -65,6 +67,7 @@ public void OnPluginStart()
     g_hRandom.AddChangeHook(OnConVarChanged);
 
     g_hAdvertisements = new ArrayList(sizeof(Advertisement));
+    hTempStorage = new StringMap();
 
     RegServerCmd("sm_advertisements_reload", Command_ReloadAds, "Reload the advertisements");
 
@@ -134,62 +137,102 @@ public Action Timer_DisplayAd(Handle timer)
 
     Advertisement ad;
     g_hAdvertisements.GetArray(g_iCurrentAd, ad);
-    char szBuffer[1024];
-    strcopy(szBuffer, sizeof(szBuffer), ad.szMessage);
 
-    switch (ad.type) {
-        case Center: {
-            CProcessVariables(szBuffer, sizeof(szBuffer), false, true);
-            PrintCenterTextAll(g_szCenterAdText);
+    int iRes;
+    float fIntervals = ad.intervals;
+    StringMapSnapshot hSnapShot = ad.szMessage.Snapshot();
+    hTempStorage.Clear();
+    if ((ad.SymbolList.Length == 0 || (CalculateRPN(ad.RPNStack, ad.SymbolList, iRes) && iRes)) && hSnapShot.Length > 0) {
+        static char szBuffer[MAX_MESSAGE_LEN];
+        static char szLang[10];
+        static int iIdx = 0;
+
+        for (iIdx = 0; iIdx < hSnapShot.Length; iIdx++) {
+            hSnapShot.GetKey(iIdx, szLang, sizeof(szLang));
+            ad.szMessage.GetString(szLang, szBuffer, sizeof(szBuffer));
+            
+            int nLen = strlen(szLang);
+            szLang[nLen + 1] = 0;
+            szLang[nLen] = 'P';
+            CProcessVariables(szBuffer, sizeof(szBuffer), ad.type == Chat, true);
+            hTempStorage.SetString(szLang, szBuffer);
+        }
+
+        
+        for (int i = 1; i<= MaxClients; i++) {
+            if (IsValidClient(i)) {
+                GetLanguageInfo(GetClientLanguage(i), szLang, sizeof(szLang));
+
+                static int nLen;
+                nLen = strlen(szLang);
+                szLang[nLen + 1] = 0;
+                szLang[nLen] = 'P';
+
+                if (!hTempStorage.GetString(szLang, szBuffer, sizeof(szBuffer))) {
+                    if (!hTempStorage.GetString("defaultP", szBuffer, sizeof(szBuffer))) {
+                        GetLanguageInfo(GetServerLanguage(), szLang, sizeof(szLang));
+
+                        nLen = strlen(szLang);
+                        szLang[nLen + 1] = 0;
+                        szLang[nLen] = 'P';
+                        if (!hTempStorage.GetString(szLang, szBuffer, sizeof(szBuffer))) {
+                            hSnapShot.GetKey(0, szLang, sizeof(szLang));
+
+                            nLen = strlen(szLang);
+                            szLang[nLen + 1] = 0;
+                            szLang[nLen] = 'P';
+                            if (!hTempStorage.GetString(szLang, szBuffer, sizeof(szBuffer))) {
+                                continue;
+                            }
+                        }
+                    }
+                }
+                switch (ad.type) {
+                    case Center: {
+                        strcopy(g_szCenterAdText[i], sizeof(g_szCenterAdText[]), szBuffer);
+                        PrintCenterText(i, g_szCenterAdText[i]);
+                    }
+                    case Chat: {
+                        CPrintToChat(i, 0, szBuffer);
+                    }
+                    case Hint: {
+                        PrintHintText(i, szBuffer);
+                    }
+                    case MenuMess: {
+                        Panel hPl = new Panel();
+                        hPl.DrawText(szBuffer);
+                        hPl.CurrentKey = 10;
+                        hPl.Send(i, MenuHandler_DoNothing, 10);
+
+                        delete hPl;
+                    }
+                    case Top: {
+                        int iStart = 0, aColor[4] = {255, 255, 255, 255};
+
+                        ParseTopColor(szBuffer, iStart, aColor);
+
+                        KeyValues hKv = new KeyValues("Stuff", "title", szBuffer);
+                        hKv.SetColor4("color", aColor);
+                        hKv.SetNum("level", 1);
+                        hKv.SetNum("time", 10);
+                        CreateDialog(i, hKv, DialogType_Msg);
+
+                        delete hKv;
+                    }
+                }
+            }
+        }
+        if (ad.type == Center) {
             CreateTimer(1.0 , Timer_CenterAd, _, TIMER_FLAG_NO_MAPCHANGE|TIMER_REPEAT);
         }
-        case Chat: {
-            CProcessVariables(szBuffer, sizeof(szBuffer), true, true);
-            CPrintToChatAll(0, szBuffer);
-        }
-        case Hint: {
-            CProcessVariables(szBuffer, sizeof(szBuffer), false, true);
-            PrintHintTextToAll(szBuffer);
-        }
-        case MenuMess: {
-            CProcessVariables(szBuffer, sizeof(szBuffer), false, true);
-
-            Panel hPl = new Panel();
-            hPl.DrawText(szBuffer);
-            hPl.CurrentKey = 10;
-
-            for (int i = 1; i <= MaxClients; i++) {
-                if (IsClientInGame(i) && !IsFakeClient(i)) {
-                    hPl.Send(i, MenuHandler_DoNothing, 10);
-                }
-            }
-
-            delete hPl;
-        }
-        case Top: {
-            int iStart = 0, aColor[4] = {255, 255, 255, 255};
-
-            ParseTopColor(szBuffer, iStart, aColor);
-            CProcessVariables(szBuffer[iStart], sizeof(szBuffer), false, true);
-
-            KeyValues hKv = new KeyValues("Stuff", "title", szBuffer);
-            hKv.SetColor4("color", aColor);
-            hKv.SetNum("level", 1);
-            hKv.SetNum("time", 10);
-
-            for (int i = 1; i <= MaxClients; i++) {
-                if (IsClientInGame(i) && !IsFakeClient(i)) {
-                    CreateDialog(i, hKv, DialogType_Msg);
-                }
-            }
-
-            delete hKv;
-        }
     }
-    
+    else {
+        fIntervals = 0.0;
+    }
+
     g_iCurrentAd++;
 
-    g_hTimer = CreateTimer(ad.intervals, Timer_DisplayAd, _, TIMER_FLAG_NO_MAPCHANGE);
+    g_hTimer = CreateTimer(fIntervals, Timer_DisplayAd, _, TIMER_FLAG_NO_MAPCHANGE);
     return Plugin_Stop;
 }
 
@@ -201,7 +244,11 @@ public Action Timer_CenterAd(Handle timer)
         return Plugin_Stop;
     }
 
-    PrintCenterTextAll("%s", g_szCenterAdText);
+    for (int i = 0; i<= MaxClients; i++) {
+        if (IsValidClient(i)) {
+            PrintCenterText(i, g_szCenterAdText[i]);
+        }
+    }
     return Plugin_Continue;
 }
 
@@ -250,7 +297,32 @@ void ParseAds()
 
             continue;
         }
-        hConfig.GetString("message", ad.szMessage, sizeof(Advertisement::szMessage));
+
+        ad.szMessage = new StringMap();
+        static char szBuffer[MAX_MESSAGE_LEN];
+        if (hConfig.JumpToKey("message")) {
+            if (hConfig.GetDataType(NULL_STRING) == KvData_None) {
+                if (hConfig.GotoFirstSubKey(false)) {
+                    static char szName[128];
+                    do {
+                        hConfig.GetSectionName(szName, sizeof(szName));
+                        hConfig.GetString(NULL_STRING, szBuffer, sizeof(szBuffer));
+                        ad.szMessage.SetString(szName, szBuffer);
+                    } while (hConfig.GotoNextKey(false));
+                    hConfig.GoBack();
+                }
+            } else {
+                hConfig.GetString(NULL_STRING, szBuffer, sizeof(szBuffer));
+                ad.szMessage.SetString("default", szBuffer);
+            }
+            hConfig.GoBack();
+        }
+
+        hConfig.GetString("condition", szBuffer, sizeof(szBuffer));
+        ad.RPNStack = new ArrayStack();
+        ad.SymbolList = new ArrayList(MAX_TOKEN_LENGTH);
+        ParseCondition(szBuffer, sizeof(szBuffer), ad.RPNStack, ad.SymbolList);
+
         ad.intervals = hConfig.GetFloat("intervals", g_hDefaultInterval.FloatValue);
 
         g_hAdvertisements.PushArray(ad);
@@ -271,4 +343,8 @@ void RestartTimer()
         delete g_hTimer;
     }
     g_hTimer = CreateTimer(g_hDefaultInterval.FloatValue, Timer_DisplayAd, _, TIMER_FLAG_NO_MAPCHANGE);
+}
+
+bool IsValidClient(int iClient) {
+    return IsClientInGame(iClient) && !IsClientTimingOut(iClient) && !IsClientInKickQueue(iClient) && !IsFakeClient(iClient);
 }

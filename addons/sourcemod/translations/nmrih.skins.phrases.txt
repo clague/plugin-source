@@ -79,6 +79,11 @@
 		"en"	"FRat"
 		"chi"	"老鼠"
 	}
+	"Smol Gura"
+	{
+		"en"	"Smol Gura"
+		"chi"	"小古拉"
+	}
 	"TF间谍"
 	{
 		"en"	"TF-Spy"

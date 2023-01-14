@@ -1,0 +1,29 @@
+"Games"
+{
+	"nmrih"
+	{
+		"Signatures"
+		{
+			"CNMRiH_BaseNPC::GetSpawnBrushIdx"
+			{
+				"library"	"server"
+				"windows"	""
+				"linux"		"@_ZNK14CNMRiH_BaseNPC16GetSpawnBrushIdxEv"
+			}
+
+			"CNMRiH_BaseNPC::SetSpawnBrushIdx"
+			{
+				"library"	"server"
+				"windows"	""
+				"linux"		"@_ZN14CNMRiH_BaseNPC16SetSpawnBrushIdxEi"
+			}
+
+			"CFuncZombieSpawn::OnZombieDespawn"
+			{
+				"library"	"server"
+				"windows"	""
+				"linux"		"@_ZN16CFuncZombieSpawn15OnZombieDespawnEv"
+			}
+		}
+	}
+}

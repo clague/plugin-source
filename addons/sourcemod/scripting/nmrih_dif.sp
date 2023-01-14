@@ -5,6 +5,7 @@
 #include <sdkhooks>
 #include <globalvariables>
 #include <getoverit>
+#include <dhooks>
 
 #define VOTE_NEEDED 0.74
 
@@ -67,6 +68,8 @@ GameMode g_GameMode = GameModeDefault;
 GameDif g_GameDif = GameDifClassic;
 GameDensity g_GameDensity = GameDensity15;
 
+Handle g_hGetSpawnBrushIdx, g_hSetSpawnBrushIdx, g_hOnZombieDespawn;
+
 Menu g_hConfirmLast[MAXPLAYERS],
     g_hTopMenu,
     g_hModeMenu,
@@ -87,10 +90,32 @@ public void OnPluginStart() {
     LoadTranslations("nmrih.dif.phrases");
     hostname = FindConVar("hostname");
 
-    sv_max_runner_chance = FindConVar("sv_max_runner_chance");
-    ov_runner_chance = FindConVar("ov_runner_chance");
-    ov_runner_kid_chance = FindConVar("ov_runner_kid_chance");
-    
+    GameData hGameData = new GameData("nmrih_dif.games");
+
+    StartPrepSDKCall(SDKCall_Static);
+    PrepSDKCall_SetFromConf(hGameData, SDKConf_Signature, "CNMRiH_BaseNPC::GetSpawnBrushIdx");
+    g_hGetSpawnBrushIdx = EndPrepSDKCall();
+    if (!IsValidHandle(g_hGetSpawnBrushIdx))
+    {
+        LogError("Failed to set up SDKCall for CNMRiH_BaseNPC::GetSpawnBrushIdx");
+    }
+
+    StartPrepSDKCall(SDKCall_Entity);
+    PrepSDKCall_SetFromConf(hGameData, SDKConf_Signature, "CNMRiH_BaseNPC::SetSpawnBrushIdx");
+    g_hSetSpawnBrushIdx = EndPrepSDKCall();
+    if (!IsValidHandle(g_hSetSpawnBrushIdx))
+    {
+        LogError("Failed to set up SDKCall for CNMRiH_BaseNPC::SetSpawnBrushIdx");
+    }
+
+    StartPrepSDKCall(SDKCall_Entity);
+    PrepSDKCall_SetFromConf(hGameData, SDKConf_Signature, "CFuncZombieSpawn::OnZombieDespawn");
+    g_hOnZombieDespawn = EndPrepSDKCall();
+    if (!IsValidHandle(g_hOnZombieDespawn))
+    {
+        LogError("Failed to set up SDKCall for CFuncZombieSpawn::OnZombieDespawn");
+    }
+
     (sm_dif_enable = CreateConVar("sm_dif_enable", "1", "Enable/Disable plugin.", FCVAR_NOTIFY, true, 0.0, true, 1.0)).AddChangeHook(OnConVarChange);
     g_bEnabled = sm_dif_enable.BoolValue;
 
@@ -139,9 +164,15 @@ public void OnConfigsExecuted() {
     sm_machete_enable = FindConVar("sm_machete_enable");
     sm_record_enable_rt = FindConVar("sm_record_enable_rt");
 
-    sv_max_runner_chance_default = sv_max_runner_chance.FloatValue;
-    ov_runner_chance_default = ov_runner_chance.FloatValue;
-    ov_runner_kid_chance_default = ov_runner_kid_chance.FloatValue;
+    if (!(IsValidHandle(sv_max_runner_chance) && IsValidHandle(ov_runner_chance) && IsValidHandle(ov_runner_kid_chance))) {
+        sv_max_runner_chance = FindConVar("sv_max_runner_chance");
+        ov_runner_chance = FindConVar("ov_runner_chance");
+        ov_runner_kid_chance = FindConVar("ov_runner_kid_chance");
+
+        sv_max_runner_chance_default = sv_max_runner_chance.FloatValue;
+        ov_runner_chance_default = ov_runner_chance.FloatValue;
+        ov_runner_kid_chance_default = ov_runner_kid_chance.FloatValue;
+    }
 
     sm_gamemode.IntValue = sm_gamemode_default.IntValue;
     g_GameMode = view_as<GameMode>(sm_gamemode.IntValue);
@@ -254,6 +285,7 @@ int ShamblerToRunnerFromPosion(int iZombie, bool isKid = false) {
     SDKUnhook(iZombie, SDKHook_SpawnPost, SDKHookCBZombieSpawnPost);
 
     if (isKid || GetRandomInt(0, 100) < 100 * g_fKidChance) {
+        int iIdx = SDKCall(g_hGetSpawnBrushIdx, iZombie);
         AcceptEntityInput(iZombie, "kill");
         iZombie = CreateEntityByName("npc_nmrih_kidzombie");
 
@@ -262,6 +294,7 @@ int ShamblerToRunnerFromPosion(int iZombie, bool isKid = false) {
         }
         if(DispatchSpawn(iZombie)) {
             TeleportEntity(iZombie, fPos, NULL_VECTOR, NULL_VECTOR);
+            SDKCall(g_hSetSpawnBrushIdx, iZombie, iIdx);
         }
     }
     else {
@@ -280,21 +313,23 @@ void ShamblerConvertToRunner(bool bKid=false) {
 }
 
 void ConVarSet(GameMode mode) {
-    switch(mode) {
-        case GameModeRunner: {
-            sv_max_runner_chance.FloatValue = 3.0;
-            ov_runner_chance.FloatValue = 3.0;
-            ov_runner_kid_chance.FloatValue = g_fKidChance;
-        }
-        case GameModeKid: {
-            sv_max_runner_chance.FloatValue = 3.0;
-            ov_runner_chance.FloatValue = 3.0;
-            ov_runner_kid_chance.FloatValue = 1.0;
-        }
-        case GameModeDefault: {
-            sv_max_runner_chance.FloatValue = sv_max_runner_chance_default;
-            ov_runner_chance.FloatValue = ov_runner_chance_default;
-            ov_runner_kid_chance.FloatValue = ov_runner_kid_chance_default;
+    if (IsValidHandle(sv_max_runner_chance) && IsValidHandle(ov_runner_chance) && IsValidHandle(ov_runner_kid_chance)) {
+        switch(mode) {
+            case GameModeRunner: {
+                sv_max_runner_chance.FloatValue = 3.0;
+                ov_runner_chance.FloatValue = 3.0;
+                ov_runner_kid_chance.FloatValue = g_fKidChance;
+            }
+            case GameModeKid: {
+                sv_max_runner_chance.FloatValue = 3.0;
+                ov_runner_chance.FloatValue = 3.0;
+                ov_runner_kid_chance.FloatValue = 1.0;
+            }
+            case GameModeDefault: {
+                sv_max_runner_chance.FloatValue = sv_max_runner_chance_default;
+                ov_runner_chance.FloatValue = ov_runner_chance_default;
+                ov_runner_kid_chance.FloatValue = ov_runner_kid_chance_default;
+            }
         }
     }
 }

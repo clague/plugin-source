@@ -46,8 +46,9 @@ public OnPluginStart() {
 
 	g_hBHop = FindClientCookie("bhop");
 	if (!IsValidHandle(g_hBHop)) {
-		g_hBHop = RegClientCookie("bhop", "BHop Enable/Disable", CookieAccess_Public);
+		g_hBHop = RegClientCookie("bhop", "自动连跳", CookieAccess_Public);
 	}
+	g_hBHop.SetPrefabMenu(CookieMenu_YesNo_Int, "是否启用自动连跳");
 
 	LoadTranslations("simple-bhop.phrases");
 

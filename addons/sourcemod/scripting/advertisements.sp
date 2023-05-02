@@ -1,4 +1,5 @@
 #include <sourcemod>
+#include <clientprefs>
 #include <mapchooser>
 #include <globalvariables>
 
@@ -46,6 +47,8 @@ ConVar g_hDefaultInterval;
 ConVar g_hRandom;
 Handle g_hTimer;
 
+Cookie g_Cookie_ShowAds;
+
 StringMap hTempStorage;
 
 char g_szCenterAdText[MAXPLAYERS + 1][MAX_MESSAGE_LEN];
@@ -65,6 +68,12 @@ public void OnPluginStart()
     g_hFile.AddChangeHook(OnConVarChanged);
     g_hDefaultInterval.AddChangeHook(OnConVarChanged);
     g_hRandom.AddChangeHook(OnConVarChanged);
+
+    g_Cookie_ShowAds = FindClientCookie("ShowAds");
+    if (!IsValidHandle(g_Cookie_ShowAds)) {
+        g_Cookie_ShowAds = RegClientCookie("ShowAds", "显示公告", CookieAccess_Public);
+    }
+    g_Cookie_ShowAds.SetPrefabMenu(CookieMenu_YesNo_Int, "是否显示公告");
 
     g_hAdvertisements = new ArrayList(sizeof(Advertisement));
     hTempStorage = new StringMap();
@@ -160,7 +169,7 @@ public Action Timer_DisplayAd(Handle timer)
 
         
         for (int i = 1; i<= MaxClients; i++) {
-            if (IsValidClient(i)) {
+            if (IsValidClient(i) && g_Cookie_ShowAds.GetInt(i, 1) > 0) {
                 GetLanguageInfo(GetClientLanguage(i), szLang, sizeof(szLang));
 
                 static int nLen;

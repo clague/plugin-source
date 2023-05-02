@@ -98,6 +98,7 @@ public void OnPluginStart() {
 	if (!IsValidHandle(g_hFov)) {
 		g_hFov = RegClientCookie("FOV", "Player's FOV", CookieAccess_Public);
 	}
+	SetCookieMenuItem(CookieMenu_Fov, 0, "FOV");
 
 	HookEvent("player_spawn", Event_PlayerSpawn);
 
@@ -539,6 +540,15 @@ public Action FovListener(int iClient, const char[] szCommand, int nArgs) {
 	}
 	else {
 		return Plugin_Continue;
+	}
+}
+
+public void CookieMenu_Fov(int iClient, CookieMenuAction action, any info, char[] szBuffer, int nMaxLen) {
+	if (action == CookieMenuAction_DisplayOption) {
+		strcopy(szBuffer, nMaxLen, "FOV");
+	}
+	else if (action == CookieMenuAction_SelectOption) {
+		g_hFovMenu.Display(iClient, 0);
 	}
 }
 

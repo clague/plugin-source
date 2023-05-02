@@ -196,6 +196,6 @@
 	"20"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示]{white} B站关注{green}嘉然今天吃什么"
+		"message"	"{green}[提示] !settings{white}指令可以更改一些设置"
 	}
 }

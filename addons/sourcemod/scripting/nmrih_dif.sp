@@ -282,7 +282,6 @@ public void SDKHookCBZombieSpawnPost(int zombie) {
 int ShamblerToRunnerFromPosion(int iZombie, bool isKid = false) {
     float fPos[3];
     GetEntPropVector(iZombie, Prop_Send, "m_vecOrigin", fPos);
-    SDKUnhook(iZombie, SDKHook_SpawnPost, SDKHookCBZombieSpawnPost);
 
     if (isKid || GetRandomInt(0, 100) < 100 * g_fKidChance) {
         // int iIdx = SDKCall(g_hGetSpawnBrushIdx, iZombie);

@@ -68,7 +68,7 @@ GameMode g_GameMode = GameModeDefault;
 GameDif g_GameDif = GameDifClassic;
 GameDensity g_GameDensity = GameDensity15;
 
-Handle g_hGetSpawnBrushIdx, g_hSetSpawnBrushIdx, g_hOnZombieDespawn;
+// Handle g_hGetSpawnBrushIdx, g_hSetSpawnBrushIdx, g_hOnZombieDespawn;
 
 Menu g_hConfirmLast[MAXPLAYERS],
     g_hTopMenu,
@@ -90,31 +90,31 @@ public void OnPluginStart() {
     LoadTranslations("nmrih.dif.phrases");
     hostname = FindConVar("hostname");
 
-    GameData hGameData = new GameData("nmrih_dif.games");
+    // GameData hGameData = new GameData("nmrih_dif.games");
 
-    StartPrepSDKCall(SDKCall_Static);
-    PrepSDKCall_SetFromConf(hGameData, SDKConf_Signature, "CNMRiH_BaseNPC::GetSpawnBrushIdx");
-    g_hGetSpawnBrushIdx = EndPrepSDKCall();
-    if (!IsValidHandle(g_hGetSpawnBrushIdx))
-    {
-        LogError("Failed to set up SDKCall for CNMRiH_BaseNPC::GetSpawnBrushIdx");
-    }
+    // StartPrepSDKCall(SDKCall_Static);
+    // PrepSDKCall_SetFromConf(hGameData, SDKConf_Signature, "CNMRiH_BaseNPC::GetSpawnBrushIdx");
+    // g_hGetSpawnBrushIdx = EndPrepSDKCall();
+    // if (!IsValidHandle(g_hGetSpawnBrushIdx))
+    // {
+    //     LogError("Failed to set up SDKCall for CNMRiH_BaseNPC::GetSpawnBrushIdx");
+    // }
 
-    StartPrepSDKCall(SDKCall_Entity);
-    PrepSDKCall_SetFromConf(hGameData, SDKConf_Signature, "CNMRiH_BaseNPC::SetSpawnBrushIdx");
-    g_hSetSpawnBrushIdx = EndPrepSDKCall();
-    if (!IsValidHandle(g_hSetSpawnBrushIdx))
-    {
-        LogError("Failed to set up SDKCall for CNMRiH_BaseNPC::SetSpawnBrushIdx");
-    }
+    // StartPrepSDKCall(SDKCall_Entity);
+    // PrepSDKCall_SetFromConf(hGameData, SDKConf_Signature, "CNMRiH_BaseNPC::SetSpawnBrushIdx");
+    // g_hSetSpawnBrushIdx = EndPrepSDKCall();
+    // if (!IsValidHandle(g_hSetSpawnBrushIdx))
+    // {
+    //     LogError("Failed to set up SDKCall for CNMRiH_BaseNPC::SetSpawnBrushIdx");
+    // }
 
-    StartPrepSDKCall(SDKCall_Entity);
-    PrepSDKCall_SetFromConf(hGameData, SDKConf_Signature, "CFuncZombieSpawn::OnZombieDespawn");
-    g_hOnZombieDespawn = EndPrepSDKCall();
-    if (!IsValidHandle(g_hOnZombieDespawn))
-    {
-        LogError("Failed to set up SDKCall for CFuncZombieSpawn::OnZombieDespawn");
-    }
+    // StartPrepSDKCall(SDKCall_Entity);
+    // PrepSDKCall_SetFromConf(hGameData, SDKConf_Signature, "CFuncZombieSpawn::OnZombieDespawn");
+    // g_hOnZombieDespawn = EndPrepSDKCall();
+    // if (!IsValidHandle(g_hOnZombieDespawn))
+    // {
+    //     LogError("Failed to set up SDKCall for CFuncZombieSpawn::OnZombieDespawn");
+    // }
 
     (sm_dif_enable = CreateConVar("sm_dif_enable", "1", "Enable/Disable plugin.", FCVAR_NOTIFY, true, 0.0, true, 1.0)).AddChangeHook(OnConVarChange);
     g_bEnabled = sm_dif_enable.BoolValue;
@@ -285,7 +285,7 @@ int ShamblerToRunnerFromPosion(int iZombie, bool isKid = false) {
     SDKUnhook(iZombie, SDKHook_SpawnPost, SDKHookCBZombieSpawnPost);
 
     if (isKid || GetRandomInt(0, 100) < 100 * g_fKidChance) {
-        int iIdx = SDKCall(g_hGetSpawnBrushIdx, iZombie);
+        // int iIdx = SDKCall(g_hGetSpawnBrushIdx, iZombie);
         AcceptEntityInput(iZombie, "kill");
         iZombie = CreateEntityByName("npc_nmrih_kidzombie");
 
@@ -294,7 +294,7 @@ int ShamblerToRunnerFromPosion(int iZombie, bool isKid = false) {
         }
         if(DispatchSpawn(iZombie)) {
             TeleportEntity(iZombie, fPos, NULL_VECTOR, NULL_VECTOR);
-            SDKCall(g_hSetSpawnBrushIdx, iZombie, iIdx);
+            // SDKCall(g_hSetSpawnBrushIdx, iZombie, iIdx);
         }
     }
     else {
@@ -304,9 +304,8 @@ int ShamblerToRunnerFromPosion(int iZombie, bool isKid = false) {
 }
 
 void ShamblerConvertToRunner(bool bKid=false) {
-    int nMaxEnts = GetMaxEntities();
-    for(int iZombie = MaxClients + 1; iZombie <= nMaxEnts; iZombie++) {
-        if(IsValidShamblerZombie(iZombie)) {
+    for(int iZombie = MaxClients + 1; iZombie >= 0; iZombie = FindEntityByClassname(iZombie, "npc_nmrih_shamblerzombie")) {
+        if(IsValidEntity(iZombie)) {
             ShamblerToRunnerFromPosion(iZombie, bKid);
         }
     }

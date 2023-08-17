@@ -199,19 +199,19 @@ public void OnConVarChange(Handle CVar, const char[] oldValue, const char[] newV
 }
 
 static bool CheckDensity() {
-    return FloatCompare(g_cvDensity.FloatValue, g_cvDensityMinReq.FloatValue) >= 0;
+    return g_cvDensity == INVALID_HANDLE || g_cvDensityMinReq == INVALID_HANDLE || FloatCompare(g_cvDensity.FloatValue, g_cvDensityMinReq.FloatValue) >= 0;
 }
 
 static bool CheckGameMode() {
-    return g_cvGameMode.IntValue == 1;  // 1 - all runner, 0 - default, 2 - all kids
+    return g_cvGameMode == INVALID_HANDLE || g_cvGameMode.IntValue == 1;  // 1 - all runner, 0 - default, 2 - all kids
 }
 
 static bool CheckInfStamina() {
-    return !g_cvInfStamina.BoolValue;
+    return g_cvInfStamina == INVALID_HANDLE || !g_cvInfStamina.BoolValue;
 }
 
 static bool CheckMachete() {
-    return !g_cvMachete.BoolValue;
+    return g_cvMachete == INVALID_HANDLE || !g_cvMachete.BoolValue;
 }
 
 static bool CheckDifficulty() {

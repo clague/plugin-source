@@ -847,7 +847,11 @@ public void DetectScope(int iClient) {
 		static int iWeapon;
 		static bool bInIronSight;
 		iWeapon = GetEntPropEnt(iClient, Prop_Send, "m_hActiveWeapon");
-		bInIronSight = GetEntProp(iWeapon, Prop_Send, "m_bIsInIronsights") != 0;
+		if (IsValidHandle(iWeapon)) {
+			bInIronSight = GetEntProp(iWeapon, Prop_Send, "m_bIsInIronsights") != 0;
+		} else {
+			bInIronSight = false;
+		}
 		if (bInIronSight && !g_bInScoped[iClient]) {
 			g_bInScoped[iClient] = true;
 		}

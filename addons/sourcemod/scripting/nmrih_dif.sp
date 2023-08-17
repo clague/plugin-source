@@ -164,7 +164,7 @@ public void OnConfigsExecuted() {
     sm_machete_enable = FindConVar("sm_machete_enable");
     sm_record_enable_rt = FindConVar("sm_record_enable_rt");
 
-    if (!(IsValidHandle(sv_max_runner_chance) && IsValidHandle(ov_runner_chance) && IsValidHandle(ov_runner_kid_chance))) {
+    if (sv_max_runner_chance == INVALID_HANDLE || ov_runner_chance == INVALID_HANDLE || ov_runner_kid_chance == INVALID_HANDLE) {
         sv_max_runner_chance = FindConVar("sv_max_runner_chance");
         ov_runner_chance = FindConVar("ov_runner_chance");
         ov_runner_kid_chance = FindConVar("ov_runner_kid_chance");
@@ -178,7 +178,7 @@ public void OnConfigsExecuted() {
     g_GameMode = view_as<GameMode>(sm_gamemode.IntValue);
     ConVarSet(g_GameMode);
 
-    SetDifficulty();
+    SetDifficultyAndDensity();
 }
 
 public void OnConVarChange(ConVar CVar, const char[] oldValue, const char[] newValue) {
@@ -194,19 +194,24 @@ public void OnConVarChange(ConVar CVar, const char[] oldValue, const char[] newV
         ConVarSet(g_GameMode);
     }
     else if (CVar == sv_difficulty || CVar == sv_spawn_density) {
-        SetDifficulty();
+        SetDifficultyAndDensity();
     }
     else if (CVar == sm_kidchance_classic && g_GameDif != GameDifNightmare) {
         g_fKidChance = sm_kidchance_classic.FloatValue;
-        ov_runner_chance.FloatValue = g_fKidChance;
+        if (ov_runner_chance != INVALID_HANDLE) {
+            ov_runner_chance.FloatValue = g_fKidChance;
+        }
     }
     else if (CVar == sm_kidchance_nightmare && g_GameDif == GameDifNightmare) {
         g_fKidChance = sm_kidchance_nightmare.FloatValue;
-        ov_runner_chance.FloatValue = g_fKidChance;
+
+        if (ov_runner_chance != INVALID_HANDLE) {
+            ov_runner_chance.FloatValue = g_fKidChance;
+        }
     }
 }
 
-void SetDifficulty() {
+void SetDifficultyAndDensity() {
     char szBuffer[128], szHostName[128], szDifficulty[24];
     hostname.GetString(szBuffer, sizeof(szBuffer));
     if (SplitString(szBuffer, "（", szHostName, 100) == -1) {

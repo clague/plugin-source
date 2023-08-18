@@ -1,0 +1,48 @@
+"Games"
+{
+	"nmrih"
+	{
+		"Signatures"
+		{
+			"CNMRiH_MeleeBase::CheckMeleeHit"
+			{
+				"library"	"server"
+				"linux"		"@_ZN16CNMRiH_MeleeBase13CheckMeleeHitER6VectorS1_b"
+			}
+			"CNMRiH_MeleeBase::DrainMeleeSwingStamina"
+			{
+				"library"	"server"
+				"linux"		"@_ZNK16CNMRiH_MeleeBase22DrainMeleeSwingStaminaEv"
+			}
+			"CSDKPlayerShared::SetStamina"
+			{
+				"library"	"server"
+				"linux"		"@_ZN16CSDKPlayerShared10SetStaminaEf"
+			}
+		}
+		"Addresses"
+		{
+			"CNMRiH_MeleeBase::CheckMeleeHit"
+            {
+                "linux"
+                {
+                    "signature" "CNMRiH_MeleeBase::CheckMeleeHit"
+                }
+            }
+			"CNMRiH_MeleeBase::DrainMeleeSwingStamina"
+            {
+                "linux"
+                {
+                    "signature" "CNMRiH_MeleeBase::DrainMeleeSwingStamina"
+                }
+            }
+			"CSDKPlayerShared::SetStamina"
+            {
+                "linux"
+                {
+                    "signature" "CSDKPlayerShared::SetStamina"
+                }
+            }
+		}
+	}
+}

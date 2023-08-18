@@ -362,7 +362,7 @@ bool CalcRPN(ArrayStack RPNStack, ArrayList SymbolList, int& iRes, bool bNotFoun
     }
     for (int i = nLen - 1; i >= 0; i--) {
         if (aReverse[i] >= view_as<int>(AND)) {
-            static int num1, num2;
+            static any num1, num2;
             switch (view_as<OP>(aReverse[i])) {
                 case AND: {
                     if (!Pop2(ResStack, num1, num2)) {
@@ -505,7 +505,7 @@ bool CalcRPN(ArrayStack RPNStack, ArrayList SymbolList, int& iRes, bool bNotFoun
     return false;
 }
 
-stock bool Pop2(ArrayStack hStack, int& num1, int& num2) {
+stock bool Pop2(ArrayStack hStack, any& num1, any& num2) {
     if (hStack.Empty) {
         return false;
     }
@@ -517,7 +517,7 @@ stock bool Pop2(ArrayStack hStack, int& num1, int& num2) {
     return true;
 }
 
-stock bool Pop1(ArrayStack hStack, int& num1) {
+stock bool Pop1(ArrayStack hStack, any& num1) {
     if (hStack.Empty) {
         return false;
     }
@@ -953,6 +953,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
     CreateNative("ParseCondition", Native_ParseCondition);
     CreateNative("CalculateRPN", Native_CalcRPN);
 
+    RegPluginLibrary("globalvariables");
     return APLRes_Success;
 }
 
@@ -969,71 +970,6 @@ public void OnPluginStart() {
     else {
         g_bProtobuf = false;
     }
-
-    RegAdminCmd("sm_testcolors", TestColor, ADMFLAG_GENERIC);
-    RegAdminCmd("sm_testsaytext2", TestSayText2, ADMFLAG_GENERIC);
-    RegAdminCmd("sm_testrpn", TestRPN, ADMFLAG_GENERIC);
-}
-
-public Action TestColor(int iClient, int nArgs) {
-    PrintToChat(iClient, "\x01x01");
-    PrintToChat(iClient, "\x02x02\x01");
-    CPrintToChat(iClient, iClient, "\x03x03 {gray} gray \x01");
-    CPrintToChat(iClient, iClient, "\x04x04 {green} green \x01");
-    PrintToChat(iClient, "\x05x05\x01");
-    PrintToChat(iClient, "\x06x06\x01");
-    PrintToChat(iClient, "\x07x07\x01");
-    PrintToChat(iClient, "\x08x08\x01");
-    PrintToChat(iClient, "\x09x09\x01");
-    PrintToChat(iClient, "\x0Ax0A\x01");
-    PrintToChat(iClient, "\x0Bx0B\x01");
-    PrintToChat(iClient, "\x0Cx0C\x01");
-    PrintToChat(iClient, "\x0Dx0D\x01");
-    PrintToChat(iClient, "\x0Ex0E\x01");
-    PrintToChat(iClient, "\x0Fx0F\x01");
-    PrintToChat(iClient, "\x10x10\x01");
-
-    CPrintToChat(iClient, iClient, "{red}red{green}green{yellow}yellow{blue}blue");
-    CPrintToChat(iClient, iClient, "{red}red{green}green{yellow}yellow{blue}blue");
-
-
-    PrintToChatAll("\x01中文 \x07FF4040red");
-    PrintToChatAll("\x07FF4040red");
-    return Plugin_Handled;
-}
-
-public Action TestSayText2(int iClient, int nArgs) {
-    static char szFlags[MAX_SAYTEXT2_LEN], szName[MAX_SAYTEXT2_LEN], szText[MAX_SAYTEXT2_LEN];
-    GetCmdArg(1, szFlags, sizeof(szFlags));
-    GetCmdArg(2, szName, sizeof(szName));
-    GetCmdArg(3, szText, sizeof(szText));
-
-    Handle hMsg = StartMessageOne("SayText2", iClient, USERMSG_RELIABLE|USERMSG_BLOCKHOOKS);
-    BfWriteByte(hMsg, iClient);
-    BfWriteByte(hMsg, true);
-    BfWriteString(hMsg, szFlags);
-    BfWriteString(hMsg, szName);
-    BfWriteString(hMsg, szText);
-    EndMessage();
-    return Plugin_Handled;
-}
-
-public Action TestRPN(int iClient, int nArgs) {
-    static char szBuffer[MAX_MESSAGE_LEN];
-    GetCmdArg(1, szBuffer, sizeof(szBuffer));
-
-    ArrayStack RPNStack = new ArrayStack();
-    ArrayList SymbolList = new ArrayList(ByteCountToCells(MAX_TOKEN_LENGTH));
-
-    int iRes;
-    if (ParseConditionsToRPN(szBuffer, RPNStack, SymbolList)) {
-        if (CalcRPN(RPNStack, SymbolList, iRes, false)) {
-            ReplyToCommand(iClient, "%d", iRes);
-            return Plugin_Handled;
-        }
-    }
-    ReplyToCommand(iClient, "Failed");
-    return Plugin_Handled;
 }
 
 public void OnLibraryAdded(const char[] szName)

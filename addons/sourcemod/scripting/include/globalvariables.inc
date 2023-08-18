@@ -21,3 +21,29 @@ native bool CalculateRPN(ArrayStack RPNStack, ArrayList SymbolList, int& iRes, b
 
 #define MAX_TOKEN_COUNT 1024
 #define MAX_TOKEN_LENGTH 32
+
+#if !defined REQUIRE_PLUGIN
+public void __pl_globalvariables_SetNTVOptional()
+{
+	MarkNativeAsOptional("CAddChatColor");
+	MarkNativeAsOptional("CProcessVariables");
+	MarkNativeAsOptional("CRemoveVariables");
+	MarkNativeAsOptional("CPrintToChat");
+	MarkNativeAsOptional("CPrintToChatAll");
+	MarkNativeAsOptional("CSayText2");
+	MarkNativeAsOptional("CSayText2All");
+	MarkNativeAsOptional("ParseCondition");
+    MarkNativeAsOptional("CalculateRPN");
+}
+#endif
+
+public SharedPlugin __pl_globalvariables =
+{
+	name = "globalvariables",
+	file = "globalvariables.smx",
+#if defined REQUIRE_PLUGIN
+	required = 1
+#else
+	required = 0
+#endif
+}; 

@@ -3,4 +3,4 @@
 
 cfg文件夹为参数配置
 
-源码快速定位：https://github.com/keter42/plugin-source/tree/master/addons/sourcemod/scripting
+源码快速定位：https://github.com/clague/plugin-source/tree/master/addons/sourcemod/scripting

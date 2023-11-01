@@ -40,24 +40,29 @@ public void OnPluginStart() {
     //g_offNextPrimaryAttack = FindSendPropInfo("CBaseCombatWeapon", "m_flNextPrimaryAttack");
 
     GameData gamedata = new GameData("happyslash.games");
-
-    Address addrCheckHit = gamedata.GetAddress("CNMRiH_MeleeBase::CheckMeleeHit");
-    if (addrCheckHit == Address_Null) {
-        SetFailState("Failed to get offset to CNMRiH_MeleeBase::CheckMeleeHit");
+    if (gamedata == null) {
+        SetFailState("Failed to load GameData");
+    } else {
+        LogMessage("Load gamedata success");
     }
 
-    Address addrDrainStamina = gamedata.GetAddress("CNMRiH_MeleeBase::DrainMeleeSwingStamina");
+    Address addrCheckHit = gamedata.GetMemSig("CNMRiH_MeleeBase::CheckMeleeHit");
+    if (addrCheckHit == Address_Null) {
+        SetFailState("Failed to get memsig to CNMRiH_MeleeBase::CheckMeleeHit");
+    }
+
+    Address addrDrainStamina = gamedata.GetMemSig("CNMRiH_MeleeBase::DrainMeleeSwingStamina");
     if (addrDrainStamina == Address_Null) {
-        SetFailState("Failed to get offset to CNMRiH_MeleeBase::DrainMeleeSwingStamina");
+        SetFailState("Failed to get address of CNMRiH_MeleeBase::DrainMeleeSwingStamina");
     }
 
     g_fnDrainMeleeSwingStamina = new DynamicDetour(addrDrainStamina, CallConv_THISCALL, ReturnType_Void, ThisPointer_CBaseEntity);
     g_fnDrainMeleeSwingStamina.Enable(Hook_Pre, DHook_DrainMeleeSwingStamina);
     g_fnDrainMeleeSwingStamina.Enable(Hook_Post, DHook_DrainMeleeSwingStaminaPost);
 
-    Address addrSetStamina = gamedata.GetAddress("CSDKPlayerShared::SetStamina");
+    Address addrSetStamina = gamedata.GetMemSig("CSDKPlayerShared::SetStamina");
     if (addrDrainStamina == Address_Null) {
-        SetFailState("Failed to get offset to CSDKPlayerShared::SetStamina");
+        SetFailState("Failed to get address of CSDKPlayerShared::SetStamina");
     }
 
     g_fnSetStamina = new DynamicDetour(addrSetStamina, CallConv_THISCALL, ReturnType_Void, ThisPointer_Address);

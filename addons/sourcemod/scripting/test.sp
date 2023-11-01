@@ -177,7 +177,7 @@ public Action MakeZombies(int client, int args)
         
     if(TR_DidHit(hTrace))
     {   
-        TR_GetEndPosition(vStart, trace);
+        TR_GetEndPosition(vStart, hTrace);
         GetVectorDistance(vOrigin, vStart, false);
         Distance = -35.0;
         GetAngleVectors(vAngles, vBuffer, NULL_VECTOR, NULL_VECTOR);

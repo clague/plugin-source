@@ -7,7 +7,7 @@
 			"CNMRiH_MeleeBase::CheckMeleeHit"
 			{
 				"library"	"server"
-				"linux"		"@_ZN16CNMRiH_MeleeBase13CheckMeleeHitER6VectorS1_b"
+				"linux"		"@_ZN16CNMRiH_MeleeBase13CheckMeleeHitERK6VectorS2_22NMRiH_MeleeTraceStep_t"
 			}
 			"CNMRiH_MeleeBase::DrainMeleeSwingStamina"
 			{
@@ -19,30 +19,6 @@
 				"library"	"server"
 				"linux"		"@_ZN16CSDKPlayerShared10SetStaminaEf"
 			}
-		}
-		"Addresses"
-		{
-			"CNMRiH_MeleeBase::CheckMeleeHit"
-            {
-                "linux"
-                {
-                    "signature" "CNMRiH_MeleeBase::CheckMeleeHit"
-                }
-            }
-			"CNMRiH_MeleeBase::DrainMeleeSwingStamina"
-            {
-                "linux"
-                {
-                    "signature" "CNMRiH_MeleeBase::DrainMeleeSwingStamina"
-                }
-            }
-			"CSDKPlayerShared::SetStamina"
-            {
-                "linux"
-                {
-                    "signature" "CSDKPlayerShared::SetStamina"
-                }
-            }
 		}
 	}
 }

@@ -9,7 +9,7 @@
 
 public Plugin myinfo =
 {
-    name        = "Colovariables",
+    name        = "ColorVariables",
     author      = "clagura",
     description = "Provide simple function.",
     version     = PLUGIN_VERSION,

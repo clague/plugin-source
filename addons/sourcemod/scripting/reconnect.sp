@@ -251,6 +251,19 @@ Action CmdFSpawn(int iClient, int nArgs) {
     GetClientEyePosition(iClient,vOrigin);
     GetClientEyeAngles(iClient,vAngle);
 
+    //get endpoint for teleport
+    Handle hTrace = TR_TraceRayFilterEx(vOrigin, vAngle, MASK_SHOT, RayType_Infinite, TraceEntityFilterPlayer);
+        
+    if(TR_DidHit(hTrace)) {
+        TR_GetEndPosition(vOrigin, hTrace);
+        vOrigin[2] += 1.0; // prevent from stucking at ground
+    }
+    else {
+        CloseHandle(hTrace);
+        return Plugin_Handled;
+    }
+    CloseHandle(hTrace);
+
     if (nArgs < 1) {
         ReplyToCommand(iClient, "[SM] Usage: sm_fspawn <#userid|name>");
         return Plugin_Handled;
@@ -280,6 +293,10 @@ Action CmdFSpawn(int iClient, int nArgs) {
     }
     return Plugin_Handled;
 }
+
+public bool TraceEntityFilterPlayer(int entity, int contentsMask) {
+    return entity > MaxClients;
+}  
 
 void SetPlayerState(int iClient) {
     float aPlayerState[PLAYER_STATE_LEN];

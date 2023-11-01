@@ -280,11 +280,15 @@ public Action TIMER_END(Event e, const char[] n, bool b)
 
     FormatEx(sQuery, 512, "SELECT time, counts FROM playertimes WHERE map = '%s' AND auth = %d ORDER BY time ASC;", gS_Map, gA_Timers[client].iSteamid);
 
-    gH_SQL.Query(SQL_OnFinishCheck_Callback, sQuery, client, DBPrio_High);
+    gH_SQL.Query(SQL_OnFinishCheckTime_Callback, sQuery, client, DBPrio_High);
+
+    gH_SQL.Format(sQuery, 512, "SELECT kills, counts FROM playerkills WHERE map = '%s' AND auth = %d ORDER BY kills DESC;", gS_Map, gA_Timers[client].iSteamid);
+
+    gH_SQL.Query(SQL_OnFinishCheckKill_Callback, sQuery, client, DBPrio_High);
     return Plugin_Continue;
 }
 
-public void SQL_OnFinishCheck_Callback(Database db, DBResultSet results, const char[] error, any client)
+public void SQL_OnFinishCheckTime_Callback(Database db, DBResultSet results, const char[] error, any client)
 {
     if(results == null)
     {
@@ -308,12 +312,6 @@ public void SQL_OnFinishCheck_Callback(Database db, DBResultSet results, const c
             "UPDATE playertimes SET time = %f, deaths = %d, counts = counts + 1, kills = %d WHERE map = '%s' AND auth = %d;", 
             gA_Timers[client].fFinalTime, gA_Timers[client].iDeaths, gA_Timers[client].iKills, gS_Map, gA_Timers[client].iSteamid);
         }
-        else if(gA_Timers[client].iKills > results.FetchFloat(0))
-        {
-            FormatEx(sQuery, 512,
-            "INSERT INTO playertimes (auth, name, map, time, deaths, counts, kills) VALUES (%d, '%s', '%s', %f, %d, 1, %d);", 
-             gA_Timers[client].iSteamid, gA_Timers[client].sName, gS_Map, gA_Timers[client].fFinalTime, gA_Timers[client].iDeaths, gA_Timers[client].iKills);
-        }
         else
         {
             FormatEx(sQuery, 512,
@@ -329,6 +327,48 @@ public void SQL_OnFinishCheck_Callback(Database db, DBResultSet results, const c
     }
 
     gH_SQL.Query(SQL_OnFinish_Callback, sQuery, client, DBPrio_High);
+}
+
+public void SQL_OnFinishCheckKill_Callback(Database db, DBResultSet results, const char[] error, any client)
+{
+    if(results == null)
+    {
+        LogError("Timer SQL query failed. Reason: %s", error);
+        return;
+    }
+    if(client == 0)
+    {
+        return;
+    }
+
+    char sQuery[512];
+
+    if(results.FetchRow() && results.HasResults)
+    {
+        gA_Timers[client].iCounts = results.FetchInt(1);
+        
+        if(gA_Timers[client].iKills > results.FetchInt(0))
+        {
+            FormatEx(sQuery, 512,
+            "UPDATE playerkills SET time = %f, deaths = %d, counts = counts + 1, kills = %d WHERE map = '%s' AND auth = %d;", 
+            gA_Timers[client].fFinalTime, gA_Timers[client].iDeaths, gA_Timers[client].iKills, gS_Map, gA_Timers[client].iSteamid);
+        }
+        else
+        {
+            FormatEx(sQuery, 512,
+            "UPDATE playerkills SET counts = counts + 1 WHERE map = '%s' AND auth = %d;",
+            gS_Map, gA_Timers[client].iSteamid);
+        }
+    }
+    else
+    {
+        FormatEx(sQuery, 512,
+        "INSERT INTO playerkills (auth, name, map, time, deaths, counts, kills) VALUES (%d, '%s', '%s', %f, %d, 1, %d);",
+        gA_Timers[client].iSteamid, gA_Timers[client].sName, gS_Map, gA_Timers[client].fFinalTime, gA_Timers[client].iDeaths, gA_Timers[client].iKills);
+    }
+
+    // 无需进行两次
+    // gH_SQL.Query(SQL_OnFinish_Callback, sQuery, client, DBPrio_High);
 }
 
 public void SQL_OnFinish_Callback(Database db, DBResultSet results, const char[] error, any client)
@@ -399,7 +439,7 @@ void StartWRMenu(int client, const char[] map, bool bIsSortedByKillCount=false)
 
     char sQuery[512];
     if (bIsSortedByKillCount)
-        FormatEx(sQuery, 512, "SELECT name, time, deaths, counts, kills FROM playertimes WHERE map = '%s' ORDER BY kills DESC, time ASC;", sEscapedMap);
+        FormatEx(sQuery, 512, "SELECT name, time, deaths, counts, kills FROM playerkills WHERE map = '%s' ORDER BY kills DESC, time ASC;", sEscapedMap);
     else
         FormatEx(sQuery, 512, "SELECT name, time, deaths, counts, kills FROM playertimes WHERE map = '%s' ORDER BY time ASC, kills DESC;", sEscapedMap);
     gH_SQL.Query(SQL_WR_Callback2, sQuery, dp);
@@ -504,6 +544,7 @@ void SQL_DBConnect()
     }
     SQL_LockDatabase(gH_SQL);
     SQL_FastQuery(gH_SQL, "CREATE TABLE IF NOT EXISTS playertimes (auth INT, name VARCHAR(32), time FLOAT NOT NULL DEFAULT '-1.0', map VARCHAR(128), deaths INT, counts INT, kills INT);");
+    SQL_FastQuery(gH_SQL, "CREATE TABLE IF NOT EXISTS playerkills (auth INT, name VARCHAR(32), kills INT, time FLOAT NOT NULL DEFAULT '-1.0', map VARCHAR(128), deaths INT, counts INT);");
     SQL_UnlockDatabase(gH_SQL);
 
     gB_Connected = true;

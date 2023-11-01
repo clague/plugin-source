@@ -20,8 +20,8 @@ int		g_iCounter[MAXPLAYERS + 1];
 int		g_iStuckStatus[MAXPLAYERS + 1];
 int		g_aLooseDist[MAXPLAYERS + 1][DIRECTION_COUNT];
 float 	g_fTime[MAXPLAYERS + 1];
-float 	g_fOriginalPos[MAXPLAYERS + 1][3];
-float 	g_fOriginalVel[MAXPLAYERS + 1][3];
+float 	gV_OriginalPos[MAXPLAYERS + 1][3];
+float 	gV_OriginalVel[MAXPLAYERS + 1][3];
 
 ConVar	sm_stuck_limit;
 ConVar	sm_stuck_countdown;
@@ -124,7 +124,7 @@ public void OnPluginStart() {
 
 	CreateConVar("sm_stuck_version", PLUGIN_VERSION, "Stuck version", FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	sm_stuck_limit		= CreateConVar("sm_stuck_limit", 		"3", 	"How many times command can be used before cooldown (0 = no limit)", _, true, 0.0);
-	sm_stuck_countdown	= CreateConVar("sm_stuck_countdown",	"30", 	"How long the command cooldown is in seconds", _, true, 0.0, true, 1000.0);
+	sm_stuck_countdown	= CreateConVar("sm_stuck_countdown",	"30", 	"How long the command being in cooldown(seconds)", _, true, 0.0, true, 1000.0);
 	sm_stuck_radius		= CreateConVar("sm_stuck_radius", 		"32", 	"Initial radius size to fix player position", _, true, 0.0);
 	sm_stuck_step		= CreateConVar("sm_stuck_step", 		"0.3", 	"Step (multiply the radius) between each position tested", _, true, 0.0);
 	sm_stuck_max_steps	= CreateConVar("sm_stuck_max_steps", 	"7.0", 	"Maxium of the steps count", _, true, 0.0);
@@ -319,8 +319,8 @@ stock void StartStuckDetection(int iClient) {
 	g_iStuckStatus[iClient] = 0;
 
 	//Save original position & velocity
-	GetClientAbsOrigin(iClient, g_fOriginalPos[iClient]);
-	GetEntPropVector(iClient, Prop_Data, "m_vecAbsVelocity", g_fOriginalVel[iClient]);
+	GetClientAbsOrigin(iClient, gV_OriginalPos[iClient]);
+	GetEntPropVector(iClient, Prop_Data, "m_vecAbsVelocity", gV_OriginalVel[iClient]);
 	
 	//Disable player controls to prevent abuse / exploits
 	int flags = GetEntityFlags(iClient) | FL_ATCONTROLS;
@@ -417,7 +417,7 @@ public Action TimerCheckMovePost(Handle hTimer, DataPack hTimerDataPack) {
 		} else if (fStep <= sm_stuck_max_steps.FloatValue){
 			g_iStuckStatus[iClient]++;
 			if (bInfix) {
-				TeleportEntity(iClient, g_fOriginalPos[iClient]);
+				TeleportEntity(iClient, gV_OriginalPos[iClient]);
 				//Continue where we left off
 				TryFixPosition(iClient, sm_stuck_radius.FloatValue, fStep, false, view_as<Direction>((view_as<int>(currentDir)+1)%DIRECTION_COUNT));
 			}
@@ -427,7 +427,7 @@ public Action TimerCheckMovePost(Handle hTimer, DataPack hTimerDataPack) {
 		}
 		else {
 			CPrintToChat(iClient, 0, "{green}%t {white}%t", "Prefix", "NeedHelp");
-			TeleportEntity(iClient, g_fOriginalPos[iClient], NULL_VECTOR, g_fOriginalVel[iClient]); //Reset to original pos / velocity
+			TeleportEntity(iClient, gV_OriginalPos[iClient], NULL_VECTOR, gV_OriginalVel[iClient]); //Reset to original pos / velocity
 
 			//Enable controls
 			int flags = GetEntityFlags(iClient) & ~FL_ATCONTROLS;
@@ -437,10 +437,10 @@ public Action TimerCheckMovePost(Handle hTimer, DataPack hTimerDataPack) {
 	} else {
 		if(g_iStuckStatus[iClient] < 1 && g_iStuckStatus[iClient] != -1) {
 			CPrintToChat(iClient, 0, "{green}%t {white}%t", "Prefix", "NotStuck");
-			TeleportEntity(iClient, g_fOriginalPos[iClient], NULL_VECTOR, g_fOriginalVel[iClient]); //Reset to original pos / velocity
+			TeleportEntity(iClient, gV_OriginalPos[iClient], NULL_VECTOR, gV_OriginalVel[iClient]); //Reset to original pos / velocity
 		} else {
 			CPrintToChat(iClient, 0, "{green}%t {white}%t", "Prefix", "Unstuck");
-			TeleportEntity(iClient, NULL_VECTOR, NULL_VECTOR, g_fOriginalVel[iClient]);
+			TeleportEntity(iClient, NULL_VECTOR, NULL_VECTOR, gV_OriginalVel[iClient]);
 		}
 
 		//Enable controls

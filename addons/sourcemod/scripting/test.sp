@@ -14,14 +14,51 @@ public void OnPluginStart() {
     // HookUserMessage(GetUserMessageId("BecameInfected"), OnUserMessage, true);
     // HookUserMessage(GetUserMessageId("InfectionCured"), OnUserMessage, true);
     // HookUserMessage(GetUserMessageId("Cure"), OnUserMessage, true);
+    // if (!HookEventEx("entity_killed", Event_EntityKilled)) {
+    //     LogError("hook entity_killed failed");
+    // }
     LoadTranslations("delay_quit.phrases");
     
+    RegConsoleCmd("sm_calc", Calc, "Calculate");
     RegAdminCmd("sm_tmi", TestMotdIndex, ADMFLAG_GENERIC);
     RegAdminCmd("sm_tarr", TestArrayAssign, ADMFLAG_GENERIC);
     RegAdminCmd("sm_count", CountZombies, ADMFLAG_GENERIC);
     RegAdminCmd("sm_make", MakeZombies, ADMFLAG_GENERIC);
     RegAdminCmd("sm_fakeclient", MakeFakeClient, ADMFLAG_GENERIC);
     RegServerCmd("sm_delay_quit", DelayQuit, "quit at a proper time");
+}
+
+public void Event_EntityKilled(Event hEvent, const char[] szName, bool bDontBroadcast) {
+
+    int iEntKilled = hEvent.GetInt("entindex_killed", 0);
+    int iEntAttacker = hEvent.GetInt("entindex_attacker", 0);
+    int iEntInflictor = hEvent.GetInt("entindex_inflictor", 0);
+    int iDamageBits = hEvent.GetInt("damagebits", 0);
+
+    char szClassname[256];
+    GetEntityClassname(iEntInflictor, szClassname, sizeof(szClassname));
+
+    LogMessage("entindex_killed: %d, entindex_attacker: %d, entindex_inflictor: %d, damagebits: %d",
+        iEntKilled, iEntAttacker, iEntInflictor, iDamageBits);
+    LogMessage("inflictor: %s", szClassname);
+}
+
+public Action Calc(int iClient, int nArgs) {
+    static char szBuffer[MAX_MESSAGE_LEN];
+    GetCmdArgString(szBuffer, sizeof(szBuffer));
+
+    ArrayStack RPNStack = new ArrayStack();
+    ArrayList SymbolList = new ArrayList(ByteCountToCells(MAX_TOKEN_LENGTH));
+
+    any iRes;
+    if (ParseCondition(szBuffer, sizeof(szBuffer), RPNStack, SymbolList)) {
+        if (CalculateRPN(RPNStack, SymbolList, iRes, false)) {
+            ReplyToCommand(iClient, "%d", iRes);
+            return Plugin_Handled;
+        }
+    }
+    ReplyToCommand(iClient, "Failed");
+    return Plugin_Handled;
 }
 
 public Action MakeFakeClient(int iClient, int nArgs) {
@@ -136,9 +173,9 @@ public Action MakeZombies(int client, int args)
     GetClientEyeAngles(client, vAngles);
     
     //get endpoint for teleport
-    new Handle:trace = TR_TraceRayFilterEx(vOrigin, vAngles, MASK_SHOT, RayType_Infinite, TraceEntityFilterPlayer);
+    Handle hTrace = TR_TraceRayFilterEx(vOrigin, vAngles, MASK_SHOT, RayType_Infinite, TraceEntityFilterPlayer);
         
-    if(TR_DidHit(trace))
+    if(TR_DidHit(hTrace))
     {   
         TR_GetEndPosition(vStart, trace);
         GetVectorDistance(vOrigin, vStart, false);
@@ -150,7 +187,7 @@ public Action MakeZombies(int client, int args)
     }
     else
     {
-        CloseHandle(trace);
+        CloseHandle(hTrace);
         return Plugin_Handled;
     }
 
@@ -162,7 +199,7 @@ public Action MakeZombies(int client, int args)
     
     CreateTimer(0.1, DelayCreateZombie, _, TIMER_REPEAT);
     
-    CloseHandle(trace);
+    CloseHandle(hTrace);
     return Plugin_Handled;
 }
 

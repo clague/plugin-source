@@ -196,6 +196,11 @@
 	"20"
 	{
 		"type"		"chat"
-		"message"	"{green}[提示] !settings{white}指令可以更改一些设置"
+		"message"
+		{
+			"default"	"{green}[Tips] {white}Use {green}!settings{white} command to modify some preferences"
+			"zho"		"{green}[提示] !settings{white}指令可以變更某些偏好"
+			"chi"		"{green}[提示] !settings{white}指令可以更改一些设定"
+		}
 	}
 }

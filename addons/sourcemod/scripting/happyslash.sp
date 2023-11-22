@@ -48,7 +48,7 @@ public void OnPluginStart() {
 
     Address addrCheckHit = gamedata.GetMemSig("CNMRiH_MeleeBase::CheckMeleeHit");
     if (addrCheckHit == Address_Null) {
-        SetFailState("Failed to get memsig to CNMRiH_MeleeBase::CheckMeleeHit");
+        // SetFailState("Failed to get memsig to CNMRiH_MeleeBase::CheckMeleeHit");
     }
 
     Address addrDrainStamina = gamedata.GetMemSig("CNMRiH_MeleeBase::DrainMeleeSwingStamina");
@@ -61,7 +61,7 @@ public void OnPluginStart() {
     g_fnDrainMeleeSwingStamina.Enable(Hook_Post, DHook_DrainMeleeSwingStaminaPost);
 
     Address addrSetStamina = gamedata.GetMemSig("CSDKPlayerShared::SetStamina");
-    if (addrDrainStamina == Address_Null) {
+    if (addrSetStamina == Address_Null) {
         SetFailState("Failed to get address of CSDKPlayerShared::SetStamina");
     }
 
@@ -86,10 +86,12 @@ MRESReturn DHook_DrainMeleeSwingStamina(int pThis) {
 MRESReturn DHook_DrainMeleeSwingStaminaPost(int pThis) {
     // LogMessage("In DHook_DrainMeleeSwingStaminaPost");
     g_bInDrainStamina = false;
+    g_iDrainWeapon = -1;
     return MRES_Ignored;
 }
 
 MRESReturn DHook_SetStamina(int pThis, DHookParam params) {
+    // LogMessage("In DHook_SetStamina");
     if (g_bInDrainStamina) {
         if (!IsValidEntity(g_iDrainWeapon)) {
             return MRES_Ignored;
@@ -104,7 +106,7 @@ MRESReturn DHook_SetStamina(int pThis, DHookParam params) {
         if (g_aStates[iClient].nSlashCount == 1) {
             g_aStates[iClient].fStaminaCost = fOldStamina - fNewStamina;
         } else if (fNewStamina < fOldStamina) {
-            g_aStates[iClient].fStaminaCost /= 2.0;
+            g_aStates[iClient].fStaminaCost /= 3.0;
             fNewStamina = fOldStamina - g_aStates[iClient].fStaminaCost;
             // LogMessage("New stamina: %f", fNewStamina);
             if (fNewStamina > 0.0) {

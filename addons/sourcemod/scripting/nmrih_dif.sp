@@ -10,19 +10,19 @@
 #define VOTE_NEEDED 0.74
 
 enum GameMode {
-    GameModeDefault,
+    GameModeDefault = 0,
     GameModeRunner,
     GameModeKid
 };
 
 enum GameDif {
-    GameDifClassic,
+    GameDifClassic = 0,
     GameDifCasual,
     GameDifNightmare
 }
 
 enum GameDensity {
-    GameDensity10,
+    GameDensity10 = 0,
     GameDensity15,
     GameDensity30,
     GameDensity50,
@@ -145,7 +145,7 @@ public void OnPluginStart() {
 }
 
 public void OnMapStart() {
-    sm_gamemode.FloatValue = sm_gamemode_default.FloatValue;
+    sm_gamemode.IntValue = sm_gamemode_default.IntValue;
     g_GameMode = view_as<GameMode>(sm_gamemode_default.IntValue);
 }
 
@@ -308,7 +308,8 @@ int ShamblerToRunnerFromPosion(int iZombie, bool isKid = false) {
 }
 
 void ShamblerConvertToRunner(bool bKid=false) {
-    for(int iZombie = MaxClients + 1; iZombie >= 0; iZombie = FindEntityByClassname(iZombie, "npc_nmrih_shamblerzombie")) {
+    int iZombie = FindEntityByClassname(-1, "npc_nmrih_shamblerzombie");
+    for( ;iZombie >= 0; iZombie = FindEntityByClassname(iZombie, "npc_nmrih_shamblerzombie")) {
         if(IsValidEntity(iZombie)) {
             ShamblerToRunnerFromPosion(iZombie, bKid);
         }

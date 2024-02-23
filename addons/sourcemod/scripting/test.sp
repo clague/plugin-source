@@ -9,6 +9,8 @@
 int nZombieCount = 0;
 float g_pos[3];
 
+int arrowList[2048], arrowNum = 0;
+
 public void OnPluginStart() {
     // HookUserMessage(GetUserMessageId("GameMessage"), OnUserMessage, true);
     // HookUserMessage(GetUserMessageId("BecameInfected"), OnUserMessage, true);
@@ -20,12 +22,43 @@ public void OnPluginStart() {
     LoadTranslations("delay_quit.phrases");
     
     RegConsoleCmd("sm_calc", Calc, "Calculate");
+    RegConsoleCmd("sm_showallarrow", ShowAllArrow, "ShowAllArrow");
     RegAdminCmd("sm_tmi", TestMotdIndex, ADMFLAG_GENERIC);
     RegAdminCmd("sm_tarr", TestArrayAssign, ADMFLAG_GENERIC);
     RegAdminCmd("sm_count", CountZombies, ADMFLAG_GENERIC);
     RegAdminCmd("sm_make", MakeZombies, ADMFLAG_GENERIC);
     RegAdminCmd("sm_fakeclient", MakeFakeClient, ADMFLAG_GENERIC);
     RegServerCmd("sm_delay_quit", DelayQuit, "quit at a proper time");
+}
+
+public void OnEntityCreated(int entity) {
+    char szClassname[64];
+    GetEntityClassname(entity, szClassname, sizeof(szClassname));
+    if (strcmp(szClassname, "projectile_arrow") == 0) {
+        arrowList[arrowNum] = entity;
+        arrowNum++;
+    }
+
+}
+
+public Action ShowAllArrow(int iClient, int nArgs) {
+    for (int i = 0; i < arrowNum; i++) {
+        int arrow = arrowList[i];
+        char szClassname[64];
+        GetEntityClassname(arrow, szClassname, sizeof(szClassname));
+        if (strcmp(szClassname, "projectile_arrow") == 0) {
+            DispatchKeyValue(arrow, "glowable", "1");
+            DispatchKeyValueFloat(arrow, "glowdistance", 99999999999.0);
+            DispatchKeyValue(arrow, "glowcolor", /*isFull ? "255 0 0" :*/ "0 255 0"); // same as item pickup
+            AcceptEntityInput(arrow, "enableglow");
+
+            float vec[3];
+            GetEntPropVector(arrow, Prop_Send, "m_vecOrigin", vec);
+            PrintToChat(iClient, "arrow %d pos: %f, %f, %f", i, vec[0], vec[1], vec[2]);
+        }
+
+    }
+    return Plugin_Handled;
 }
 
 public void Event_EntityKilled(Event hEvent, const char[] szName, bool bDontBroadcast) {

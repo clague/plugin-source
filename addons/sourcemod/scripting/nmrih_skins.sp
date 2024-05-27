@@ -428,12 +428,15 @@ public Action Cmd_Fov(int iClient, int nArgs) {
 			if (GetCmdArgFloatEx(1, fFov)) {
 				ApplyFov(iClient, RoundToNearest(fFov));
 			} else {
+				char buffer[256];
+				g_hFov.Get(iClient, buffer, sizeof(buffer));
+				int iFov = StringToInt(buffer);
 				if (g_bUseTranslation) {
-					CPrintToChat(iClient, 0, "{green}%t {white}%t", "ChatPrefix", "CurrentFov", GetEntProp(iClient, Prop_Send, "m_iFOV"), g_hFov.GetInt(iClient));
+					CPrintToChat(iClient, 0, "{green}%t {white}%t", "ChatPrefix", "CurrentFov", GetEntProp(iClient, Prop_Send, "m_iFOV"), iFov);
 					PrintToConsole(iClient, "default fov: %d", GetEntProp(iClient, Prop_Send, "m_iDefaultFOV"));
 				} else {
 					CPrintToChat(iClient, 0, "{green}[系统] {white}当前的{green}FOV{white}值：{orange}%d{white}，当前设置的{green}FOV{white}值：{red}%d{white}\n（死亡视角下两者不同是正常的）",
-						GetEntProp(iClient, Prop_Send, "m_iFOV"), g_hFov.GetInt(iClient));
+						GetEntProp(iClient, Prop_Send, "m_iFOV"), iFov);
 				}
 				g_hFovMenu.Display(iClient, MENU_TIME_FOREVER);
 			}
@@ -791,7 +794,10 @@ stock void ToggleView(int iClient, bool bTPView) {
 		} else {
 			SetEntPropEnt(iClient, Prop_Send, "m_hObserverTarget", iClient);
 			SetEntProp(iClient, Prop_Send, "m_iObserverMode", 0);
-			SetEntProp(iClient, Prop_Send, "m_iFOV", g_hFov.GetInt(iClient));
+			char buffer[256];
+			g_hFov.Get(iClient, buffer, sizeof(buffer));
+			int iFov = StringToInt(buffer);
+			SetEntProp(iClient, Prop_Send, "m_iFOV", iFov);
 		}
 	}
 }
@@ -807,8 +813,10 @@ stock void ApplyFromCookie(int iClient) {
 	} else {
 		ApplyModel(iClient, szModel);
 	}
-
-	ApplyFov(iClient, g_hFov.GetInt(iClient), false);
+	char buffer[256];
+	g_hFov.Get(iClient, buffer, sizeof(buffer));
+	int iFov = StringToInt(buffer);
+	ApplyFov(iClient, iFov, false);
 }
 
 stock void ApplyModel(int iClient, const char[] szModel) {
@@ -836,7 +844,9 @@ stock void ApplyFov(int iClient, int iFov, bool bSet=true) {
 	SetEntPropFloat(iClient, Prop_Send, "m_flFOVRate", 0.7);
 
 	if (bSet) {
-		g_hFov.SetInt(iClient, iFov);
+		char buffer[256];
+		IntToString(iFov, buffer, sizeof(buffer));
+		g_hFov.Set(iClient, buffer);
 	}
 }
 
@@ -856,7 +866,10 @@ public void DetectScope(int iClient) {
 			g_bInScoped[iClient] = true;
 		}
 		else if (!bInIronSight && g_bInScoped[iClient]) {
-			SetEntProp(iClient, Prop_Send, "m_iFOV", g_hFov.GetInt(iClient), false);
+			char buffer[256];
+			g_hFov.Get(iClient, buffer, sizeof(buffer));
+			int iFov = StringToInt(buffer);
+			SetEntProp(iClient, Prop_Send, "m_iFOV", iFov, false);
 			if (!IsValidHandle(g_hScopeTimer[iClient])) {
 				g_hScopeTimer[iClient] = CreateTimer(0.7, TimerUnScoped, iClient, TIMER_FLAG_NO_MAPCHANGE);
 			}

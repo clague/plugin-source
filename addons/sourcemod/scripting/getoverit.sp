@@ -59,7 +59,10 @@ public void OnPluginStart() {
 }
 
 public void OnConfigsExecuted() {
-    (record_enable = FindConVar("sm_record_enable")).AddChangeHook(OnConVarChange);
+    record_enable = FindConVar("sm_record_enable");
+    if (record_enable != INVALID_HANDLE) {
+        record_enable.AddChangeHook(OnConVarChange);
+    }
 
     for (int i = 0; i < sizeof(g_color_group); i++) {
         for (int j = 0; j < sizeof(g_color_group[]); j++) {
@@ -94,7 +97,7 @@ public InitializeDB() {
 }
 
 public void OnRoundStart(Event e, const char[] n, bool b) {
-    if (record_enable.BoolValue)
+    if (record_enable != INVALID_HANDLE && record_enable.BoolValue)
         enable = true;
     else
         enable = false;

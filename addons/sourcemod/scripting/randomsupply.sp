@@ -41,6 +41,7 @@ bool g_bMacheteGived;
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
     CreateNative("SetGived", NativeSetGived);
+    RegPluginLibrary("randomsupply");
     return APLRes_Success;
 }
 

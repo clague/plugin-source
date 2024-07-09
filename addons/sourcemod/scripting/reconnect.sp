@@ -4,8 +4,9 @@
 #include <sourcemod>
 #include <sdktools>
 #include <globalvariables>
-#include <randomsupply>
 #include <dhooks>
+#undef REQUIRE_PLUGIN
+#include <randomsupply>
 
 public Plugin MyInfo = {
     name = "Reconnect",
@@ -26,9 +27,32 @@ DynamicHook g_fnGetPlayerSpawnSpot;
 
 Menu g_hChooseMenu;
 
+bool g_bRandomSupplyLoaded;
 int g_iSpawningPlayer;
 float g_aPlayerState[MAXPLAYERS + 1][PLAYER_STATE_LEN];
 char g_szPlayerAuth[MAXPLAYERS + 1][64];
+
+public APLRes AskPluginLoad2(Handle hMySelf, bool bLate, char[] sError, int nErrMax)
+{
+    MarkNativeAsOptional("SetGived");
+    return APLRes_Success;
+}
+
+public void OnAllPluginsLoaded() {
+    g_bRandomSupplyLoaded = LibraryExists("randomsupply");
+}
+
+public void OnLibraryAdded(const char[] szName) {
+	if (StrEqual(szName, "randomsupply")) {
+		g_bRandomSupplyLoaded = true;
+	}
+}
+
+public void OnLibraryRemoved(const char[] szName) {
+	if (StrEqual(szName, "randomsupply")) {
+		g_bRandomSupplyLoaded = false;
+	}
+}
 
 public void OnPluginStart() {
     LoadTranslations("common.phrases");
@@ -116,7 +140,9 @@ int ChooseMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
                     CPrintToChat(param1, 0, "{green}%t {white}%t", "Prefix", "AlreadyAlive");
                     return 0;
                 }
-                SetGived(param1, true);
+                if (g_bRandomSupplyLoaded) {
+                    SetGived(param1, true);
+                }
                 ForceSpawn(param1);
                 RequestFrame(SetPlayerState, param1);
                 g_hRestoredState.Remove(g_szPlayerAuth[param1]);
@@ -231,7 +257,9 @@ Action CmdRSpawn(int iClient, int nArgs) {
             CPrintToChat(iClient, 0, "{green}%t {white}%t", "Prefix", "AlreadyAlive");
             return Plugin_Handled;
         }
-        SetGived(iClient, true);
+        if (g_bRandomSupplyLoaded) {
+            SetGived(iClient, true);
+        }
         ForceSpawn(iClient);
         RequestFrame(SetPlayerState, iClient);
         g_hRestoredState.Remove(g_szPlayerAuth[iClient]);

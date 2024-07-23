@@ -16,12 +16,12 @@ public Plugin myInfo = {
 #define MAX_COLOR_LEN 32
 #define MAX_QUERY_LEN 512
 
-Handle db = INVALID_HANDLE;
-char g_user_name_color[MAXPLAYERS + 1][MAX_COLOR_LEN];
-ConVar record_enable;
-bool enable = true;
+Handle g_hDB = INVALID_HANDLE;
+char g_arrszUserNameColor[MAXPLAYERS + 1][MAX_COLOR_LEN];
+ConVar sm_record_enable_rt;
+bool g_bEnable = true;
 
-char g_rank_color[11][MAX_COLOR_LEN] = {
+char g_arrszRankColor[][MAX_COLOR_LEN] = {
     "{white}",
     "{navajowhite}",
     "{yellow}",
@@ -35,7 +35,7 @@ char g_rank_color[11][MAX_COLOR_LEN] = {
     "rainbow"
 };
 
-char g_color_group[][][32] = {
+char g_arrszColorGroup[][][32] = {
     {"{red}", "{orangered}", "{crimson}", "{collectors}", "{darkred}"},
     {"{palegreen}", "{lawngreen}", "{green}", "{lime}", "{forestgreen}"},
     {"{aqua}", "{dodgerblue}", "{blue}", "{darkcyan}", "{teal}"},
@@ -43,7 +43,7 @@ char g_color_group[][][32] = {
     {"{lightpink}", "{pink}", "{hotpink}", "{deeppink}", "{palevioletred}"}
 };
 
-public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+public APLRes AskPluginLoad2(Handle hMyself, bool bLate, char[] szError, int nErrMax)
 {
     CreateNative("FetchColoredName", NativeGetColoredName);
     return APLRes_Success;
@@ -51,299 +51,315 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart() {
     //LoadTranslations("extraction_level");
-    enable = true;
+    g_bEnable = true;
     InitializeDB();
-    HookEvent("nmrih_round_begin", OnRoundStart);
     HookEvent("player_extracted", OnPlayerExtraction);
-    RegConsoleCmd("sm_top", ShowTopRankToClient_p1);
+    RegConsoleCmd("sm_top", ShowTopRankToClientP1);
+}
+
+
+public Action OnClientPreAdminCheck(int iClient) {
+    char szSteamId[64] = {0};
+    char szBuffer[MAX_QUERY_LEN] = {0};
+    if (iClient && IsClientConnected(iClient) && !IsFakeClient(iClient)) {
+        GetClientAuthId(iClient, AuthId_SteamID64, szSteamId, sizeof(szSteamId));
+
+        Format(szBuffer, sizeof(szBuffer), "SELECT steam_id, name, times FROM extraction_times WHERE steam_id = '%s'", szSteamId);
+        PrintToServer("client%d's steamid: %s", iClient, szSteamId);
+        SQL_TQuery(g_hDB, ApplyNameColor, szBuffer, iClient);
+    }
+    return Plugin_Continue;
 }
 
 public void OnConfigsExecuted() {
-    record_enable = FindConVar("sm_record_enable");
-    if (record_enable != INVALID_HANDLE) {
-        record_enable.AddChangeHook(OnConVarChange);
+    sm_record_enable_rt = FindConVar("sm_record_enable_rt");
+    if (sm_record_enable_rt != INVALID_HANDLE) {
+        g_bEnable = sm_record_enable_rt.BoolValue;
+        sm_record_enable_rt.AddChangeHook(OnConVarChange);
     }
 
-    for (int i = 0; i < sizeof(g_color_group); i++) {
-        for (int j = 0; j < sizeof(g_color_group[]); j++) {
-            CProcessVariables(g_color_group[i][j], sizeof(g_color_group[][]));
+    for (int i = 0; i < sizeof(g_arrszColorGroup); i++) {
+        for (int j = 0; j < sizeof(g_arrszColorGroup[]); j++) {
+            CProcessVariables(g_arrszColorGroup[i][j], sizeof(g_arrszColorGroup[][]));
         }
     }
 
-    for (int i = 0; i < sizeof(g_rank_color); i++) {
-        CProcessVariables(g_rank_color[i], sizeof(g_rank_color[]));
+    for (int i = 0; i < sizeof(g_arrszRankColor); i++) {
+        CProcessVariables(g_arrszRankColor[i], sizeof(g_arrszRankColor[]));
     }
 }
 
-public OnConVarChange(Handle CVar, const char[] oldValue, const char[] newValue)
+public OnConVarChange(ConVar cvar, const char[] szOldValue, const char[] szNewValue)
 {
-    if (CVar == record_enable && !record_enable.BoolValue)
-        enable = false;
+    if (cvar == sm_record_enable_rt) {
+        g_bEnable = sm_record_enable_rt.BoolValue;
+    }
 }
 
 public InitializeDB() {
-    char error[MAX_SAYTEXT2_LEN];
+    char szError[MAX_SAYTEXT2_LEN];
     KeyValues kv = CreateKeyValues("");
     KvSetString(kv, "driver", "sqlite");
     KvSetString(kv, "database", "extraction_times");
 
-    db = SQL_ConnectCustom(kv, error, sizeof(error), true);
-    if(db == INVALID_HANDLE) {
-        SetFailState(error);
+    g_hDB = SQL_ConnectCustom(kv, szError, sizeof(szError), true);
+    if(g_hDB == INVALID_HANDLE) {
+        SetFailState(szError);
     }
-    SQL_LockDatabase(db);
-    SQL_FastQuery(db, "CREATE TABLE IF NOT EXISTS extraction_times (steam_id TEXT, name TEXT, times INTEGER);");
-    SQL_UnlockDatabase(db);
+    SQL_LockDatabase(g_hDB);
+    SQL_FastQuery(g_hDB, "CREATE TABLE IF NOT EXISTS extraction_times (steam_id TEXT, name TEXT, times INTEGER);");
+    SQL_UnlockDatabase(g_hDB);
 }
 
-public void OnRoundStart(Event e, const char[] n, bool b) {
-    if (record_enable != INVALID_HANDLE && record_enable.BoolValue)
-        enable = true;
-    else
-        enable = false;
-}
-
-public void OnPlayerExtraction(Event e, const char[] n, bool b) {
-    if (!enable)
+public void OnPlayerExtraction(Event e, const char[] sz, bool b) {
+    if (!g_bEnable)
         return;
-    int client = e.GetInt("player_id");
+    int iClient = e.GetInt("player_id");
 
-    char steam_id[64] = {0};
-    char buffer[MAX_QUERY_LEN] = {0};
+    char szSteamId[64] = {0};
+    char szBuffer[MAX_QUERY_LEN] = {0};
 
-    if(client && IsClientConnected(client) && !IsFakeClient(client)) {
-        GetClientAuthId(client, AuthId_SteamID64, steam_id, sizeof(steam_id));
+    if(iClient && IsClientConnected(iClient) && !IsFakeClient(iClient)) {
+        GetClientAuthId(iClient, AuthId_SteamID64, szSteamId, sizeof(szSteamId));
 
-        Format(buffer, sizeof(buffer), "SELECT steam_id, name, times FROM extraction_times WHERE steam_id = '%s'", steam_id);
-        SQL_TQuery(db, AfterQuery, buffer, client);
+        Format(szBuffer, sizeof(szBuffer), "SELECT steam_id, name, times FROM extraction_times WHERE steam_id = '%s'", szSteamId);
+        SQL_TQuery(g_hDB, AfterQuery, szBuffer, iClient);
     }
 }
 
-public void AfterQuery(Handle owner, Handle hndl, const char[] error, any data) {
-    if(!IsClientInGame(data))
+public void AfterQuery(Handle hOwner, Handle hChild, const char[] szError, any iClient) {
+    if(!IsClientInGame(iClient))
         return;
 
-    char steam_id[64], name[MAX_NAME_LENGTH], buffer[MAX_QUERY_LEN];
-    int times = 0;
-    bool need_insert = false;
+    char szSteamId[64], szName[MAX_NAME_LENGTH], szBuffer[MAX_QUERY_LEN];
+    int nTimes = 0;
+    bool bNeedInsert = false;
 
-    GetClientName(data, name, sizeof(name));
-    GetClientAuthId(data, AuthId_SteamID64, steam_id, sizeof(steam_id));
+    GetClientName(iClient, szName, sizeof(szName));
+    GetClientAuthId(iClient, AuthId_SteamID64, szSteamId, sizeof(szSteamId));
 
-    if(hndl == INVALID_HANDLE) {
-        PrintToServer("Error when query %s!", name);
+    if (hChild == INVALID_HANDLE) {
+        PrintToServer("Error when query %s!", szName);
         return;
+    } else if (SQL_FetchRow(hChild)) {
+        nTimes = SQL_FetchInt(hChild, 2);
+    } else {
+        bNeedInsert = true;
     }
-    else if(SQL_FetchRow(hndl)) 
-        times = SQL_FetchInt(hndl, 2);
-    else need_insert = true;
-    times++;
-    strcopy(g_user_name_color[data], sizeof(g_user_name_color[]), g_rank_color[GetColorIndexFromTimes(times)]);
+    nTimes++;
+    strcopy(g_arrszUserNameColor[iClient], sizeof(g_arrszUserNameColor[]), g_arrszRankColor[GetColorIndexFromTimes(nTimes)]);
 
     //GetColoredName(data, colored_name, sizeof(colored_name));
     //Format(buffer, sizeof(buffer), "{white}幸存者** %s {white}**已经撤离！", colored_name);
     //CPrintToChatAll(buffer);
 
-    if(need_insert)
-        Format(buffer, sizeof(buffer), "INSERT INTO extraction_times VALUES ('%s', '%s', %i)", steam_id, name, times);
-    else
-        Format(buffer, sizeof(buffer), "UPDATE extraction_times SET name = '%s', times = %i WHERE steam_id = '%s'", name, times, steam_id);
-    SQL_TQuery(db, AfterReplace, buffer, data);
-}
-
-public void AfterReplace(Handle owner, Handle hndl, const char[] error, any data) {
-    if(!StrEqual("", error))
-        PrintToServer("Last Connect SQL Error: %s", error);
-}
-
-public Action OnClientPreAdminCheck(int client) {
-    char steam_id[64] = {0};
-    char buffer[MAX_QUERY_LEN] = {0};
-    if(client && IsClientConnected(client) && !IsFakeClient(client)) {
-        GetClientAuthId(client, AuthId_SteamID64, steam_id, sizeof(steam_id));
-
-        Format(buffer, sizeof(buffer), "SELECT steam_id, name, times FROM extraction_times WHERE steam_id = '%s'", steam_id);
-        PrintToServer(steam_id);
-        SQL_TQuery(db, ApplyNameColor, buffer, client);
+    if (bNeedInsert) {
+        Format(szBuffer, sizeof(szBuffer), "INSERT INTO extraction_times VALUES ('%s', '%s', %i)", szSteamId, szName, nTimes);
+    } else {
+        Format(szBuffer, sizeof(szBuffer), "UPDATE extraction_times SET name = '%s', times = %i WHERE steam_id = '%s'", szName, nTimes, szSteamId);
     }
-    return Plugin_Continue;
+    SQL_TQuery(g_hDB, AfterReplace, szBuffer, iClient);
 }
 
-public void ApplyNameColor(Handle owner, Handle hndl, const char[] error, any data) {
-    int times = 0;
-    char name[MAX_NAME_LENGTH], name_1[MAX_NAME_LENGTH], buffer[MAX_QUERY_LEN];
-    GetClientName(data, name_1, 128);
-    if(hndl == INVALID_HANDLE) {
-        PrintToServer("Error when query %s!", name);
-        strcopy(g_user_name_color[data], sizeof(g_user_name_color[]), g_rank_color[0]);
+public void AfterReplace(Handle hOwner, Handle hChild, const char[] szError, any iClient) {
+    if (szError[0] != '\0') {
+        PrintToServer("Last Connect SQL Error: %s", szError);
+    }
+}
+
+public void ApplyNameColor(Handle hOwner, Handle hChild, const char[] szError, any iClient) {
+    int nTimes = 0;
+    char szName[MAX_NAME_LENGTH], szOriginalName[MAX_NAME_LENGTH], szBuffer[MAX_QUERY_LEN];
+    GetClientName(iClient, szOriginalName, MAX_NAME_LENGTH);
+    if (hChild == INVALID_HANDLE) {
+        PrintToServer("Error when query %s!", szName);
+        strcopy(g_arrszUserNameColor[iClient], sizeof(g_arrszUserNameColor[]), g_arrszRankColor[0]);
         return ;
     }
-    else if(SQL_FetchRow(hndl)) {
-        SQL_FetchString(hndl, 1, name, sizeof(name));
-        times = SQL_FetchInt(hndl, 2);
-        if (times >= 100) strcopy(g_user_name_color[data], sizeof(g_user_name_color[]), "rainbow");
-        else strcopy(g_user_name_color[data], sizeof(g_user_name_color[]), g_rank_color[GetColorIndexFromTimes(times)]);
-        if(strcmp(name, name_1) != 0) {
-            Format(buffer, sizeof(buffer), "UPDATE extraction_times SET name = '%s' WHERE name = '%s'", name_1, name);
-            SQL_TQuery(db, AfterNameUpdate, buffer, data);
+    else if(SQL_FetchRow(hChild)) {
+        SQL_FetchString(hChild, 1, szName, sizeof(szName));
+        nTimes = SQL_FetchInt(hChild, 2);
+        if (nTimes >= 100) {
+            strcopy(g_arrszUserNameColor[iClient], sizeof(g_arrszUserNameColor[]), "rainbow");
+        }
+        else {
+            strcopy(g_arrszUserNameColor[iClient], sizeof(g_arrszUserNameColor[]), g_arrszRankColor[GetColorIndexFromTimes(nTimes)]);
+        }
+        if (strcmp(szName, szOriginalName) != 0) {
+            Format(szBuffer, sizeof(szBuffer), "UPDATE extraction_times SET name = '%s' WHERE name = '%s'", szOriginalName, szName);
+            SQL_TQuery(g_hDB, AfterNameUpdate, szBuffer, iClient);
         }
     }
-    else strcopy(g_user_name_color[data], sizeof(g_user_name_color[]), g_rank_color[0]);
-    GetColoredName(data, name, sizeof(name));
-    Format(buffer, MAX_SAYTEXT2_LEN, "幸存者 %s {white}总撤离次数为 %i！", name, times);
-    CPrintToChatAll(0, buffer);
+    else strcopy(g_arrszUserNameColor[iClient], sizeof(g_arrszUserNameColor[]), g_arrszRankColor[0]);
+    GetColoredName(iClient, szName, sizeof(szName));
+    Format(szBuffer, MAX_SAYTEXT2_LEN, "幸存者 %s {white}总撤离次数为 %i！", szName, nTimes);
+    CPrintToChatAll(0, szBuffer);
 }
 
-public void AfterNameUpdate(Handle owner, Handle hndl, const char[] error, any data) {
-    if(!StrEqual("", error))
-        PrintToServer("Last Connect SQL Error: %s", error);
+public void AfterNameUpdate(Handle hOwner, Handle hChild, const char[] szError, any iClient) {
+    if (szError[0] != '\0') {
+        PrintToServer("Last Connect SQL Error: %s", szError);
+    }
 }
 
-public void OnClientDisconnect(int client) {
-    g_user_name_color[client][0] = '\0';
+public void OnClientDisconnect(int iClient) {
+    g_arrszUserNameColor[iClient][0] = '\0';
 }
 
-void StringRainbow(const char[] input, char[] output, int maxLen) {
-    int bytes = 0, buffs = 0;
-    int size = strlen(input), color_index = GetRandomInt(0, 4);
-    int char_len = 0, chars_width[MAX_SAYTEXT2_LEN];
-    output[0] = '\0';
+int StringRainbow(const char[] szInput, char[] szOutput, int nMaxLen) {
+    int nBytes = 0, nBuffs = 0;
+    int nSize = strlen(szInput), nColorIndex = GetRandomInt(0, sizeof(g_arrszColorGroup) - 1);
+    // LogMessage("Test output: %d, %d, %d", sizeof(g_arrszColorGroup), sizeof(g_arrszColorGroup[]), sizeof(g_arrszColorGroup[][]));
+    int nCharLen = 0, arrnCharsWidth[MAX_SAYTEXT2_LEN];
+    szOutput[0] = '\0';
 
-    for (int x = 0; x < size; ++x) {
-        if (0 <= input[x] < 128) {
-            chars_width[char_len++] = 1;
+    for (int x = 0; x < nSize; x += nBuffs) {
+        if (szInput[x] < 128) {
+            nBuffs = 1;
         }
-        else if (input[x] >= 192) {
-            buffs = 0;
-            for (int i = 7; i >= 0; i--) {
-                if (input[x] & (1 << i)) {
-                    buffs++;
-                }
-                else {
+        else if (szInput[x] >= 192) {
+            nBuffs = 2;
+            for (int i = 5; i >= 0; i--) {
+                if (szInput[x] & (1 << i)) {
+                    nBuffs++;
+                } else {
                     break;
                 }
             }
-            chars_width[char_len++] = buffs;
-            x += (buffs - 1);
+        } else {
+            char szBuffer[4096];
+            FormatEx(szBuffer, sizeof(szBuffer), "Invalid utf8 string, please check: %s\n", szInput);
+            for (int i = 0; i < nSize; i++) {
+                FormatEx(szBuffer, sizeof(szBuffer), "%s%d ", szBuffer, szInput[i]);
+            }
+            LogError(szBuffer);
+            return -1;
         }
+        arrnCharsWidth[nCharLen++] = nBuffs;
     }
 
-    bytes += strcopy(output, maxLen, g_color_group[color_index][0]);
-    int last = 0, index = 0, insert_point, len = 0;
-    for (int i = 1; i < 5 && maxLen > bytes; ++i) {
-        insert_point = RoundToNearest(float(char_len) / 5.0 * i);
-        if (insert_point != last) {
-            len = 0;
-            for (int j = last; j < insert_point; j++) {
-                len += chars_width[j];
-                if (len > maxLen - bytes - 1) {
-                    len = maxLen - bytes - 1;
+    nBytes += strcopy(szOutput, nMaxLen, g_arrszColorGroup[nColorIndex][0]);
+    int nLast = 0, nIndex = 0, nInsertPoint, nLen = 0;
+    for (int i = 1; i < sizeof(g_arrszColorGroup[]) && nMaxLen > nBytes; i++) {
+        nInsertPoint = RoundToNearest(float(nCharLen) / float(sizeof(g_arrszColorGroup[])) * i);
+        if (nInsertPoint != nLast) {
+            nLen = 0;
+            for (int j = nLast; j < nInsertPoint; j++) {
+                nLen += arrnCharsWidth[j];
+                if (nLen > nMaxLen - nBytes - 1) {
+                    nLen = nMaxLen - nBytes - 1;
                     break;
                 }
             }
-            len = strcopy(output[bytes], len + 1, input[index]);
-            index += len;
-            bytes += len;
+            nLen = strcopy(szOutput[nBytes], nLen + 1, szInput[nIndex]);
+            nIndex += nLen;
+            nBytes += nLen;
 
-            bytes += strcopy(output[bytes], maxLen-bytes, g_color_group[color_index][i]);
-            last = insert_point;
+            nBytes += strcopy(szOutput[nBytes], nMaxLen - nBytes, g_arrszColorGroup[nColorIndex][i]);
+            nLast = nInsertPoint;
         }
     }
-    bytes += strcopy(output[bytes], maxLen-bytes, input[index]);
-    bytes += strcopy(output[bytes], maxLen-bytes, "\x01");
+    nBytes += strcopy(szOutput[nBytes], nMaxLen - nBytes, szInput[nIndex]);
+    nBytes += strcopy(szOutput[nBytes], nMaxLen - nBytes, "\x01");
 
-    output[bytes] = '\0';
+    szOutput[nBytes] = '\0';
+    return nBytes;
     //PrintToServer(output);
 }
 
-public Action ShowTopRankToClient_p1(int client, int args) {
-    char buffer[MAX_QUERY_LEN];
-    Format(buffer, sizeof(buffer), "SELECT name, times FROM extraction_times ORDER BY times DESC LIMIT 10");
-    SQL_TQuery(db, ShowTopRankToClient_p2, buffer, client);
+public Action ShowTopRankToClientP1(int iClient, int nArgs) {
+    char szBuffer[MAX_QUERY_LEN];
+    Format(szBuffer, sizeof(szBuffer), "SELECT name, times FROM extraction_times ORDER BY times DESC LIMIT 10");
+    SQL_TQuery(g_hDB, ShowTopRankToClientP2, szBuffer, iClient);
     return Plugin_Continue;
 }
 
-public void ShowTopRankToClient_p2(Handle:owner, Handle:hndl, const String:error[], any:data) {
-    if(hndl == INVALID_HANDLE) {
-        PrintToServer("Last Connect SQL Error: %s", error);
+public void ShowTopRankToClientP2(Handle hOwner, Handle hChild, const char[] szError, any iClient) {
+    if (hOwner == INVALID_HANDLE) {
+        PrintToServer("Last Connect SQL Error: %s", szError);
     }
-    int top = 0, times = 0;
-    char buffer[10][MAX_SAYTEXT2_LEN], name[MAX_NAME_LENGTH] = {0}, color[MAX_COLOR_LEN];
-    while(SQL_FetchRow(hndl) && top < 10) {
-        strcopy(color, sizeof(color), g_rank_color[0]);
-        SQL_FetchString(hndl, 0, name, sizeof(name));
-        times = SQL_FetchInt(hndl, 1);
-        top++;
-        if (times >= 100) {
-            char newname[MAX_NAME_LENGTH];
-            StringRainbow(name, newname, sizeof(newname));
-            FormatEx(buffer[top-1], sizeof(buffer[]), "TOP %i：幸存者 %s {white}总共撤离 {red}%i {white}次", 
-                    top, newname, times);
+    int nTop = 0, nTimes = 0;
+    static char szBuffer[10][MAX_SAYTEXT2_LEN], szName[MAX_NAME_LENGTH] = {0};
+    while (SQL_FetchRow(hChild) && nTop < 10) {
+        SQL_FetchString(hChild, 0, szName, sizeof(szName));
+        nTimes = SQL_FetchInt(hChild, 1);
+        nTop++;
+        if (nTimes >= 100) {
+            char szNewName[MAX_NAME_LENGTH];
+            StringRainbow(szName, szNewName, sizeof(szNewName));
+            FormatEx(szBuffer[nTop-1], sizeof(szBuffer[]), "TOP %i：幸存者 %s 总共撤离 {red}%i {white}次", 
+                    nTop, szNewName, nTimes);
         }
         else {
-            strcopy(color, sizeof(g_rank_color[]), g_rank_color[GetColorIndexFromTimes(times)]);
-            FormatEx(buffer[top-1], sizeof(buffer[]), "TOP %i：幸存者 %s%s {white}总共撤离 {red}%i {white}次", 
-                    top, color, name, times);
+            FormatEx(szBuffer[nTop-1], sizeof(szBuffer[]), "TOP %i：幸存者 %s%s {white}总共撤离 {red}%i {white}次", nTop, g_arrszRankColor[GetColorIndexFromTimes(nTimes)], szName, nTimes);
         }
     }
-    if (buffer[0][0] == '\0') {
-        strcopy(buffer[0], sizeof(buffer[]), "{red}当前没有任何记录！");
-        top = 1;
+    if (szBuffer[0][0] == '\0') {
+        strcopy(szBuffer[0], sizeof(szBuffer[]), "{red}当前没有任何记录！");
+        nTop = 1;
     }
-    if (data == 0) {
-        for(int i = top - 1; i >= 0; i--)
-            CPrintToChatAll(0, buffer[i]);
-    }
-    else if (IsClientInGame(data) && IsClientConnected(data) && !IsFakeClient(data) && !IsClientSourceTV(data)) {
-        for(int i = top - 1; i >= 0; i--)
-            CPrintToChat(data, 0, buffer[i]);
+    if (iClient == 0) {
+        for (int i = nTop - 1; i >= 0; i--) {
+            CPrintToChatAll(0, szBuffer[i]);
+        }
+    } else if (IsClientInGame(iClient) && IsClientConnected(iClient) && !IsFakeClient(iClient) && !IsClientSourceTV(iClient)) {
+        for (int i = nTop - 1; i >= 0; i--) {
+            CPrintToChat(iClient, 0, szBuffer[i]);
+        }
     }
 }
 
-public any NativeGetColoredName(Handle plugin, int num_params) {
-    int client = GetNativeCell(1);
-    int max_len = GetNativeCell(3);
-    char[] new_name = new char[max_len];
-    GetColoredName(client, new_name, max_len);
-    SetNativeString(2, new_name, max_len);
-    return 0;
+public int NativeGetColoredName(Handle hPlugin, int nParams) {
+    int iClient = GetNativeCell(1);
+    int nMaxLen = GetNativeCell(3);
+    char szName[MAX_NAME_LENGTH] = {0};
+    int nWriten = GetColoredName(iClient, szName, nMaxLen > MAX_NAME_LENGTH ? nMaxLen: MAX_NAME_LENGTH);
+    int nErr = SetNativeString(2, szName, nMaxLen);
+    if (nErr != SP_ERROR_NONE) {
+        LogError("Error on SetNativeString: %d", nErr);
+        return -1;
+    }
+    return nWriten;
 }
 
-public void GetColoredName(int client, char[] new_name, int max_len) {
-    char[] name = new char[max_len];
-    GetClientName(client, name, max_len);
-    if (g_user_name_color[client][0] == '\0') {
-        Format(new_name, max_len, "%s%s\x01", g_rank_color[0], name);
+public int GetColoredName(int iClient, char[] szName, int nMaxLen) {
+    if (!GetClientName(iClient, szName, nMaxLen)) {
+        return -1;
     }
-    else if (strcmp(g_user_name_color[client], "rainbow") != 0) {
-        Format(new_name, max_len, "%s%s\x01", g_user_name_color[client], name);
+    if (g_arrszUserNameColor[iClient][0] == '\0') {
+        return Format(szName, nMaxLen, "%s%s\x01", g_arrszRankColor[0], szName);
+    }
+    else if (strcmp(g_arrszUserNameColor[iClient], "rainbow") != 0) {
+        return Format(szName, nMaxLen, "%s%s\x01", g_arrszUserNameColor[iClient], szName);
     }
     else {
-        StringRainbow(name, new_name, max_len);
+        static char szBuffer[MAX_NAME_LENGTH];
+        strcopy(szBuffer, nMaxLen, szName);
+        return StringRainbow(szBuffer, szName, nMaxLen);
     }
 }
 
-public int GetColorIndexFromTimes(int times) {
+public int GetColorIndexFromTimes(int nTimes) {
 //1 5 10 20 30 40 50 60 80 100
-    if (times >=0 && times < 1)
+    if (nTimes >=0 && nTimes < 1)
         return 0;
-    else if (times < 5)
+    else if (nTimes < 5)
         return 1;
-    else if (times < 10)
+    else if (nTimes < 10)
         return 2;
-    else if (times < 20)
+    else if (nTimes < 20)
         return 3;
-    else if (times < 30)
+    else if (nTimes < 30)
         return 4;
-    else if (times < 40)
+    else if (nTimes < 40)
         return 5;
-    else if (times < 50)
+    else if (nTimes < 50)
         return 6;
-    else if (times < 60)
+    else if (nTimes < 60)
         return 7;
-    else if (times < 80)
+    else if (nTimes < 80)
         return 8;
-    else if (times < 100)
+    else if (nTimes < 100)
         return 9;
     else
         return 10;

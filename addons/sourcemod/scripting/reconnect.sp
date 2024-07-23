@@ -55,6 +55,7 @@ public void OnLibraryRemoved(const char[] szName) {
 }
 
 public void OnPluginStart() {
+    g_bRandomSupplyLoaded = LibraryExists("randomsupply");
     LoadTranslations("common.phrases");
     LoadTranslations("reconnect.phrases");
     sm_reconnect_max_interval = CreateConVar("sm_reconnect_max_interval", "300", "Player need reconnect in this time , in seconds.");

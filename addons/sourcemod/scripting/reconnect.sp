@@ -29,7 +29,7 @@ Menu g_hChooseMenu;
 
 bool g_bRandomSupplyLoaded;
 int g_iSpawningPlayer;
-float g_aPlayerState[MAXPLAYERS + 1][PLAYER_STATE_LEN];
+float g_arrfPlayerState[MAXPLAYERS + 1][PLAYER_STATE_LEN];
 char g_szPlayerAuth[MAXPLAYERS + 1][64];
 
 public APLRes AskPluginLoad2(Handle hMySelf, bool bLate, char[] sError, int nErrMax)
@@ -98,6 +98,7 @@ public void OnPluginStart() {
     HookEvent("nmrih_reset_map", OnMapReset);
     HookEvent("player_disconnect", OnUserDisconnect, EventHookMode_Post);
     RegConsoleCmd("sm_rspawn", CmdRSpawn);
+    RegConsoleCmd("sm_kickme", CmdKickMe);
     RegAdminCmd("sm_fspawn", CmdFSpawn, ADMFLAG_CHEATS);
     
 }
@@ -168,7 +169,7 @@ int ChooseMenuHandler(Menu menu, MenuAction action, int param1, int param2) {
 public void OnClientPostAdminCheck(int iClient) {
     GetClientAuthId(iClient, AuthId_SteamID64, g_szPlayerAuth[iClient], 64);
 
-    if (g_hRestoredState.GetArray(g_szPlayerAuth[iClient], g_aPlayerState[iClient], PLAYER_STATE_LEN)) {
+    if (g_hRestoredState.GetArray(g_szPlayerAuth[iClient], g_arrfPlayerState[iClient], PLAYER_STATE_LEN)) {
         CPrintToChat(iClient, 0, "{green}%t {white}%t", "Prefix", "Notifi");
         g_hChooseMenu.Display(iClient, sm_reconnect_choose_time.IntValue);
     }
@@ -194,7 +195,7 @@ public Action OnUserDisconnect(Event event, const char[] name, bool dontBroadcas
         return Plugin_Continue;
     }
 
-    GetEventString(event, "reason", szReason, 128);
+    GetEventString(event, "reason", szReason, sizeof(szReason));
 
     if (StrContains(szReason, "Client not connected to Steam") != -1) {
         bStore = true;
@@ -214,30 +215,30 @@ public Action OnUserDisconnect(Event event, const char[] name, bool dontBroadcas
 
     if (bStore) {
         char szAuth[64];
-        float aPlayerState[PLAYER_STATE_LEN];
+        float arrfPlayerState[PLAYER_STATE_LEN];
         float vOrigin[3], vAngle[3];
-        GetClientAuthId(iClient, AuthId_SteamID64, szAuth, 64);
+        GetClientAuthId(iClient, AuthId_SteamID64, szAuth, sizeof(szAuth));
 
         GetClientAbsOrigin(iClient, vOrigin);
         GetClientAbsAngles(iClient, vAngle);
 
-        aPlayerState[0] = vOrigin[0];
-        aPlayerState[1] = vOrigin[1];
-        aPlayerState[2] = vOrigin[2];
-        aPlayerState[3] = vAngle[0];
-        aPlayerState[4] = vAngle[1];
-        aPlayerState[5] = vAngle[2];
-        aPlayerState[6] = float(GetEntProp(iClient, Prop_Send, "m_iHealth"));
-        aPlayerState[7] = GetEntPropFloat(iClient, Prop_Send, "m_flStamina");
-        aPlayerState[8] = GetEntPropFloat(iClient, Prop_Send, "m_flInfectionTime");
-        aPlayerState[9] = GetEntPropFloat(iClient, Prop_Send, "m_flInfectionDeathTime");
-        aPlayerState[10] = float(GetEntProp(iClient, Prop_Send, "_bleedingOut"));
-        aPlayerState[11] = float(GetEntProp(iClient, Prop_Send, "_vaccinated"));
-        aPlayerState[12] = float(GetEntProp(iClient, Prop_Data, "m_iFrags"));
-        aPlayerState[13] = float(GetEntProp(iClient, Prop_Data, "m_iDeaths"));
-        aPlayerState[14] = GetEngineTime();
+        arrfPlayerState[0] = vOrigin[0];
+        arrfPlayerState[1] = vOrigin[1];
+        arrfPlayerState[2] = vOrigin[2];
+        arrfPlayerState[3] = vAngle[0];
+        arrfPlayerState[4] = vAngle[1];
+        arrfPlayerState[5] = vAngle[2];
+        arrfPlayerState[6] = float(GetEntProp(iClient, Prop_Send, "m_iHealth"));
+        arrfPlayerState[7] = GetEntPropFloat(iClient, Prop_Send, "m_flStamina");
+        arrfPlayerState[8] = GetEntPropFloat(iClient, Prop_Send, "m_flInfectionTime");
+        arrfPlayerState[9] = GetEntPropFloat(iClient, Prop_Send, "m_flInfectionDeathTime");
+        arrfPlayerState[10] = float(GetEntProp(iClient, Prop_Send, "_bleedingOut"));
+        arrfPlayerState[11] = float(GetEntProp(iClient, Prop_Send, "_vaccinated"));
+        arrfPlayerState[12] = float(GetEntProp(iClient, Prop_Data, "m_iFrags"));
+        arrfPlayerState[13] = float(GetEntProp(iClient, Prop_Data, "m_iDeaths"));
+        arrfPlayerState[14] = GetEngineTime();
 
-        g_hRestoredState.SetArray(szAuth, aPlayerState, PLAYER_STATE_LEN);
+        g_hRestoredState.SetArray(szAuth, arrfPlayerState, PLAYER_STATE_LEN);
     }
 
     return Plugin_Continue;
@@ -253,7 +254,7 @@ void ForceSpawn(int iClient)
 }
 
 Action CmdRSpawn(int iClient, int nArgs) {
-    if (g_hRestoredState.GetArray(g_szPlayerAuth[iClient], g_aPlayerState[iClient], PLAYER_STATE_LEN)) {
+    if (g_hRestoredState.GetArray(g_szPlayerAuth[iClient], g_arrfPlayerState[iClient], PLAYER_STATE_LEN)) {
         if (IsPlayerAlive(iClient) && GetEntProp(iClient, Prop_Send, "m_iPlayerState") == 0) {
             CPrintToChat(iClient, 0, "{green}%t {white}%t", "Prefix", "AlreadyAlive");
             return Plugin_Handled;
@@ -266,6 +267,11 @@ Action CmdRSpawn(int iClient, int nArgs) {
         g_hRestoredState.Remove(g_szPlayerAuth[iClient]);
     }
 
+    return Plugin_Handled;
+}
+
+Action CmdKickMe(int iClient, int nArgs) {
+    KickClient(iClient, "Lost connection");
     return Plugin_Handled;
 }
 
@@ -328,32 +334,32 @@ public bool TraceEntityFilterPlayer(int entity, int contentsMask) {
 }  
 
 void SetPlayerState(int iClient) {
-    float aPlayerState[PLAYER_STATE_LEN];
-    aPlayerState = g_aPlayerState[iClient];
+    float arrfPlayerState[PLAYER_STATE_LEN];
+    arrfPlayerState = g_arrfPlayerState[iClient];
 
     float vOrigin[3], vAngle[3];
-    vOrigin[0] = aPlayerState[0];
-    vOrigin[1] = aPlayerState[1];
-    vOrigin[2] = aPlayerState[2];
-    vAngle[0] = aPlayerState[3];
-    vAngle[1] = aPlayerState[4];
-    vAngle[2] = aPlayerState[5];
-    float fInterval = GetEngineTime() - aPlayerState[14];
-    int iHealth = RoundFloat(aPlayerState[6]);
+    vOrigin[0] = arrfPlayerState[0];
+    vOrigin[1] = arrfPlayerState[1];
+    vOrigin[2] = arrfPlayerState[2];
+    vAngle[0] = arrfPlayerState[3];
+    vAngle[1] = arrfPlayerState[4];
+    vAngle[2] = arrfPlayerState[5];
+    float fInterval = GetEngineTime() - arrfPlayerState[14];
+    int iHealth = RoundFloat(arrfPlayerState[6]);
 
-    SetEntPropFloat(iClient, Prop_Send, "m_flStamina", aPlayerState[7]);
+    SetEntPropFloat(iClient, Prop_Send, "m_flStamina", arrfPlayerState[7]);
     
-    if (aPlayerState[9] != -1.0) {
-        if (aPlayerState[9] - fInterval < 10.0) {
+    if (arrfPlayerState[9] != -1.0) {
+        if (arrfPlayerState[9] - fInterval < 10.0) {
             SetEntPropFloat(iClient, Prop_Send, "m_flInfectionDeathTime", 10.0);
-            SetEntPropFloat(iClient, Prop_Send, "m_flInfectionTime", aPlayerState[8] + aPlayerState[9] - 10.0);
+            SetEntPropFloat(iClient, Prop_Send, "m_flInfectionTime", arrfPlayerState[8] + arrfPlayerState[9] - 10.0);
         }
         else {
-            SetEntPropFloat(iClient, Prop_Send, "m_flInfectionDeathTime", aPlayerState[9] - fInterval);
-            SetEntPropFloat(iClient, Prop_Send, "m_flInfectionTime", aPlayerState[8] + fInterval);
+            SetEntPropFloat(iClient, Prop_Send, "m_flInfectionDeathTime", arrfPlayerState[9] - fInterval);
+            SetEntPropFloat(iClient, Prop_Send, "m_flInfectionTime", arrfPlayerState[8] + fInterval);
         }
     }
-    if (RoundFloat(aPlayerState[10]) == 1) {
+    if (RoundFloat(arrfPlayerState[10]) == 1) {
         iHealth -=  RoundFloat(fInterval / 5.0);
         if (iHealth < 5) iHealth = 5;
         //SetEntProp(iClient, Prop_Send, "_bleedingOut", 1);
@@ -361,11 +367,11 @@ void SetPlayerState(int iClient) {
         FakeClientCommand(iClient, "bleedout");
         SetCommandFlags("bleedout", GetCommandFlags("bleedout")|FCVAR_CHEAT);
     }
-    if (RoundFloat(aPlayerState[11]) == 1) {
+    if (RoundFloat(arrfPlayerState[11]) == 1) {
         SetEntProp(iClient, Prop_Send, "_vaccinated", 1);
     }
-    SetEntProp(iClient, Prop_Data, "m_iFrags", RoundFloat(aPlayerState[12]));
-    SetEntProp(iClient, Prop_Data, "m_iDeaths", RoundFloat(aPlayerState[13]));
+    SetEntProp(iClient, Prop_Data, "m_iFrags", RoundFloat(arrfPlayerState[12]));
+    SetEntProp(iClient, Prop_Data, "m_iDeaths", RoundFloat(arrfPlayerState[13]));
 
     SetEntProp(iClient, Prop_Send, "m_iHealth", iHealth);
 
